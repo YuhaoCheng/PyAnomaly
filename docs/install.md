@@ -8,6 +8,7 @@
 The requirement packages are as follows, and if users have some problems in installation, please submit an issue, and we will solve it ASAP.
 
 - PyTorch >= 1.3
+- Detectron2
 - `cupy`
 - `tensorboard`
 - `colorama`
