@@ -1,5 +1,5 @@
 #! /bin/bash
-project_path='/export/home/chengyh/Anomaly_DA'
+project_path='/export/home/chengyh/PyAnomaly'
 verbose='default'
 MULTIGPUS=False
 # NUM_GPUS=1

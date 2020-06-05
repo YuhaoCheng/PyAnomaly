@@ -1,5 +1,5 @@
 #! /bin/bash
-project_path='/export/home/chengyh/Anomaly_DA'
+project_path='/export/home/chengyh/PyAnomaly'
 verbose='default'
 MULTIGPUS=False
 inference_model='./final_model/avenue_amc_cfg@amc_avenue#2020-03-02-22-05#0.835^amc#amc.pth'
