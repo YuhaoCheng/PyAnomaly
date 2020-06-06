@@ -11,6 +11,8 @@ Please refer to the [INSTALL.md](./docs/install.md)
 ### Usage 
 Specifically usage please refer to [USAGE.md](./docs/usage.md)
 
+The introduction of some useful tools is in [TOOLS](#./docs/tools.md)
+
 ### Update
 
 - 2020/6/4: Finish migrating the readme and add some information

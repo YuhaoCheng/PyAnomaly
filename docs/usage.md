@@ -1,3 +1,9 @@
+## Content
+- [Quick Start](#Quick-Start)
+- [Build Components](#build-components)
+- [Tools](#tools)
+- [Model Zoo](#model-zoo)
+
 ## Quick Start
 The toolbox uses the shell file to start the training or inference process, and the parameters are as follows:
 
@@ -28,7 +34,7 @@ sh inference.sh -m amc -d avenue -p PATH/TO/ANOMALY -g 0 -c default.yaml /
 -im MODEL_PATH -v inference_test
 ```
 
-## Build your own components
+## Build Components
 
 The original intention is to promote the development of anomaly detection, so almost everything in PyAnomaly can be built by researchers and engineers. We will introduce the simple steps to build your own components. For some details, please refer to the codes. 
 
@@ -155,6 +161,11 @@ For example, if you want to build a model named `Example`.
    ```
 
    
+
+## Tools
+
+During build this tool, we make some code tools to read data, make loggers, and so on. We will introduce these things here and tell the users how to use them. Some of them are referred to other repo with some modification, and we will cite the original version of them. Details are in [TOOLS](./tools.md)
+
 
 ## [Model Zoo](./model_zoo.md)
 
