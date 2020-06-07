@@ -8,7 +8,8 @@
 The requirement packages are as follows, and if users have some problems in installation, please submit an issue, and we will solve it ASAP.
 
 - PyTorch >= 1.3
-- Detectron2
+- [Detectron2](https://github.com/facebookresearch/detectron2)
+- [Flownet2](https://github.com/NVIDIA/flownet2-pytorch)
 - `cupy`
 - `tensorboard`
 - `colorama`
