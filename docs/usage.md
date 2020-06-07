@@ -7,15 +7,17 @@
 ## Quick Start
 The toolbox uses the shell file to start the training or inference process, and the parameters are as follows:
 
-```
--m MODEL: (amc, anopcn, anopred, oc)
--d DATASET: (avenue, ped2, shanghai)
+```shell
+-m MODEL: The name of the method
+-d DATASET: The name of the dataset
 -p PROJRECT_PATH(ABSOLUTE)
 -g GPUS(e.g. 0,1)
 -c CONFIG_NAME
 -v VERBOSE
 -im(only in inference.sh) INFERENCE MODEL
 ```
+
+The name list of methods and datasets are in the [MODEL ZOO](./model_zoo.md)
 
 Example: 
 

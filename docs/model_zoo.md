@@ -1,6 +1,20 @@
 ## Model Zoo
 We provide the model for different dataset and different methods
 
+### Present Support Model names
+```
+amc
+anopred
+anopcn
+```
+
+### Present Support Dataset names
+```
+ped2
+avenue
+shanghai
+```
+
 ### Video Dataset
 
 #### Ped2 Baseline

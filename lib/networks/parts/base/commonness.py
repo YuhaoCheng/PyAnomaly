@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torchsnooper
 import torch.nn.functional as F
+import functools
 class BasicConv2d(nn.Module):
     '''
     The basic convaolution with bn
@@ -154,3 +155,50 @@ class Inception7x7(nn.Module):
         x = self.s7_n1_c(x)
 
         return x
+
+class PixelDiscriminator(nn.Module):
+    """Defines a 1x1 PatchGAN discriminator (pixelGAN)"""
+
+    def __init__(self, input_nc, num_filters, use_norm=False,norm_layer=nn.BatchNorm2d):
+        """Construct a 1x1 PatchGAN discriminator
+
+        Parameters:
+            input_nc (int)  -- the number of channels in input images
+            ndf (int)       -- the number of filters in the last conv layer
+            norm_layer      -- normalization layer
+        """
+        '''
+        different from ano_pred with norm here
+        '''
+
+
+        super(PixelDiscriminator, self).__init__()
+        if use_norm:
+            if type(norm_layer) == functools.partial:  # no need to use bias as BatchNorm2d has affine parameters
+                use_bias = norm_layer.func != nn.InstanceNorm2d
+            else:
+                use_bias = norm_layer != nn.InstanceNorm2d
+        else:
+            use_bias=True
+
+        self.net=[]
+        self.net.append(nn.Conv2d(input_nc,num_filters[0],kernel_size=4,padding=2,stride=2))
+        self.net.append(nn.LeakyReLU(0.1))
+        if use_norm:
+            for i in range(1,len(num_filters)-1):
+                self.net.extend([nn.Conv2d(num_filters[i-1],num_filters[i],4,2,2,bias=use_bias),
+                                 nn.LeakyReLU(0.1),
+                                 norm_layer(num_filters[i])])
+        else :
+            for i in range(1,len(num_filters)-1):
+                self.net.extend([nn.Conv2d(num_filters[i-1],num_filters[i],4,2,2,bias=use_bias),
+                                 nn.LeakyReLU(0.1)])
+        self.net.append(nn.Conv2d(num_filters[-1],1,4,1,2))
+        
+        self.net = nn.Sequential(*self.net)
+
+    def forward(self, input):
+        """Standard forward."""
+        with torch.autograd.set_detect_anomaly(True):
+            output = self.net(input)
+        return output
