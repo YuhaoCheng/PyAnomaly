@@ -1,0 +1,189 @@
+SYSTEM:
+  multigpus: false
+  num_gpus: 2
+  gpus: [0,1]
+  cudnn:
+    benchmark: true
+    deterministic: false
+    enable: true
+  distributed:
+    use: false
+LOG:
+  log_output_dir: './output/log'
+  tb_output_dir: './output/tensorboard'
+  vis_dir: './output/vis'
+  
+DATASET:
+  name: 'avenue'
+  seed: 2020
+  read_format: 'opencv'
+  train_path: './data/Avenue/training/frames'
+  train_clip_length: 7
+  train_clip_step: 3
+  test_path: './data/Avenue/testing/frames'
+  test_clip_length: 7
+  test_clip_step: 3
+  gt_path: './data/Shanghai/testing/test_frame_mask'
+  number_of_class: 1
+  score_normalize: true
+  score_type: 'normal'
+  decidable_idx: 4
+  smooth:
+    guassian: true
+    guassian_sigma: 10
+  mini_dataset:
+    samples: 100
+  evaluate_function_type: 'compute_auc_score'
+ARGUMENT:
+  train:
+    use: true
+    resize:
+      use: true
+      height: 256
+      width: 256
+    grayscale:
+      use: false
+    normal:
+      use: true
+      mean: [0.5, 0.5, 0.5]
+      std: [0.5, 0.5, 0.5]
+    fliplr:
+      use: true
+      p: 0.5
+    flipud:
+      use: false
+      p: 0.5
+    rote:
+      use: false
+      degrees: [10,10]
+    JpegCompression:
+      use: false
+      high: 100
+      low: 80
+    GaussianBlur:
+      use: false
+      high: 0.3
+      low: 0.03
+    CropToFixedSize:
+      use: false
+      hight: 256
+      width: 256
+      position: 'center'
+  val:
+    use: true
+    resize:
+      use: true
+      height: 256
+      width: 256
+    grayscale:
+      use: false
+    normal:
+      use: true
+      mean: [0.5, 0.5, 0.5]
+      std: [0.5, 0.5, 0.5]
+    fliplr:
+      use: true
+      p: 0.5
+    flipud:
+      use: false
+      p: 0.5
+    rote:
+      use: false
+      degrees: [10,10]
+    JpegCompression:
+      use: false
+      high: 100
+      low: 80
+    GaussianBlur:
+      use: false
+      high: 0.3
+      low: 0.03
+    CropToFixedSize:
+      use: false
+      hight: 256
+      width: 256
+      position: 'center'
+MODEL:
+  name: 'amc'
+  type: 'amc'
+  hooks:
+    train: ['oc.ClusterHook', 'oc.OCEvaluateHook', 'base.VisScoreHook']
+    val: ['oc.ClusterHook', 'oc.OCEvaluateHook']
+  flow_model_path: ''
+  discriminator_channels: []
+  pretrain_model: ''
+  detector_config: 'COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml'
+  detector_model_path: "./pretrained_model/faster_rcnn_X_101_FPN_model_final_68b088.pkl"
+RESUME:
+  flag: false
+  checkpoint_path: ''
+FINETUNE:
+  flag: false
+  layer_list: []
+TRAIN:
+  batch_size: 4
+  start_step: 0
+  max_steps: 20000
+  log_step: 5
+  vis_step: 1000
+  mini_eval_step: 500
+  eval_step: 2000
+  save_step: 5000
+  epochs: 1
+  loss: ['A_loss', 'B_loss', 'C_loss']
+  loss_coefficients: [1,2,1]
+  mode: 'general'
+  general:
+    optimizer:
+      include: ['A', 'B', 'C']
+      name: 'adam'
+      lr: 1e-3
+      momentum: 0.9
+      weight_decay: 0.0001
+      nesterov: false
+      output_name: ['optimizer_abc']
+    scheduler:
+      use: true
+      name: 'stepLR'
+      step_size: 1000
+      steps: [10000, 15000]
+      gamma: 0.1
+      T_max: 300
+      eta_min: 0
+      warmup_factor: 0.001
+      warmup_iters: 1000
+      warmup_method: 'linear'
+  adversarial:
+    optimizer:
+      include: ['Generator', 'Discriminator']
+      name: 'adam'
+      g_lr: 0.0002
+      d_lr: 0.00002
+      weight_decay: 0.0001
+      output_name: ['optimizer_g', 'optimizer_d']
+    scheduler:
+      use: true
+      name: 'WarmupCosLR' # 'stepLR'| 'cosLR' | 'WarmupCosLR' | 'WarmupMultiStepLR'
+      step_size: 1000
+      steps: [10000, 15000]
+      gamma: 0.1
+      T_max: 300
+      eta_min: 0
+      warmup_factor: 0.001
+      warmup_iters: 1000
+      warmup_method: 'linear' # 'linear' | 'constant'
+  split: ''
+  model_output: './output/models'
+  checkpoint_output: './output/checkpoint'
+  pusedo_data_path: ''
+  cluster:
+    k: 10
+VAL:
+  name: ''
+  path: ''
+  batch_size: 2
+TEST:
+  name: ''
+  path: ''
+  result_output: './output/results'
+

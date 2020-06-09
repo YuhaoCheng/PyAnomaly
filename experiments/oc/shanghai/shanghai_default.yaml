@@ -1,0 +1,77 @@
+SYSTEM:
+  multigpus: false
+  num_gpus: 4
+  gpus: [0,1,2,3]
+LOG:
+  log_output_dir: './output/log'
+  tb_output_dir: './output/tensorboard'
+  
+DATASET:
+  name: 'shanghai'
+  read_format: 'opencv'
+  train_path: './data/Shanghai/training/frames'
+  train_clip_length: 7
+  train_clip_step: 3
+  test_path: './data/Shanghai/testing/frames'
+  test_clip_length: 7
+  test_clip_step: 3
+  gt_path: './data/Shanghai/testing/test_frame_mask'
+  mini_dataset:
+    samples: 100
+  smooth:
+    guassian_sigma: 30
+ARGUMENT:
+  train:
+    use: true
+    resize:
+      use: true
+      height: 256
+      width: 256
+    normal:
+      use: false
+      mean: [0.5, 0.5, 0.5]
+      std: [0.5, 0.5, 0.5]
+    flip:
+      use: false
+      p: 0.5
+    rote:
+      use: false
+      degrees: 10
+  val:
+    use: true
+    resize:
+      use: true
+      height: 256
+      width: 256
+    normal:
+      use: false  # normalize to [-1, 1]
+      mean: [0.5, 0.5, 0.5]
+      std: [0.5, 0.5, 0.5]
+MODEL:
+  name: 'oc'
+  type: 'oc'
+  eval_hooks: ['oc.OCEvaluateHook']
+  hooks: ['oc.ClusterHook']
+  detector_config: 'COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml'
+  detector_model_path: "./pretrained_model/faster_rcnn_X_101_FPN_model_final_68b088.pkl"
+TRAIN:
+  batch_size: 8
+  max_steps: 20000
+  model_output: './output/models'
+  checkpoint_output: './output/checkpoint'
+  pusedo_data_path: './output'
+  log_step: 5
+  mini_eval_step: 10
+  eval_step: 10
+  save_step: 500
+  loss: ['A_loss', 'B_loss', 'C_loss']
+  loss_coefficients: [1,2,1]
+  general:
+    optimizer:
+      lr: 1e-3
+    scheduler:
+      name: 'stepLR'
+      step_size: 2000
+TEST:
+  result_output: './output/results'
+

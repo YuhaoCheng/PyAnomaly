@@ -1,0 +1,75 @@
+SYSTEM:
+  multigpus: true
+  num_gpus: 2
+  gpus: [0,1]
+LOG:
+  log_output_dir: './output/log'
+  tb_output_dir: './output/tensorboard'
+  
+DATASET:
+  name: 'ped2'
+  read_format: 'opencv'
+  train_path: './data/Ped2/training/frames'
+  train_clip_length: 2
+  test_path: './data/Ped2/testing/frames'
+  test_clip_length: 2
+  gt_path: './data/Ped2'
+  mini_dataset:
+    samples: 100
+ARGUMENT:
+  train:
+    use: true
+    resize:
+      use: true
+      height: 256
+      width: 256
+    normal:
+      use: false
+      mean: [0.5, 0.5, 0.5]
+      std: [0.5, 0.5, 0.5]
+    flip:
+      use: false
+      p: 0.5
+    rote:
+      use: false
+      degrees: 10
+  val:
+    use: true
+    resize:
+      use: true
+      height: 256
+      width: 256
+    normal:
+      use: false  # normalize to [-1, 1]
+      mean: [0.5, 0.5, 0.5]
+      std: [0.5, 0.5, 0.5]
+MODEL:
+  name: 'anopcn'
+  type: 'anopcn'
+  hooks:
+    train: ['anopcn.AnoPCNEvaluateHook', 'base.VisScoreHook']
+    val: ['anopcn.AnoPCNEvaluateHook']
+  # hooks: ['base.VisScoreHook']
+TRAIN:
+  batch_size: 32
+  max_steps: 20000
+  model_output: './output/models'
+  checkpoint_output: './output/checkpoint'
+  pusedo_data_path: ''
+  log_step: 5
+  vis_step: 1000
+  mini_eval_step: 500
+  eval_step: 2000
+  save_step: 5000
+  loss: ['amc_g_adverserial_loss', 'amc_d_adverserial_loss_1', 'amc_d_adverserial_loss_2','gradient_loss', 'intentsity_loss', 'opticalflow_loss']
+  loss_coefficients: [0.25,0.5,0.5,1,1,2]
+  mode: 'adversarial'
+  adversarial:
+    optimizer:
+      g_lr: 0.0001
+      d_lr: 0.00001
+    scheduler:
+      name: 'cosLR'
+TEST:
+  result_output: './output/results'
+
