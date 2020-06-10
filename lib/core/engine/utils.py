@@ -24,8 +24,8 @@ def engine_save_model(cfg, cfg_name, model, logger, time_stamp,metric,verbose='N
     Save the final model of training 
     '''
     logger.info('=>Save the final model in:{}'.format(cfg.TRAIN.model_output))
-    model_name = f'cfg@{cfg_name}#{time_stamp}#{metric:.3f}^{verbose}.pth'
-    model_name_best = f'best_{cfg.DATASET.name}_{cfg.MODEL.name}_cfg@{cfg_name}.pth'
+    model_name = f'cfg@{cfg_name}#{time_stamp}#{metric:.2f}^{verbose}.pth'
+    model_name_best = f'best_{cfg.DATASET.name}_{cfg.MODEL.name}#{metric:.2f}_cfg@{cfg_name}.pth'
     output = Path(cfg.TRAIN.model_output) / cfg.DATASET.name / cfg.MODEL.name 
     output.mkdir(parents=True, exist_ok=True)
     
@@ -73,8 +73,8 @@ def engine_save_checkpoint(cfg, cfg_name, model, epoch, loss, optimizer, logger,
         checkpoint['optimizer_state_dict'] = optimizer.state_dict()
 
     # Save
-    file_name = f'{flag}_epoch{epoch}#{metric:.3f}^{verbose}.pth.tar'
-    file_name_best = f'best_ckpt_{cfg.DATASET.name}_{cfg.MODEL.name}_cfg@{cfg_name}.pth'
+    file_name = f'{flag}_epoch{epoch}#{metric:.2f}^{verbose}.pth.tar'
+    file_name_best = f'best_ckpt_{cfg.DATASET.name}_{cfg.MODEL.name}#{metric:.2f}_cfg@{cfg_name}.pth'
     output = output / file_name
     output_best = Path(cfg.TRAIN.checkpoint_output) / file_name_best
     torch.save(checkpoint, output)
