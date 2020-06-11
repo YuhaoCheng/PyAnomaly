@@ -6,7 +6,7 @@ from lib.networks.parts.pcn_parts.pcm import PCM
 from lib.networks.parts.pcn_parts.erm import ERM
 from lib.networks.auxiliary.flownet2.models import FlowNet2
 from lib.networks.parts.amc_networks import AMCDiscriminiator
-from lib.networks.parts.base.pix2pix_networks import PixelDiscriminator
+from lib.networks.parts.base.commonness import PixelDiscriminator
 
 class AnoPcn(nn.Module):
     def __init__(self, cfg):
