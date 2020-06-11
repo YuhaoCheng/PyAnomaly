@@ -133,6 +133,7 @@ class Trainer(DefaultTrainer):
         self.D.train()
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
+        
         # get the data
         data  = next(self._train_loader_iter)
         self.data_time.update(time.time() - start)

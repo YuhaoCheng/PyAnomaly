@@ -116,12 +116,15 @@ class Trainer(DefaultTrainer):
         
     
     def train(self,current_step):
+        # Pytorch [N, C, D, H, W]
+        
+        # initialize
         start = time.time()
         self.STAE.train()
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
         
-        # for step, data in enumerate(self.train_dataloader):
+        # get the data
         data  = next(self._train_loader_iter)  # the core for dataloader
         self.data_time.update(time.time() - start)
         time_len = data.shape[2]
