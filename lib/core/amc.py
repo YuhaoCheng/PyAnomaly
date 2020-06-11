@@ -1,8 +1,6 @@
 '''
 this is the trainer of the 'Anomaly Detection in Video Sequence with Appearance-Motion Correspondence(ICCV2019)'
 '''
-import sys
-sys.path.append('../')
 #!!!!! ignore the warning messages
 import warnings
 warnings.filterwarnings('ignore')
@@ -24,9 +22,7 @@ from lib.utils.flow_utils import flow2img
 from lib.core.engine.default_engine import DefaultTrainer, DefaultInference
 
 class Trainer(DefaultTrainer):
-    '''
-    The trainer of the AMC method
-    '''
+    NAME = ["AMC.TRAIN"]
     def __init__(self, *defaults, **kwargs):
         '''
         Args:
@@ -239,9 +235,7 @@ class Trainer(DefaultTrainer):
 
 
 class Inference(DefaultInference):
-    '''
-    The inference of the AMC method
-    '''
+    NAME = ["AMC.INFERENCE"]
     def __init__(self, *defaults,**kwargs):
         '''
          Args:

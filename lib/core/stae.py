@@ -24,9 +24,7 @@ from lib.utils.flow_utils import flow2img
 from lib.core.engine.default_engine import DefaultTrainer, DefaultInference
 
 class Trainer(DefaultTrainer):
-    '''
-    The trainer of the AMC method
-    '''
+    NAME = ["STAE.TRAIN"]
     def __init__(self, *defaults, **kwargs):
         '''
         Args:
@@ -194,3 +192,59 @@ class Trainer(DefaultTrainer):
             temp_meter_pred.update(vaild_pred_psnr.detach())
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the rec PSNR is {temp_meter_rec.avg:.3f}, the pred PSNR is {temp_meter_pred.avg:.3f}')
         # return temp_meter.avg
+
+class Inference(DefaultInference):
+    NAME = ["MEMAE.INFERENCE"]
+    def __init__(self, *defaults,**kwargs):
+        '''
+         Args:
+            defaults(tuple): the default will have:
+                0->model: the model of the experiment
+                1->model_path: the path of the model path
+                2->val_dataloader: the dataloader to inference
+                3->logger: the logger of the whole process
+                4->config: the config object of the whole process
+            kwargs(dict): the default will have:
+                verbose(str):
+                parallel(bool): True-> data parallel
+                pertrain(bool): True-> use the pretarin model
+                mode(str): 'dataset' -> the data will use the dataloder to pass in(dicard, becasue we will use the dataset to get all I need)
+        '''
+        self._hooks = []
+        self._register_hooks(kwargs['hooks'])
+        self.logger = defaults[3]
+        self.config = defaults[4]
+        self.model_path = defaults[1]
+
+        save_model = torch.load(self.model_path)
+        
+        model = defaults[0]
+        if kwargs['parallel']:
+            self.G = self.data_parallel(model['Generator']).load_state_dict(save_model['G'])
+            self.D = self.data_parallel(model['Discriminator']).load_state_dict(save_model['D'])
+            # self.G = model['Generator'].to(torch.device('cuda:0'))
+            # self.D = model['Discriminator'].to(torch.device('cuda:1'))
+            self.F = self.data_parallel(model['FlowNet'])
+        else:
+            # import ipdb; ipdb.set_trace()
+            self.G = model['Generator'].cuda()
+            self.G.load_state_dict(save_model['G'])
+            self.D = model['Discriminator'].cuda()
+            self.D.load_state_dict(save_model['D'])
+            self.F = model['FlowNet'].cuda()
+        
+        # self.load()
+
+        self.verbose = kwargs['verbose']
+        self.kwargs = kwargs
+        self.config_name = kwargs['config_name']
+        # self.mode = kwargs['mode']
+
+        self.test_dataset_keys = kwargs['test_dataset_keys']
+        self.test_dataset_dict = kwargs['test_dataset_dict']
+
+        self.metric = 0.0
+    
+    def inference(self):
+        for h in self._hooks:
+            h.inference()

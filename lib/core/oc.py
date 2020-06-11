@@ -1,8 +1,6 @@
 '''
 this is the trainer of the 'Future Frame Prediction for Anomaly Detection - A New Baseline CVPR2018'
 '''
-import sys
-sys.path.append('../')
 #!!!!! ignore the warning messages
 import warnings
 warnings.filterwarnings('ignore')
@@ -22,10 +20,9 @@ from lib.core.engine.default_engine import DefaultTrainer, DefaultInference
 from lib.core.utils import AverageMeter, multi_obj_grid_crop, frame_gradient, flow_batch_estimate
 from lib.datatools.evaluate.utils import psnr_error
 
+
 class Trainer(DefaultTrainer):
-    '''
-    The train method of the OC 
-    '''
+    NAME = ["OCAE.TRAIN"]
     def __init__(self, *defaults, **kwargs):
         '''
         Args:
@@ -267,9 +264,7 @@ class Trainer(DefaultTrainer):
         pass
 
 class Inference(DefaultInference):
-    '''
-    The inference of the AMC method
-    '''
+    NAME = ["OCAE.INFERENCE"]
     def __init__(self, *defaults,**kwargs):
         '''
          Args:

@@ -1,8 +1,6 @@
 '''
-this is the trainer of the 'Future Frame Prediction for Anomaly Detection - A New Baseline CVPR2018'
+this is the core function of the 'AnoPCN: Video Anomaly Detection via Deep Predictive Coding Network'
 '''
-import sys
-sys.path.append('../')
 #!!!!! ignore the warning messages
 import warnings
 warnings.filterwarnings('ignore')
@@ -25,9 +23,7 @@ from lib.core.engine.default_engine import DefaultTrainer, DefaultInference
 
 
 class Trainer(DefaultTrainer):
-    '''
-    The train method of the anopcn method
-    '''
+    NAME = ["ANOPCN.TRAIN"]
     def __init__(self, *defaults, **kwargs):
         '''
         Args:
@@ -231,9 +227,7 @@ class Trainer(DefaultTrainer):
 
 
 class Inference(DefaultInference):
-    '''
-    The inference of the ano psn method
-    '''
+    NAME = ["ANOPCN.INFERENCE"]
     def __init__(self, *defaults,**kwargs):
         '''
         Args:

@@ -21,9 +21,7 @@ from lib.datatools.evaluate.utils import psnr_error
 from lib.core.engine.default_engine import DefaultTrainer, DefaultInference
 
 class Trainer(DefaultTrainer):
-    '''
-    The trainer method of the ano pred method
-    '''
+    NAME = ["ANOPRED.TRAIN"]
     def __init__(self, *defaults, **kwargs):
         '''
         Args:
@@ -240,9 +238,7 @@ class Trainer(DefaultTrainer):
     
 
 class Inference(DefaultInference):
-    '''
-    The inference of the ano pred
-    '''
+    NAME = ["ANOPRED.INFERENCE"]
     def __init__(self, *defaults,**kwargs):
         '''
          Args:
