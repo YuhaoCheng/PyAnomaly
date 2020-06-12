@@ -17,7 +17,7 @@ import torchvision.transforms as T
 import torchvision.transforms.functional as tf
 
 from lib.core.engine.default_engine import DefaultTrainer, DefaultInference
-from lib.core.utils import AverageMeter, multi_obj_grid_crop, frame_gradient, flow_batch_estimate
+from lib.core.utils import AverageMeter, multi_obj_grid_crop, frame_gradient, get_batch_dets, training_vis_images
 from lib.datatools.evaluate.utils import psnr_error
 
 
@@ -54,8 +54,6 @@ class Trainer(DefaultTrainer):
         if kwargs['parallel']:
             self.A = self.data_parallel(model['A'])
             self.B = self.data_parallel(model['B'])
-            # self.G = model['Generator'].to(torch.device('cuda:0'))
-            # self.D = model['Discriminator'].to(torch.device('cuda:1'))
             self.C = self.data_parallel(model['C'])
             self.Detector = self.data_parallel(model['Detector'])
         else:
@@ -75,9 +73,6 @@ class Trainer(DefaultTrainer):
 
         # get the optimizer
         optimizer = defaults[3]
-        # self.optim_A = optimizer['optimizer_a']
-        # self.optim_B = optimizer['optimizer_b']
-        # self.optim_C = optimizer['optimizer_c']
         self.optim_ABC = optimizer['optimizer_abc']
 
         # get the loss_fucntion
@@ -121,8 +116,6 @@ class Trainer(DefaultTrainer):
         # the lr scheduler
         lr_scheduler_dict = kwargs['lr_scheduler_dict']
         self.lr_abc = lr_scheduler_dict['optimizer_abc_scheduler']
-        # self.lr_b = kwargs['lr_shechulder_b']
-        # self.lr_c = kwargs['lr_shechulder_c']
 
         if self.config.RESUME.flag:
             self.resume()
@@ -130,38 +123,10 @@ class Trainer(DefaultTrainer):
         if self.config.FINETUNE.flag:
             self.fine_tune()
     
-    def get_batch_dets(self, batch_image):
-        """
-        Use the detecron2
-        """
-        image_list = list()
-        batch_size = batch_image.size(0)
-        images = torch.chunk(batch_image, batch_size, dim=0)
-        for image in images:
-            image_list.append({"image":image.squeeze_(0).mul(255).byte()[[2,0,1],:,:]})
-        outputs = self.Detector(image_list)
-        # import ipdb; ipdb.set_trace()
-        bboxs = []
-        frame_objects = OrderedDict()
-        max_objects = 0
-        min_objects = 1000
-        for frame_id, out in enumerate(outputs):
-            temp = out['instances'].pred_boxes.tensor.detach()
-            temp.requires_grad = False
-            frame_objects[frame_id] = temp.size(0)
-            if frame_objects[frame_id] > max_objects:
-                max_objects = frame_objects[frame_id]
-            if frame_objects[frame_id] < min_objects:
-                min_objects = frame_objects[frame_id]
-            bboxs.append(temp)
-        
-        # bboxs = torch.stack(bboxs, dim=0)
-        # self.logger.info(f'the max object:{max_objects}, the min objects:{min_objects}')
-
-        return bboxs
-
 
     def train(self,current_step):
+        # Pytorch [N, C, D, H, W]
+        # initialize
         start = time.time()
         self.A.train()
         self.B.train()
@@ -170,46 +135,41 @@ class Trainer(DefaultTrainer):
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
 
+        # get the data
         data = next(self._train_loader_iter)  # the core for dataloader
         self.data_time.update(time.time() - start)
-
+        
+        # base on the D to get each frame
+        # in this method, D = 3 and not change
         future = data[:, -1, :, :, :].cuda() # t+1 frame 
         current = data[:, 1, :, :, :].cuda() # t frame
-        past = data[:, 0, :, :, :].cuda() # t frame
+        past = data[:, 0, :, :, :].cuda() # t-1 frame
 
-        # bbox = self.Detector(current)
-        bboxs = self.get_batch_dets(current)
+        bboxs = get_batch_dets(self.Detector, current)
+        # this method is based on the objects to train the model insted of frames
         for index, bbox in enumerate(bboxs):
-            # import ipdb; ipdb.set_trace()
             if bbox.numel() == 0:
                 bbox = bbox.new_zeros([1, 4])
-                # print('NO objects')
-                # continue
-            # import ipdb; ipdb.set_trace()
-            current_object, _ = multi_obj_grid_crop(current[index], bbox)
+            # get the crop objects
+            input_currentObject_B, _ = multi_obj_grid_crop(current[index], bbox)
             future_object, _ = multi_obj_grid_crop(future[index], bbox)
-            future2current = torch.stack([future_object, current_object], dim=1)
+            future2current = torch.stack([future_object, input_currentObject_B], dim=1)
             past_object, _ = multi_obj_grid_crop(past[index], bbox)
-            current2past = torch.stack([current_object, past_object], dim=1)
+            current2past = torch.stack([input_currentObject_B, past_object], dim=1)
 
-            _, _, A_input = frame_gradient(future2current)
-            A_input = A_input.sum(1)
-            _, _, C_input = frame_gradient(current2past)
-            C_input = C_input.sum(1)
-            # import ipdb; ipdb.set_trace()
+            _, _, input_objectGradient_A = frame_gradient(future2current)
+            input_objectGradient_A = input_objectGradient_A.sum(1)
+            _, _, input_objectGradient_C = frame_gradient(current2past)
+            input_objectGradient_C = input_objectGradient_A.sum(1)
+            
             # True Process =================Start===================
-            #---------update optim_G ---------
-            _, A_output = self.A(A_input)
-            # pred_flow_esti_tensor = torch.cat([input_last, G_output_flow],1)
-            # gt_flow_esti_tensor = torch.cat([input_last, target], 1)
-            # flow_gt,_ = self.batch_estimate(gt_flow_esti_tensor)
-            # flow_pred = self.batch_estimate(pred_flow_esti_tensor)
-            _, B_output = self.B(current_object)
-            _, C_output = self.C(C_input)
+            _, output_recGradient_A = self.A(input_objectGradient_A)
+            _, output_recObject_B = self.B(input_currentObject_B)
+            _, output_recGradient_C = self.C(input_objectGradient_C)
             # import ipdb; ipdb.set_trace()
-            loss_A = self.a_loss(A_output, A_input)
-            loss_B = self.b_loss(B_output, current_object)
-            loss_C = self.c_loss(C_output, C_input)
+            loss_A = self.a_loss(output_recGradient_A, input_objectGradient_A)
+            loss_B = self.b_loss(output_recObject_B, input_currentObject_B)
+            loss_C = self.c_loss(output_recGradient_C, input_objectGradient_C)
 
             loss_all = self.loss_lamada['A_loss'] * loss_A + self.loss_lamada['B_loss'] * loss_B + self.loss_lamada['C_loss'] * loss_C
             self.optim_ABC.zero_grad()
@@ -219,23 +179,7 @@ class Trainer(DefaultTrainer):
             self.loss_meter_ABC.update(loss_all.detach())
             if self.config.TRAIN.general.scheduler.use:
                 self.lr_abc.step()
-            # #---------update optim_D ---------------
-            # self.optim_D.zero_grad()
-            # # G_output_flow,  G_output_frame = self.G(input)
-            # real_sigmoid, real = self.D(torch.cat([target,G_output_flow.detach()],dim=1))
-            # fake_sigmoid, fake = self.D(torch.cat([G_output_frame.detach(),G_output_flow.detach()], dim=1))
-            # # loss_d = self.d_adv_loss(self.D(torch.cat([input,target],dim=1)), self.D(torch.cat(G_output_frame.detach()))
-            # loss_d_1 = self.d_adv_loss_1(real_sigmoid, torch.ones_like(real))
-            # loss_d_2 = self.d_adv_loss_2(fake_sigmoid, torch.zeros_like(fake))
-            # loss_d = self.loss_lamada['amc_d_adverserial_loss_1'] * loss_d_1 + self.loss_lamada['amc_d_adverserial_loss_2'] * loss_d_2
-            # # loss_d.sum().backward()
-            # # import ipdb; ipdb.set_trace()
-            # loss_d.backward()
-
-            # self.optim_D.step()
-            # if self.config.TRAIN.scheduler.use:
-            #     self.lr_d.step()
-            # self.loss_meter_D.update(loss_d.detach())
+        
             # ======================End==================
 
         self.batch_time.update(time.time() - start)
@@ -243,17 +187,25 @@ class Trainer(DefaultTrainer):
         if (current_step % self.log_step == 0):
             msg = 'Step: [{0}/{1}]\t' \
                 'Type: {cae_type}\t' \
-                'Time: {batch_time.val:.3f}s ({batch_time.avg:.3f}s)\t' \
+                'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
                 'Speed: {speed:.1f} samples/s\t' \
-                'Data: {data_time.val:.3f}s ({data_time.avg:.3f}s)\t' \
+                'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' \
                 'Loss_ABC: {losses_ABC.val:.5f} ({losses_ABC.avg:.5f})\t'.format(current_step, self.max_steps, cae_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses_ABC=self.loss_meter_ABC)
             self.logger.info(msg)
         writer.add_scalar('Train_loss_ABC', self.loss_meter_ABC.val, global_steps)
+
+        if (current_step % self.vis_step == 0):
+            vis_objects = OrderedDict()
+            vis_objects['train_input_objectGradient_A'] =  input_objectGradient_A.detach()
+            vis_objects['train_input_currentObject_B'] =  input_currentObject_B.detach()
+            vis_objects['train_input_objectGradient_C'] = input_objectGradient_C.detach()
+            vis_objects['train_output_recGradient_A'] =  output_recGradient_A.detach()
+            vis_objects['train_output_recObject_B'] =  output_recObject_B.detach()
+            vis_objects['train_output_recGradient_C'] = output_recGradient_C.detach()
+            training_vis_images(vis_objects, writer, global_steps)
         global_steps += 1 
         # reset start
         start = time.time()
-        # del data, input, input_last, loss_d, loss_g_all, target
-        # torch.cuda.empty_cache()
         
         self.saved_model = {'A':self.A, 'B':self.B, 'C':self.C}
         self.saved_optimizer = {'optim_ABC': self.optim_ABC}
@@ -261,7 +213,51 @@ class Trainer(DefaultTrainer):
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
     def mini_eval(self, current_step):
-        pass
+        if current_step % self.config.TRAIN.mini_eval_step != 0:
+            return
+        temp_meter_A = AverageMeter()
+        temp_meter_B = AverageMeter()
+        temp_meter_C = AverageMeter()
+        self.A.eval()
+        self.B.eval()
+        self.C.eval()
+        self.Detector.eval()
+        for data in self.val_dataloader:
+            # base on the D to get each frame
+            # in this method, D = 3 and not change
+            future_mini = data[:, -1, :, :, :].cuda() # t+1 frame 
+            current_mini = data[:, 1, :, :, :].cuda() # t frame
+            past_mini = data[:, 0, :, :, :].cuda() # t-1 frame
+
+            bboxs_mini = get_batch_dets(self.Detector, current_mini)
+
+            for index, bbox in enumerate(bboxs_mini):
+                if bbox.numel() == 0:
+                    bbox = bbox.new_zeros([1, 4])
+                # get the crop objects
+                input_currentObject_B, _ = multi_obj_grid_crop(current_mini[index], bbox)
+                future_object, _ = multi_obj_grid_crop(future_mini[index], bbox)
+                future2current = torch.stack([future_object, input_currentObject_B], dim=1)
+                past_object, _ = multi_obj_grid_crop(past_mini[index], bbox)
+                current2past = torch.stack([input_currentObject_B, past_object], dim=1)
+
+                _, _, input_objectGradient_A = frame_gradient(future2current)
+                input_objectGradient_A = input_objectGradient_A.sum(1)
+                _, _, input_objectGradient_C = frame_gradient(current2past)
+                input_objectGradient_C = input_objectGradient_A.sum(1)
+            
+                _, output_recGradient_A = self.A(input_objectGradient_A)
+                _, output_recObject_B = self.B(input_currentObject_B)
+                _, output_recGradient_C = self.C(input_objectGradient_C)
+
+                psnr_A = psnr_error(output_recGradient_A.detach(), input_objectGradient_A)
+                psnr_B = psnr_error(output_recObject_B.detach(), input_currentObject_B)
+                psnr_C = psnr_error(output_recGradient_C.detach(), input_objectGradient_C)
+                temp_meter_A.update(psnr_A.detach())
+                temp_meter_B.update(psnr_B.detach())
+                temp_meter_C.update(psnr_C.detach())
+
+        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the  A PSNR is {temp_meter_A.avg:.2f}, the B PSNR is {temp_meter_B.avg:.2f}, the C PSNR is {temp_meter_C.avg:.2f}')
 
 class Inference(DefaultInference):
     NAME = ["OCAE.INFERENCE"]
@@ -292,8 +288,6 @@ class Inference(DefaultInference):
         if kwargs['parallel']:
             self.A = self.data_parallel(model['A'])
             self.B = self.data_parallel(model['B'])
-            # self.G = model['Generator'].to(torch.device('cuda:0'))
-            # self.D = model['Discriminator'].to(torch.device('cuda:1'))
             self.C = self.data_parallel(model['C'])
             self.Detector = self.data_parallel(model['Detector'])
         else:

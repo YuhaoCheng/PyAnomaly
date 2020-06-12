@@ -110,26 +110,23 @@ class Trainer(DefaultTrainer):
         
     
     def train(self,current_step):
+        # Pytorch [N, C, D, H, W]
+        # initialize
         start = time.time()
         self.MemAE.train()
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
         
-        # for step, data in enumerate(self.train_dataloader):
+        # get the data
         data  = next(self._train_loader_iter)  # the core for dataloader
         self.data_time.update(time.time() - start)
-        # time_len = data.shape[2]
-        input = data.cuda() # t+1 frame 
-        # input = data[:, :-1, ] # 0~t frame
-        # input_last = input[:,-1,].cuda() # t frame
-        # input = input.view(input.shape[0], -1, input.shape[-2], input.shape[-1]).cuda() # 0~t frame
-        # input = input.reshape(input.shape[0], -1, input,input.shape[-2], input.shape[-1]).cuda() # 0~t frame
+        
+        input_data = data.cuda() 
+        
         # True Process =================Start===================
-        output_rec, att = self.MemAE(input)
-        loss_rec = self.rec_loss(output_rec, input)
+        output_rec, att = self.MemAE(input_data)
+        loss_rec = self.rec_loss(output_rec, input_data)
         loss_mem = self.mem_loss(att)
-        print(f'rec:{loss_rec}, loss_mem:{loss_mem}')
-        # loss_pred = self.pred_loss(output_pred, pred)
 
         loss_memae_all = self.loss_lamada['rec_loss'] * loss_rec + self.loss_lamada['mem_loss'] * loss_mem 
         self.optim_MemAE.zero_grad()
@@ -146,16 +143,16 @@ class Trainer(DefaultTrainer):
         if (current_step % self.log_step == 0):
             msg = 'Step: [{0}/{1}]\t' \
                 'Type: {cae_type}\t' \
-                'Time: {batch_time.val:.3f}s ({batch_time.avg:.3f}s)\t' \
+                'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
                 'Speed: {speed:.1f} samples/s\t' \
-                'Data: {data_time.val:.3f}s ({data_time.avg:.3f}s)\t' \
+                'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' \
                 'Loss: {losses.val:.5f} ({losses.avg:.5f})'.format(current_step, self.max_steps, cae_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses=self.loss_meter_MemAE)
             self.logger.info(msg)
         writer.add_scalar('Train_loss_MemAE', self.loss_meter_MemAE.val, global_steps)
         if (current_step % self.vis_step == 0):
             vis_objects = OrderedDict()
-            vis_objects['train_MemAE_output'] = output_rec.detach()
-            vis_objects['train_target_frame'] =  input.detach()
+            vis_objects['train_output_rec_memeae'] = output_rec.detach()
+            vis_objects['train_input'] =  input_data.detach()
             training_vis_images(vis_objects, writer, global_steps)
         global_steps += 1 
         
@@ -173,19 +170,12 @@ class Trainer(DefaultTrainer):
         temp_meter_frame = AverageMeter()
         self.MemAE.eval()
         for data in self.val_dataloader:
-            # vaild_target = data[:,-1,].cuda()
-            vaild_input = data.cuda()
-            # vaild_input_last = vaild_input[:,-1].cuda()
-            # vaild_input = vaild_input.reshape(data.shape[0],-1,data.shape[-2], data.shape[-1]).cuda()
-            vaild_input = vaild_input.cuda()
-            vaild_output_frame, _ = self.MemAE(vaild_input)
-            # gt_flow_esti_tensor = torch.cat([vaild_input_last, vaild_target], 1)
-            # flow_gt, _ = flow_batch_estimate(self.F, gt_flow_esti_tensor)
-            # import ipdb; ipdb.set_trace()
-            # vaild_psnr = psnr_error(vaild_output[1].detach(), vaild_target)
-            vaild_frame_psnr = psnr_error(vaild_output_frame.detach(), vaild_input)
-            # vaild_flow_psnr = psnr_error(vaild_output_flow.detach(), flow_gt)
-            temp_meter_frame.update(vaild_frame_psnr.detach())
+            # get the data
+            input_data_mini = data.cuda()
+            output_rec, _ = self.MemAE(input_data_mini)
+
+            frame_psnr_mini = psnr_error(output_rec.detach(), input_data_mini)
+            temp_meter_frame.update(frame_psnr_mini.detach())
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the frame PSNR is {temp_meter_frame.avg:.3f}')
         # return temp_meter.avg
 
@@ -217,18 +207,10 @@ class Inference(DefaultInference):
         
         model = defaults[0]
         if kwargs['parallel']:
-            self.G = self.data_parallel(model['Generator']).load_state_dict(save_model['G'])
-            self.D = self.data_parallel(model['Discriminator']).load_state_dict(save_model['D'])
-            # self.G = model['Generator'].to(torch.device('cuda:0'))
-            # self.D = model['Discriminator'].to(torch.device('cuda:1'))
-            self.F = self.data_parallel(model['FlowNet'])
+            self.G = self.data_parallel(model['MemAE']).load_state_dict(save_model['MemAE'])
         else:
-            # import ipdb; ipdb.set_trace()
-            self.G = model['Generator'].cuda()
-            self.G.load_state_dict(save_model['G'])
-            self.D = model['Discriminator'].cuda()
-            self.D.load_state_dict(save_model['D'])
-            self.F = model['FlowNet'].cuda()
+            self.G = model['MemAE'].cuda()
+            self.G.load_state_dict(save_model['MemAE'])
         
         # self.load()
 

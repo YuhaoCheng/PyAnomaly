@@ -300,6 +300,34 @@ def training_vis_images(vis_objects, writer, global_step):
             writer.add_image(vis_key+'_image', temp, global_step)
 
 
+def get_batch_dets(det_model, batch_image):
+        """
+        Use the detecron2
+        """
+        image_list = list()
+        batch_size = batch_image.size(0)
+        images = torch.chunk(batch_image, batch_size, dim=0)
+        for image in images:
+            image_list.append({"image":image.squeeze_(0).mul(255).byte()[[2,0,1],:,:]})
+        outputs = det_model(image_list)
+        
+        bboxs = []
+        frame_objects = OrderedDict()
+        max_objects = 0
+        min_objects = 1000
+        for frame_id, out in enumerate(outputs):
+            temp = out['instances'].pred_boxes.tensor.detach()
+            temp.requires_grad = False
+            frame_objects[frame_id] = temp.size(0)
+            if frame_objects[frame_id] > max_objects:
+                max_objects = frame_objects[frame_id]
+            if frame_objects[frame_id] < min_objects:
+                min_objects = frame_objects[frame_id]
+            bboxs.append(temp)
+        
+        return bboxs
+
+
 
 if __name__ == '__main__':
     path = '/export/home/chengyh/data/COCO/MSCOCO/images/test2017/000000000019.jpg'

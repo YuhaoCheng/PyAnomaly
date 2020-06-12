@@ -11,12 +11,12 @@ import torch
 import time
 import numpy as np
 from PIL import Image
-from torch.autograd import Variable
+from collections import OrderedDict
 import torchvision.transforms as T
 import torchvision.transforms.functional as tf
 from torch.utils.data import DataLoader
 
-from lib.core.utils import AverageMeter, flow_batch_estimate
+from lib.core.utils import AverageMeter, flow_batch_estimate, training_vis_images
 from lib.core.utils import psnr_error
 from lib.utils.flow_utils import flow2img
 from lib.core.engine.default_engine import DefaultTrainer, DefaultInference
@@ -135,45 +135,37 @@ class Trainer(DefaultTrainer):
         self.data_time.update(time.time() - start)
         
         # base on the D to get each frame
-        target = data[:, -1, :, :].cuda() # t+1 frame 
-        input_data = data[:, :-1, ] # 0~t frame
-        input_last = input[:,-1,].cuda() # t frame
-        # input = input.view(input.shape[0], -1, input.shape[-2], input.shape[-1]).cuda()
-        input = input.transpose_(1,2).cuda()
+        target = data[:, :, -1, :, :].cuda() # t frame 
+        input_data = data[:, :, :-1, :, :] # 0 ~ t frame
+        input_last = input_data[:, :, -1, :, :].cuda() # t-1 frame
         
         # True Process =================Start===================
         #---------update optim_G ---------
-        G_output_frame = self.G(input, target)
-        # ^^^^^^^
-        pred_flow_esti_tensor = torch.cat([input_last, G_output_frame],1).cuda()
-        gt_flow_esti_tensor = torch.cat([input_last, target], 1).cuda()
-        flow_gt = flow_batch_estimate(self.F, gt_flow_esti_tensor)
-        flow_pred = flow_batch_estimate(self.F, pred_flow_esti_tensor)
-        # ^^^^^^^^
-        # fake_sigmoid_g, fake_g = self.D(torch.cat([target, G_output_frame], dim=1))
-        loss_g_adv = self.gan_loss(self.D(G_output_frame), True)
-        # loss_g_adv = self.g_adv_loss(fake_sigmoid_g, torch.ones_like(fake_g.detach_()))
-        loss_op = self.op_loss(flow_pred, flow_gt)
-        loss_int = self.int_loss(G_output_frame, target)
-        loss_gd = self.gd_loss(G_output_frame, target)
+        output_frame_G = self.G(input_data, target)
+        
+        predFlowEstim = torch.cat([input_last, output_frame_G],1).cuda()
+        gtFlowEstim = torch.cat([input_last, target], 1).cuda()
+        gtFlow = flow_batch_estimate(self.F, gtFlowEstim)
+        predFlow = flow_batch_estimate(self.F, predFlowEstim)
+        
+        loss_g_adv = self.gan_loss(self.D(output_frame_G), True)
+        loss_op = self.op_loss(predFlow, gtFlow)
+        loss_int = self.int_loss(output_frame_G, target)
+        loss_gd = self.gd_loss(output_frame_G, target)
 
         loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + self.loss_lamada['opticalflow_loss'] * loss_op + self.loss_lamada['gan_loss'] * loss_g_adv
-        # import ipdb; ipdb.set_trace()
         self.optim_G.zero_grad()
-        # loss_g_all.sum().backward()
-        loss_g_all.backward(retain_graph=True)
+        loss_g_all.backward()
         self.optim_G.step()
         # record
         self.loss_meter_G.update(loss_g_all.detach())
-        # train_psnr = psnr_error(G_output_frame.detach(), target)
-        # self.psnr.update(train_psnr.detach())
         if self.config.TRAIN.adversarial.scheduler.use:
             self.lr_g.step()
+        
         #---------update optim_D ---------------
         self.optim_D.zero_grad()
-        # loss_d.sum().backward()
         temp_t = self.D(target)
-        temp_g = self.D(G_output_frame.detach())
+        temp_g = self.D(output_frame_G.detach())
         loss_d_1 = self.gan_loss(temp_t, True)
         loss_d_2 = self.gan_loss(temp_g, False)
         loss_d = (loss_d_1 + loss_d_2) * 0.5
@@ -192,19 +184,24 @@ class Trainer(DefaultTrainer):
         if (current_step % self.log_step == 0):
             msg = 'Step: [{0}/{1}]\t' \
                 'Type: {cae_type}\t' \
-                'Time: {batch_time.val:.3f}s ({batch_time.avg:.3f}s)\t' \
+                'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
                 'Speed: {speed:.1f} samples/s\t' \
-                'Data: {data_time.val:.3f}s ({data_time.avg:.3f}s)\t' \
+                'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' \
                 'Loss_G: {losses_G.val:.5f} ({losses_G.avg:.5f})\t'   \
                 'Loss_D:{losses_D.val:.5f}({losses_D.avg:.5f})'.format(current_step, self.max_steps, cae_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses_G=self.loss_meter_G, losses_D=self.loss_meter_D)
             self.logger.info(msg)
         writer.add_scalar('Train_loss_G', self.loss_meter_G.val, global_steps)
         writer.add_scalar('Train_loss_D', self.loss_meter_D.val, global_steps)
+        if (current_step % self.vis_step == 0):
+            vis_objects = OrderedDict()
+            vis_objects['train_target_flow'] =  gtFlow.detach()
+            vis_objects['train_pred_flow'] = predFlow.detach()
+            vis_objects['train_target_frame'] =  target.detach()
+            vis_objects['train_output_frame_G'] = output_frame_G.detach()
+            training_vis_images(vis_objects, writer, global_steps)
         global_steps += 1 
         # reset start
         start = time.time()
-        # del data, input, input_last, loss_d, loss_g_all, target
-        # torch.cuda.empty_cache()
         
         self.saved_model = {'G':self.G, 'D':self.D}
         self.saved_optimizer = {'optim_G': self.optim_G, 'optim_D': self.optim_D}
@@ -218,13 +215,14 @@ class Trainer(DefaultTrainer):
         self.G.eval()
         self.D.eval()
         for data in self.val_dataloader:
-            vaild_target = data[:,-1,].cuda()
-            # vaild_input = data[:,:-1].view(data.shape[0],-1,data.shape[-2], data.shape[-1]).cuda()
-            vaild_input = data[:,:-1].transpose_(1,2).cuda()
-            vaild_output = self.G(vaild_input, vaild_target)
-            vaild_psnr = psnr_error(vaild_output.detach(), vaild_target)
+            # get the data
+            target_mini = data[:, :, -1, :, :].cuda()
+            input_data_mini = data[:, :, :-1, :, :].cuda()
+
+            output_frame_G_mini = self.G(input_data_mini, target_mini)
+            vaild_psnr = psnr_error(output_frame_G_mini.detach(), target_mini)
             temp_meter.update(vaild_psnr.detach())
-        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the PSNR is {temp_meter.avg}')
+        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the PSNR is {temp_meter.avg:.3f}')
 
 
 class Inference(DefaultInference):
@@ -234,7 +232,6 @@ class Inference(DefaultInference):
         Args:
             mode: change the mode of inference, can choose: dataset | image
         '''
-        # super(AMCInference, self).__init__(model, model_path, val_dataloader, logger, config, verbose='None', parallel=False, mode='dataset')
         '''
          Args:
             defaults(tuple): the default will have:
@@ -261,11 +258,8 @@ class Inference(DefaultInference):
         if kwargs['parallel']:
             self.G = self.data_parallel(model['Generator']).load_state_dict(save_model['G'])
             self.D = self.data_parallel(model['Discriminator']).load_state_dict(save_model['D'])
-            # self.G = model['Generator'].to(torch.device('cuda:0'))
-            # self.D = model['Discriminator'].to(torch.device('cuda:1'))
             self.F = self.data_parallel(model['FlowNet'])
         else:
-            # import ipdb; ipdb.set_trace()
             self.G = model['Generator'].cuda()
             self.G.load_state_dict(save_model['G'])
             self.D = model['Discriminator'].cuda()
