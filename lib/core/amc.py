@@ -139,24 +139,25 @@ class Trainer(DefaultTrainer):
         self.data_time.update(time.time() - start)
         
         # base on the D to get each frame
-        target = data[:, :, -1,:, :].cuda() # t+1 frame 
-        input_data = data[:, :, :-1, :, :] # 0~t frame
-        input_last = data[:, :, -2, :, :].cuda() # t frame
+        # in this method, D = 2 and not change
+        target = data[:, :, 1,:, :] # target(2-nd) frame 
+        input_data = data[:, :, 0, :, :] # input(1-st) frame
         
-        # squeeze the D dimension to C dimension
-        input_data = input_data.reshape(input_data.shape[0], -1, input_data.shape[-2], input_data.shape[-1]).cuda() # 0~t frame
+        # squeeze the D dimension to C dimension, shape comes to [N, C, H, W]
+        target = target.reshape(target.shape[0], -1, target.shape[-2], target.shape[-1]).cuda()
+        input_data = input_data.reshape(input_data.shape[0], -1, input_data.shape[-2], input_data.shape[-1]).cuda()
         
         # True Process =================Start===================
         #---------update optim_G ---------
         self.set_requires_grad(self.D, False)
-        G_output_flow,  G_output_frame = self.G(input_data)
-        gt_flow_esti_tensor = torch.cat([input_last, target], 1)
+        output_flow_G,  output_frame_G = self.G(input_data)
+        gt_flow_esti_tensor = torch.cat([input_data, target], 1)
         flow_gt, _ = flow_batch_estimate(self.F, gt_flow_esti_tensor, normalize=self.config.ARGUMENT.train.normal.use, mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
-        fake_g= self.D(torch.cat([target, G_output_flow], dim=1))
+        fake_g= self.D(torch.cat([target, output_flow_G], dim=1))
         loss_g_adv = self.gan_loss(fake_g, True)
-        loss_op = self.op_loss(G_output_flow, flow_gt)
-        loss_int = self.int_loss(G_output_frame, target)
-        loss_gd = self.gd_loss(G_output_frame, target)
+        loss_op = self.op_loss(output_flow_G, flow_gt)
+        loss_int = self.int_loss(output_frame_G, target)
+        loss_gd = self.gd_loss(output_frame_G, target)
 
         loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + self.loss_lamada['opticalflow_loss'] * loss_op + self.loss_lamada['gan_loss'] * loss_g_adv
         self.optim_G.zero_grad()
@@ -171,7 +172,7 @@ class Trainer(DefaultTrainer):
         self.set_requires_grad(self.D, True)
         self.optim_D.zero_grad()
         real_d = self.D(torch.cat([target, flow_gt],dim=1))
-        fake_d = self.D(torch.cat([target, G_output_flow.detach()], dim=1))
+        fake_d = self.D(torch.cat([target, output_flow_G.detach()], dim=1))
         loss_d_1 = self.gan_loss(real_d, True)
         loss_d_2 = self.gan_loss(fake_d, False)
         loss_d = (loss_d_1  + loss_d_2) * 0.5 
@@ -198,9 +199,9 @@ class Trainer(DefaultTrainer):
         if (current_step % self.vis_step == 0):
             vis_objects = OrderedDict()
             vis_objects['train_target_flow'] =  flow_gt.detach()
-            vis_objects['train_G_output_flow'] = G_output_flow.detach()
+            vis_objects['train_output_flow_G'] = output_flow_G.detach()
             vis_objects['train_target_frame'] =  target.detach()
-            vis_objects['train_G_output_frame'] = G_output_frame.detach()
+            vis_objects['train_output_frame_G'] = output_frame_G.detach()
             training_vis_images(vis_objects, writer, global_steps)
         global_steps += 1 
         
@@ -220,19 +221,22 @@ class Trainer(DefaultTrainer):
         self.G.eval()
         self.D.eval()
         for data in self.val_dataloader:
-            vaild_target = data[:,:,-1,].cuda()
-            vaild_input = data[:,:,:-1]
-            vaild_input_last = data[:,:,-1].cuda()
-            vaild_input = vaild_input.view(data.shape[0],-1,data.shape[-2], data.shape[-1]).cuda()
-            vaild_output_flow, vaild_output_frame = self.G(vaild_input)
-            gt_flow_esti_tensor = torch.cat([vaild_input_last, vaild_target], 1)
-            flow_gt, _ = flow_batch_estimate(self.F, gt_flow_esti_tensor)
-            # import ipdb; ipdb.set_trace()
-            # vaild_psnr = psnr_error(vaild_output[1].detach(), vaild_target)
-            vaild_frame_psnr = psnr_error(vaild_output_frame.detach(), vaild_target)
-            vaild_flow_psnr = psnr_error(vaild_output_flow.detach(), flow_gt)
-            temp_meter_frame.update(vaild_frame_psnr.detach())
-            temp_meter_flow.update(vaild_flow_psnr.detach())
+            # get the data
+            target_mini = data[:, :, 1, :, :]
+            input_data_mini = data[:, :, 0, :, :]
+            # squeeze the dimension
+            target_mini = target_mini.view(target_mini.shape[0],-1,target_mini.shape[-2], target_mini.shape[-1]).cuda()
+            input_data_mini = input_data_mini.view(input_data_mini.shape[0],-1,input_data_mini.shape[-2], input_data_mini.shape[-1]).cuda()
+            
+            # Use the model, get the output
+            output_flow_G_mini, output_frame_G_mini = self.G(input_data_mini)
+            input_gtFlowEstimTensor = torch.cat([input_data_mini, target_mini], 1)
+            gtFlow, _ = flow_batch_estimate(self.F, input_gtFlowEstimTensor)
+            
+            frame_psnr_mini = psnr_error(output_frame_G_mini.detach(), target_mini)
+            flow_psnr_mini = psnr_error(output_flow_G_mini.detach(), gtFlow)
+            temp_meter_frame.update(frame_psnr_mini.detach())
+            temp_meter_flow.update(flow_psnr_mini.detach())
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the frame PSNR is {temp_meter_frame.avg:.3f}, the flow PSNR is {temp_meter_flow.avg:.3f}')
         # return temp_meter.avg
 
@@ -266,11 +270,8 @@ class Inference(DefaultInference):
         if kwargs['parallel']:
             self.G = self.data_parallel(model['Generator']).load_state_dict(save_model['G'])
             self.D = self.data_parallel(model['Discriminator']).load_state_dict(save_model['D'])
-            # self.G = model['Generator'].to(torch.device('cuda:0'))
-            # self.D = model['Discriminator'].to(torch.device('cuda:1'))
             self.F = self.data_parallel(model['FlowNet'])
         else:
-            # import ipdb; ipdb.set_trace()
             self.G = model['Generator'].cuda()
             self.G.load_state_dict(save_model['G'])
             self.D = model['Discriminator'].cuda()

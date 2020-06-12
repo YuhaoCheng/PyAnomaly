@@ -79,10 +79,6 @@ class Trainer(DefaultTrainer):
 
         # get the loss_fucntion
         loss_function = defaults[4]
-        # self.g_adv_loss = loss_function['g_adv']
-        # self.d_adv_loss_1 = loss_function['amc_d_adverserial_loss_1']
-        # self.d_adv_loss_2 = loss_function['amc_d_adverserial_loss_2']
-        # self.d_adv_loss = loss_function['d_adv']
         self.gan_loss = loss_function['gan_loss']
         self.gd_loss = loss_function['gradient_loss']
         self.int_loss = loss_function['intentsity_loss']
@@ -126,20 +122,25 @@ class Trainer(DefaultTrainer):
     
 
     def train(self,current_step):
+        # Pytorch [N, C, D, H, W]
+        # initialize
         start = time.time()
         self.G.train()
         self.D.train()
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
-        # for step, data in enumerate(self.train_dataloader):
+        
+        # get the data
         data = next(self._train_loader_iter)  # the core for dataloader
         self.data_time.update(time.time() - start)
+        
+        # base on the D to get each frame
         target = data[:, -1, :, :].cuda() # t+1 frame 
-        input = data[:, :-1, ] # 0~t frame
+        input_data = data[:, :-1, ] # 0~t frame
         input_last = input[:,-1,].cuda() # t frame
         # input = input.view(input.shape[0], -1, input.shape[-2], input.shape[-1]).cuda()
         input = input.transpose_(1,2).cuda()
-        # import ipdb; ipdb.set_trace()
+        
         # True Process =================Start===================
         #---------update optim_G ---------
         G_output_frame = self.G(input, target)
