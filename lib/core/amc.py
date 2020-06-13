@@ -123,7 +123,6 @@ class Trainer(DefaultTrainer):
         
         if self.config.FINETUNE.flag:
             self.fine_tune()
-        
     
     def train(self,current_step):
         # Pytorch [N, C, D, H, W]

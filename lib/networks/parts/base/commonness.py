@@ -21,12 +21,12 @@ class BasicConv2d(nn.Module):
 class Conv2dLeakly(nn.Module):
     '''
     The basic convolution with leakly relu
+    conv-bn-leakyReLU
     '''
     def __init__(self, c_in, c_out, bn_flag=True, **kwargs):
         super(Conv2dLeakly, self).__init__()
         self.bn_flag = bn_flag
         self.conv = nn.Conv2d(c_in, c_out, **kwargs)
-        
         self.bn = nn.BatchNorm2d(c_out)
     # @torchsnooper.snoop()
     def forward(self,x):
@@ -35,15 +35,18 @@ class Conv2dLeakly(nn.Module):
             x = self.bn(x)
         return F.leaky_relu_(x)
 
-class ConcatDeconv2d(nn.Module):
+class ConcatDeconv2dReduce(nn.Module):
+    '''
+    the outpuct channel is the c_out, c_out <= c_in
+    '''
     def __init__(self, c_in, c_out, dropout_prob):
         '''
         use the conv_tranpose to enlarge the feature into two times
         '''
-        super(ConcatDeconv2d, self).__init__()
+        super(ConcatDeconv2dReduce, self).__init__()
         self.conv_transpose = nn.ConvTranspose2d(c_in, c_out, kernel_size=4, stride=2, padding=1)
         self.bn = nn.BatchNorm2d(c_out)
-        self.dropout = nn.Dropout2d(p=dropout_prob)
+        self.dropout = nn.Dropout(p=dropout_prob)
         self.reduce_channel = nn.Conv2d(c_out*2, c_out, kernel_size=1)
     def forward(self, x1, x2):
         x1 = self.conv_transpose(x1)
@@ -53,6 +56,26 @@ class ConcatDeconv2d(nn.Module):
         x2 = self.reduce_channel(x2)
         # import ipdb; ipdb.set_trace()
         return x2
+
+class ConcatDeconv2d(nn.Module):
+    def __init__(self, c_in, c_out, dropout_prob=0):
+        '''
+        use the conv_tranpose to enlarge the feature into two times
+        '''
+        super(ConcatDeconv2d, self).__init__()
+        self.conv_transpose = nn.ConvTranspose2d(c_in, c_out, kernel_size=4, stride=2, padding=1)
+        self.bn = nn.BatchNorm2d(c_out)
+        self.dropout = nn.Dropout(p=dropout_prob)
+    
+    def forward(self, x1, x2):
+        x1 = self.conv_transpose(x1)
+        x1 = self.dropout(x1)
+        x1 = F.relu(x1)
+        x2 = torch.cat([x1,x2], dim=1)
+        # x2 = self.reduce_channel(x2)
+        # import ipdb; ipdb.set_trace()
+        return x2
+
 
 class Deconv2d(nn.Module):
     def __init__(self, c_in, c_out, dropout_prob):
@@ -230,8 +253,8 @@ class Down(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.maxpool_conv = nn.Sequential(
-            nn.MaxPool2d(2),
-            DoubleConv(in_channels, out_channels)
+            DoubleConv(in_channels, out_channels),
+            nn.MaxPool2d(2)
         )
 
     def forward(self, x):
@@ -241,7 +264,7 @@ class Down(nn.Module):
 class Up(nn.Module):
     """Upscaling then double conv"""
 
-    def __init__(self, in_channels, out_channels, bilinear=True):
+    def __init__(self, in_channels, a, out_channels, bilinear=True):
         super().__init__()
 
         # if bilinear, use the normal convolutions to reduce the number of channels
@@ -249,7 +272,7 @@ class Up(nn.Module):
             # self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
             self.up = nn.Sequential(nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True), nn.Conv2d(in_channels, in_channels//2,1))
         else:
-            self.up = nn.ConvTranspose2d(in_channels // 2, in_channels // 2, kernel_size=2, stride=2)
+            self.up = nn.ConvTranspose2d(a, a, kernel_size=2, stride=2)
 
         self.conv = DoubleConv(in_channels, out_channels)
 

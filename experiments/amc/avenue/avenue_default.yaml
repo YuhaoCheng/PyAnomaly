@@ -125,14 +125,14 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
-  batch_size: 32
+  batch_size: 8
   start_step: 0
-  max_steps: 20000
+  max_steps: 19160
   log_step: 5
-  vis_step: 1000
-  mini_eval_step: 500
-  eval_step: 2000
-  save_step: 5000
+  vis_step: 1916
+  mini_eval_step: 900
+  eval_step: 1916
+  save_step: 1916
   epochs: 1
   loss: ['gan_loss','gradient_loss', 'intentsity_loss', 'opticalflow_loss']
   loss_coefficients: [0.25,1,1,2]
@@ -166,9 +166,9 @@ TRAIN:
       weight_decay: 0.0001
       output_name: ['optimizer_g', 'optimizer_d']
     scheduler:
-      use: true
+      use: false
       name: 'WarmupCosLR'
-      step_size: 1000
+      step_size: 1916
       steps: [10000, 15000]
       gamma: 0.1
       T_max: 300

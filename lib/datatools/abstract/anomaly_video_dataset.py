@@ -59,7 +59,7 @@ class AbstractVideoAnomalyDataset(AbstractImageDataset):
                 self.videos[video_name]['cursor'] = 0
                 self.total_clips += (len(self.videos[video_name]['frames']) - self.clip_length)
             self.videos_keys = self.videos.keys()
-            print(f'The total frames are:{self.total_clips}')
+            print(f'\033[1;34m The clips are:{self.total_clips} \033[0m')
             # self.cursor = 0
         else:
             # the dir is the path of one video

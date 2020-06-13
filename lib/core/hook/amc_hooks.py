@@ -64,20 +64,17 @@ class AMCEvaluateHook(HookBase):
 
             for test_input in data_loader:
                 # import ipdb; ipdb.set_trace()
-                test_target = test_input[:, -1].cuda()
-                test_input = test_input[:, :-1].view(test_input.shape[0], -1, test_input.shape[-2],
-                                                    test_input.shape[-1]).cuda()
-                # import ipdb; ipdb.set_trace()
-                g_output_flow, g_output_frame = self.trainer.G(test_input)
-                gt_flow_esti_tensor = torch.cat([test_input, test_target], 1)
-                # flow_gt, _ = self.trainer.batch_estimate(gt_flow_esti_tensor)
-                flow_gt, _ = flow_batch_estimate(self.trainer.F, gt_flow_esti_tensor)
+                target_test = test_input[:, :, 1, :, :].cuda()
+                input_data_test = test_input[:, :, 0, :, :].cuda()
+                output_flow_G, output_frame_G = self.trainer.G(input_data_test)
+                gtFlowEstim = torch.cat([input_data_test, target_test], 1)
+                gtFlow, _ = flow_batch_estimate(self.trainer.F, gtFlowEstim)
                 # score = amc_score(test_input, g_output_frame, flow_gt, g_output_flow)
-                diff_appe, diff_flow = simple_diff(test_input, g_output_frame, flow_gt, g_output_flow)
-                max_patch_appe, max_patch_flow = find_max_patch(diff_appe, diff_flow)
-                score_appe = torch.mean(max_patch_appe)
-                score_flow = torch.mean(max_patch_flow)
-                scores[test_counter+frame_num-1] = [score_appe, score_flow]
+                diff_appe, diff_flow = simple_diff(input_data_test, output_frame_G, gtFlow, output_flow_G)
+                patch_score_appe, patch_score_flow, _, _ = find_max_patch(diff_appe, diff_flow)
+                # score_appe = torch.mean(max_patch_appe)
+                # score_flow = torch.mean(max_patch_flow)
+                scores[test_counter+frame_num-1] = [patch_score_appe, patch_score_flow]
                 test_counter += 1
                 if test_counter >= test_iters:
                     scores[:frame_num-1] = [scores[frame_num-1]]
@@ -108,9 +105,8 @@ class AMCEvaluateHook(HookBase):
             scores = np.empty(shape=(len_dataset,),dtype=np.float32)
             # scores = [0.0 for i in range(len_dataset)]
             for frame_sn, test_input in enumerate(data_loader):
-                test_target = test_input[:, -1].cuda()
-                test_input = test_input[:, :-1].view(test_input.shape[0], -1, test_input.shape[-2],
-                                                    test_input.shape[-1]).cuda()
+                test_target = test_input[:, :, 1, :, :].cuda()
+                test_input = test_input[:, :, 0, :, :].cuda()
 
                 g_output_flow, g_output_frame = self.trainer.G(test_input)
                 gt_flow_esti_tensor = torch.cat([test_input, test_target], 1)
@@ -118,7 +114,7 @@ class AMCEvaluateHook(HookBase):
                 flow_gt,_ = flow_batch_estimate(self.trainer.F, gt_flow_esti_tensor)
                 # score = amc_score(test_input, g_output_frame, flow_gt, g_output_flow)
                 test_psnr = psnr_error(g_output_frame, test_target)
-                score = amc_score(test_input, g_output_frame, flow_gt, g_output_flow, wf, wi)
+                score, _, _ = amc_score(test_input, g_output_frame, flow_gt, g_output_flow, wf, wi)
                 # import ipdb; ipdb.set_trace()
                 test_psnr = test_psnr.tolist()
                 score = score.tolist()
@@ -141,6 +137,8 @@ class AMCEvaluateHook(HookBase):
                     break
         
         result_dict = {'dataset': self.trainer.config.DATASET.name, 'psnr': psnr_records, 'flow': [], 'names': [], 'diff_mask': [], 'score':score_records, 'num_videos':num_videos}
+        if not os.path.exists(self.trainer.config.TEST.result_output):
+            os.mkdir(self.trainer.config.TEST.result_output)
         result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}#step{current_step}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
         with open(result_path, 'wb') as writer:
             pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
@@ -172,14 +170,6 @@ class AMCEvaluateHook(HookBase):
                 image_tensor[:,i,:,:] = image_tensor[:,i,:,:] * std[i] + mean[i]
             return image_tensor
     
-    # def draw_roc_curve(self, results):
-    #     fpr = results.fpr
-    #     tpr = results.tpr
-    #     auc = results.auc
-    #     fig = plt.figure()
-    #     fig.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (area = {auc:0.3f})')
-    #     fig.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-    #     fig.set_xlim
 def get_amc_hooks(name):
     if name in HOOKS:
         t = eval(name)()

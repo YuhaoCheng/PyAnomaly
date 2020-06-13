@@ -131,15 +131,32 @@ def simple_diff(frame_true, frame_hat, flow_true, flow_hat, aggregation=False):
     return loss_appe, loss_flow
 
 def find_max_patch(diff_map_appe, diff_map_flow, kernel_size=16, stride=1, aggregation=True):
+    '''
+    kernel size = window size
+    '''
     max_pool = torch.nn.MaxPool2d(kernel_size=kernel_size, stride=stride)
     max_patch_appe = max_pool(diff_map_appe)
     max_patch_flow = max_pool(diff_map_flow)
     # import ipdb; ipdb.set_trace()
-    if aggregation:
-        max_patch_appe = torch.mean(max_patch_appe) # torch.mean(max_patch_appe, [1,2,3]) will calc the mean based on the N, 
-        max_patch_flow = torch.mean(max_patch_flow)
+    assert len(max_patch_appe.shape) == 3, f'the shape of max_patch_appe is {max_patch_appe.shape}'
+    assert len(max_patch_flow.shape) == 3, f'the shape of max_patch_flow is {max_patch_flow.shape}'
 
-    return max_patch_appe, max_patch_flow
+    if aggregation:
+        # Will sum the channel dim
+        max_patch_appe = torch.mean(max_patch_appe, dim=0) 
+        max_patch_flow = torch.mean(max_patch_flow, dim=0)
+
+    
+    max_appe_value = torch.max(max_patch_appe)
+    max_flow_value = torch.max(max_patch_flow)
+    app_h, app_w =  torch.where(torch.eq(max_patch_appe, max_appe_value))
+    flow_h, flow_w =  torch.where(torch.eq(max_patch_flow, max_flow_value))
+    
+    max_appe_final = torch.div(max_appe_value, kernel_size**2) 
+    max_flow_final = torch.div(max_flow_value, kernel_size**2) 
+
+    # return max_patch_appe, max_patch_flow
+    return max_appe_final, max_flow_final, (app_h, app_w), (flow_h, flow_w)
 
 def calc_w(w_dict):
     wf = 0.0
@@ -165,10 +182,10 @@ def amc_score(frame, frame_hat, flow, flow_hat, wf, wi, kernel_size=16, stride=1
     wf, wi is different from videos
     '''
     loss_appe, loss_flow = simple_diff(frame, frame_hat, flow, flow_hat)
-    max_patch_appe, max_patch_flow = find_max_patch(loss_appe, loss_flow, kernel_size=kernel_size, stride=stride)
+    max_patch_appe, max_patch_flow, app_cord, flow_crod = find_max_patch(loss_appe, loss_flow, kernel_size=kernel_size, stride=stride)
     final_score = amc_normal_score(wf, max_patch_appe, wi, max_patch_flow, lambada_s=lambada_s)
 
-    return final_score
+    return final_score, app_cord, flow_crod
 
 def oc_score(raw_data):
     object_score = np.empty(shape=(raw_data.shape[0],),dtype=np.float32)

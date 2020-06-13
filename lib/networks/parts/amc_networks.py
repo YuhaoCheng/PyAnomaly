@@ -12,7 +12,7 @@ from lib.networks.auxiliary.flownet2.models import FlowNet2
 from lib.networks.parts.base.commonness import Conv2dLeakly, ConcatDeconv2d, Deconv2d, BasicConv2d, Inception
 
 class AMCGenerator(nn.Module):
-    def __init__(self, c_in, c_out, dropout_prob=0,bilinear=True):
+    def __init__(self, c_in, c_out, channel_num=3, dropout_prob=0, bilinear=True):
         super(AMCGenerator, self).__init__()
         self.c_in = c_in
         self.c_out = c_out
@@ -20,23 +20,24 @@ class AMCGenerator(nn.Module):
 
         # common encoder
         self.inception = Inception(c_in, 64)
-        self.h1 = Conv2dLeakly(64, 64, bias=False, kernel_size=3, stride=1, padding=1)
-        self.h2 = Conv2dLeakly(64, 128, bias=True, kernel_size=4, stride=2, padding=1)
-        self.h3 = Conv2dLeakly(128, 256, bias=True, kernel_size=4, stride=2, padding=1)
-        self.h4 = Conv2dLeakly(256, 512, bias=True, kernel_size=4, stride=2, padding=1)
-        self.h5 = Conv2dLeakly(512, 512, bias=True, kernel_size=4, stride=2, padding=1)
+        self.h1 = Conv2dLeakly(64, 64, bn_flag=False, kernel_size=3, stride=1, padding=1)
+        self.h2 = Conv2dLeakly(64, 128, bn_flag=True, kernel_size=4, stride=2, padding=1)
+        self.h3 = Conv2dLeakly(128, 256, bn_flag=True, kernel_size=4, stride=2, padding=1)
+        self.h4 = Conv2dLeakly(256, 512, bn_flag=True, kernel_size=4, stride=2, padding=1)
+        self.h5 = Conv2dLeakly(512, 512, bn_flag=True, kernel_size=4, stride=2, padding=1)
         # unet for optical flow, decoder
-        self.h4fl = ConcatDeconv2d(512, 512, dropout_prob)
-        self.h3fl = ConcatDeconv2d(512, 256, dropout_prob)
-        self.h2fl = ConcatDeconv2d(256, 128, dropout_prob)
-        self.h1fl = ConcatDeconv2d(128, 64, dropout_prob)
-        self.conv_fl = BasicConv2d(64,3,kernel_size=3, stride=1, padding=1)
+        self.h4fl = ConcatDeconv2d(512, 256, dropout_prob)
+        self.h3fl = ConcatDeconv2d(768, 256, dropout_prob)
+        self.h2fl = ConcatDeconv2d(512, 128, dropout_prob)
+        self.h1fl = ConcatDeconv2d(256, 64, dropout_prob)
+        self.conv_fl = BasicConv2d(128,3,kernel_size=3, stride=1, padding=1)
+        
         # decoder for frame
-        self.h4fr = Deconv2d(512, 512, dropout_prob)
-        self.h3fr = Deconv2d(512, 256, dropout_prob)
+        self.h4fr = Deconv2d(512, 256, dropout_prob)
+        self.h3fr = Deconv2d(256, 256, dropout_prob)
         self.h2fr = Deconv2d(256, 128, dropout_prob)
         self.h1fr = Deconv2d(128, 64, dropout_prob)
-        self.conv_fr = BasicConv2d(64,3, kernel_size=3, stride=1, padding=1)
+        self.conv_fr = BasicConv2d(64,channel_num, kernel_size=3, stride=1, padding=1)
 
         self._init_weights()
 
@@ -107,7 +108,7 @@ def get_model_amc(cfg):
     from collections import namedtuple
     temp = namedtuple('Args', ['fp16', 'rgb_max'])
     args = temp(False, 1.0)
-    generator_model = AMCGenerator(c_in=3, c_out=3, dropout_prob=0.3)
+    generator_model = AMCGenerator(c_in=3, c_out=3, channel_num=cfg.DATASET.channel_num, dropout_prob=0.7)
     discriminator_model = AMCDiscriminiator(c_in=6, filters=64)
     flow_model = FlowNet2(args)
     flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path)['state_dict'])

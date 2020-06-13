@@ -17,21 +17,23 @@ DATASET:
   name: 'ped2'
   seed: 2020
   read_format: 'opencv'
-  train_path: './data/Ped2/training/frames'
+  channel_num: 3
+  channel_name: 'rgb'
+  train_path: './data/ped2/training/frames'
   train_clip_length: 2
   train_frame_step: 1
   train_clip_step: 1
-  test_path: './data/Ped2/testing/frames'
+  test_path: './data/ped2/testing/frames'
   test_clip_length: 2
   test_frame_step: 1
   test_clip_step: 1
-  gt_path: './data/Ped2'
+  gt_path: './data/ped2'
   number_of_class: 1
   score_normalize: true
   score_type: 'abnormal'
   decidable_idx: 1
   smooth:
-    guassian: true
+    guassian: false
     guassian_sigma: 10
   mini_dataset:
     samples: 100
@@ -41,8 +43,8 @@ ARGUMENT:
     use: true
     resize:
       use: true
-      height: 256
-      width: 256
+      height: 128
+      width: 192
     grayscale:
       use: false
     normal:
@@ -53,7 +55,7 @@ ARGUMENT:
       use: true
       p: 0.5
     flipud:
-      use: false
+      use: true
       p: 0.5
     rote:
       use: false
@@ -75,8 +77,8 @@ ARGUMENT:
     use: true
     resize:
       use: true
-      height: 256
-      width: 256
+      height: 128
+      width: 192
     grayscale:
       use: false
     normal:
@@ -84,7 +86,7 @@ ARGUMENT:
       mean: [0.5, 0.5, 0.5]
       std: [0.5, 0.5, 0.5]
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
       use: false
@@ -125,12 +127,12 @@ FINETUNE:
 TRAIN:
   batch_size: 32
   start_step: 0
-  max_steps: 20000
+  max_steps: 1200
   log_step: 5
-  vis_step: 1000
-  mini_eval_step: 500
-  eval_step: 2000
-  save_step: 5000
+  vis_step: 100
+  mini_eval_step: 50
+  eval_step: 80
+  save_step: 80
   epochs: 1
   loss: ['gan_loss','gradient_loss', 'intentsity_loss', 'opticalflow_loss']
   loss_coefficients: [0.25,1,1,2]
@@ -147,8 +149,8 @@ TRAIN:
     scheduler:
       use: true
       name: 'stepLR'
-      step_size: 1000
-      steps: [10000, 15000]
+      step_size: 160
+      steps: [400, 800]
       gamma: 0.1
       T_max: 300
       eta_min: 0
@@ -166,10 +168,10 @@ TRAIN:
     scheduler:
       use: true
       name: 'WarmupCosLR'
-      step_size: 1000
-      steps: [10000, 15000]
+      step_size: 160
+      steps: [400, 800]
       gamma: 0.1
-      T_max: 300
+      T_max: 1200
       eta_min: 0
       warmup_factor: 0.001
       warmup_iters: 1000
