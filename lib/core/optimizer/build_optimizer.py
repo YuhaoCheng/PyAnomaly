@@ -33,7 +33,7 @@ class OptimizerAPI(object):
         if self.type not in OptimizerAPI._SUPPROT:
             raise Exception(f'Not support: {self.type} in {OptimizerAPI._NAME}')
         elif self.type == 'adam':
-            t = torch.optim.Adam(model.parameters(), lr=self.lr, weight_decay=self.params.weight_decay)
+            t = torch.optim.Adam(model.parameters(), lr=self.lr, betas=self.params.betas, weight_decay=self.params.weight_decay)
         elif self.type == 'sgd':
             t = torch.optim.SGD(model.parameters(), lr=self.lr, momentum=self.params.momentum, weight_decay=self.params.weight_decay,nesterov=self.params.nesterov)
 
@@ -47,7 +47,7 @@ class OptimizerAPI(object):
         elif self.type == 'adam':
             for model in model_list:
                 param_groups.append({'params':model.parameters()}) 
-            t = torch.optim.Adam(param_groups, lr=self.lr, weight_decay=self.params.weight_decay)
+            t = torch.optim.Adam(param_groups, lr=self.lr, betas=self.params.betas, weight_decay=self.params.weight_decay)
         elif self.type == 'sgd':
             for model in model_list:
                 param_groups.append({'params':model.parameters()}) 

@@ -163,7 +163,8 @@ def calc_w(w_dict):
     wi = 0.0
     n = 0
     for key in w_dict.keys():
-        n += w_dict[key][0]
+        # n += w_dict[key][0]
+        n += 1
         wf += w_dict[key][1]
         wi += w_dict[key][2]
     # import ipdb; ipdb.set_trace()

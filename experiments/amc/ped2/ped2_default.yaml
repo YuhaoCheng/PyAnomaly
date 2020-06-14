@@ -19,6 +19,7 @@ DATASET:
   read_format: 'opencv'
   channel_num: 3
   channel_name: 'rgb'
+  optical_format: 'Y'
   train_path: './data/ped2/training/frames'
   train_clip_length: 2
   train_frame_step: 1
@@ -29,11 +30,11 @@ DATASET:
   test_clip_step: 1
   gt_path: './data/ped2'
   number_of_class: 1
-  score_normalize: true
+  score_normalize: false
   score_type: 'abnormal'
   decidable_idx: 1
   smooth:
-    guassian: false
+    guassian: true
     guassian_sigma: 10
   mini_dataset:
     samples: 100
@@ -125,14 +126,14 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
-  batch_size: 32
+  batch_size: 16
   start_step: 0
-  max_steps: 1200
+  max_steps: 6400
   log_step: 5
-  vis_step: 100
-  mini_eval_step: 50
-  eval_step: 80
-  save_step: 80
+  vis_step: 160
+  mini_eval_step: 80
+  eval_step: 160
+  save_step: 160
   epochs: 1
   loss: ['gan_loss','gradient_loss', 'intentsity_loss', 'opticalflow_loss']
   loss_coefficients: [0.25,1,1,2]
@@ -149,7 +150,7 @@ TRAIN:
     scheduler:
       use: true
       name: 'stepLR'
-      step_size: 160
+      step_size: 320
       steps: [400, 800]
       gamma: 0.1
       T_max: 300
@@ -163,12 +164,13 @@ TRAIN:
       name: 'adam'
       g_lr: 0.0002
       d_lr: 0.00002
+      betas: [0.5, 0.9]
       weight_decay: 0.0001
       output_name: ['optimizer_g', 'optimizer_d']
     scheduler:
       use: true
-      name: 'WarmupCosLR'
-      step_size: 160
+      name: 'stepLR'
+      step_size: 1600
       steps: [400, 800]
       gamma: 0.1
       T_max: 1200

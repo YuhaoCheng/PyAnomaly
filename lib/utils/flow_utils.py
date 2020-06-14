@@ -75,6 +75,8 @@ def flow2img(flow_data, output_format, normalize=True, mean=None, std=None):
 	'''
 	if output_format == 'Y':
 		img = flow2Y(flow_data)
+		# if normalize:
+		# 	img = img / 255
 	elif output_format == 'xym':
 		mag, _ = cv2.cartToPolar(flow_data[:, :, 0], flow_data[:, :, 1])
 		img = np.concatenate((flow_data, np.expand_dims(mag, axis=2)), axis=-1)
@@ -126,7 +128,9 @@ def flow2Y(flow_data):
 	idx = np.repeat(idx_unknown[:, :, np.newaxis], 3, axis=2)
 	img[idx] = 0
 
-	return np.uint8(img)
+	# return np.uint8(img)
+	# import ipdb; ipdb.set_trace()
+	return np.float32(img)
 
 
 def compute_color(u, v):

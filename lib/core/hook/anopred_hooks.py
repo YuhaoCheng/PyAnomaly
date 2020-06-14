@@ -62,9 +62,8 @@ class AnoPredEvaluateHook(HookBase):
             vis_range = range(int(len_dataset*0.5), int(len_dataset*0.5 + 5))
             
             for frame_sn, test_input in enumerate(data_loader):
-                test_target = test_input[:, -1].cuda()
-                test_input = test_input[:, :-1].view(test_input.shape[0], -1, test_input.shape[-2],
-                                                    test_input.shape[-1]).cuda()
+                test_target = test_input[:, :, -1, :, :].cuda()
+                test_input = test_input[:, :, :-1, :, :].reshape(test_input.shape[0], -1, test_input.shape[-2],test_input.shape[-1]).cuda()
 
                 g_output = self.trainer.G(test_input)
                 test_psnr = psnr_error(g_output, test_target)
@@ -85,7 +84,7 @@ class AnoPredEvaluateHook(HookBase):
                     normal_scores = np.array([np.divide(s-smin, smax-smin) for s in scores])
                     psnr_records.append(psnrs)
                     score_records.append(normal_scores)
-                    print(f'finish test video set {video_name}')
+                    # print(f'finish test video set {video_name}')
                     break
 
         result_dict = {'dataset': self.trainer.config.DATASET.name, 'psnr': psnr_records, 'flow': [], 'names': [], 'diff_mask': [], 'score':score_records, 'num_videos':len(psnr_records)}

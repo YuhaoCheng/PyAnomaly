@@ -102,6 +102,7 @@ class Trainer(DefaultTrainer):
         # self.total_steps = len(self.train_dataloader)
         self.result_path = ''
         self.log_step = self.config.TRAIN.log_step # how many the steps, we will show the information
+        self.vis_step = self.config.TRAIN.vis_step # how many the steps, we will vis
         self.eval_step = self.config.TRAIN.eval_step 
         self.save_step = self.config.TRAIN.save_step # save the model whatever the acc of the model
         self.max_steps = self.config.TRAIN.max_steps
@@ -145,16 +146,17 @@ class Trainer(DefaultTrainer):
         input_last = input_data[:, :, -1, :, :].cuda() # t frame
 
         # squeeze the D dimension to C dimension, shape comes to [N, C, H, W]
-        input_data = input_data.view(input_data.shape[0], -1, input_data.shape[-2], input_data.shape[-1]).cuda()
+        input_data = input_data.reshape(input_data.shape[0], -1, input_data.shape[-2], input_data.shape[-1]).cuda()
 
         # True Process =================Start===================
         #---------update optim_G ---------
         self.set_requires_grad(self.D, False)
         output_pred_G = self.G(input_data)
+        # import ipdb; ipdb.set_trace()
         predFlowEstim = torch.cat([input_last, output_pred_G],1)
         gtFlowEstim = torch.cat([input_last, target], 1)
-        _, gtFlow = flow_batch_estimate(self.F, gtFlowEstim)
-        _, predFlow = flow_batch_estimate(self.F, predFlowEstim)
+        gtFlow, _ = flow_batch_estimate(self.F, gtFlowEstim)
+        predFlow, _ = flow_batch_estimate(self.F, predFlowEstim)
 
         # loss_g_adv = self.g_adv_loss(self.D(G_output))
         loss_g_adv = self.gan_loss(self.D(output_pred_G), True)
@@ -208,6 +210,7 @@ class Trainer(DefaultTrainer):
             vis_objects['train_output_pred_G'] = output_pred_G.detach()
             vis_objects['train_gtFlow'] = gtFlow.detach()
             vis_objects['train_predFlow'] = predFlow.detach()
+            # import ipdb; ipdb.set_trace()
             training_vis_images(vis_objects, writer, global_steps)
         global_steps += 1 
         # reset start
@@ -232,7 +235,7 @@ class Trainer(DefaultTrainer):
             input_last_mini = input_data[:, :, -1, :, :].cuda() # t frame
 
             # squeeze the D dimension to C dimension, shape comes to [N, C, H, W]
-            input_data_mini = input_data.view(input_data.shape[0], -1, input_data.shape[-2], input_data.shape[-1]).cuda()
+            input_data_mini = input_data.reshape(input_data.shape[0], -1, input_data.shape[-2], input_data.shape[-1]).cuda()
             output_pred_G = self.G(input_data_mini)
             gtFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, target_mini], 1))
             predFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, output_pred_G], 1))

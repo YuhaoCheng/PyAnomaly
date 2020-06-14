@@ -151,7 +151,7 @@ class Trainer(DefaultTrainer):
         self.set_requires_grad(self.D, False)
         output_flow_G,  output_frame_G = self.G(input_data)
         gt_flow_esti_tensor = torch.cat([input_data, target], 1)
-        flow_gt, _ = flow_batch_estimate(self.F, gt_flow_esti_tensor, normalize=self.config.ARGUMENT.train.normal.use, mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
+        flow_gt, _ = flow_batch_estimate(self.F, gt_flow_esti_tensor, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
         fake_g= self.D(torch.cat([target, output_flow_G], dim=1))
         loss_g_adv = self.gan_loss(fake_g, True)
         loss_op = self.op_loss(output_flow_G, flow_gt)
@@ -170,6 +170,7 @@ class Trainer(DefaultTrainer):
         #---------update optim_D ---------------
         self.set_requires_grad(self.D, True)
         self.optim_D.zero_grad()
+        # import ipdb; ipdb.set_trace()
         real_d = self.D(torch.cat([target, flow_gt],dim=1))
         fake_d = self.D(torch.cat([target, output_flow_G.detach()], dim=1))
         loss_d_1 = self.gan_loss(real_d, True)
@@ -187,9 +188,9 @@ class Trainer(DefaultTrainer):
         if (current_step % self.log_step == 0):
             msg = 'Step: [{0}/{1}]\t' \
                 'Type: {cae_type}\t' \
-                'Time: {batch_time.val:.3f}s ({batch_time.avg:.3f}s)\t' \
+                'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
                 'Speed: {speed:.1f} samples/s\t' \
-                'Data: {data_time.val:.3f}s ({data_time.avg:.3f}s)\t' \
+                'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' \
                 'Loss_G: {losses_G.val:.5f} ({losses_G.avg:.5f})\t'   \
                 'Loss_D:{losses_D.val:.5f}({losses_D.avg:.5f})'.format(current_step, self.max_steps, cae_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses_G=self.loss_meter_G, losses_D=self.loss_meter_D)
             self.logger.info(msg)
@@ -230,7 +231,7 @@ class Trainer(DefaultTrainer):
             # Use the model, get the output
             output_flow_G_mini, output_frame_G_mini = self.G(input_data_mini)
             input_gtFlowEstimTensor = torch.cat([input_data_mini, target_mini], 1)
-            gtFlow, _ = flow_batch_estimate(self.F, input_gtFlowEstimTensor)
+            gtFlow, _ = flow_batch_estimate(self.F, input_gtFlowEstimTensor, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
             
             frame_psnr_mini = psnr_error(output_frame_G_mini.detach(), target_mini)
             flow_psnr_mini = psnr_error(output_flow_G_mini.detach(), gtFlow)

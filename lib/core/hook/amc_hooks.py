@@ -68,14 +68,16 @@ class AMCEvaluateHook(HookBase):
                 input_data_test = test_input[:, :, 0, :, :].cuda()
                 output_flow_G, output_frame_G = self.trainer.G(input_data_test)
                 gtFlowEstim = torch.cat([input_data_test, target_test], 1)
-                gtFlow, _ = flow_batch_estimate(self.trainer.F, gtFlowEstim)
+                gtFlow, _ = flow_batch_estimate(self.trainer.F, gtFlowEstim, output_format=self.trainer.config.DATASET.optical_format, optical_size=self.trainer.config.DATASET.optical_size, normalize=self.trainer.config.ARGUMENT.val.normal.use, mean=self.trainer.config.ARGUMENT.val.normal.mean, std=self.trainer.config.ARGUMENT.val.normal.mean)
                 # score = amc_score(test_input, g_output_frame, flow_gt, g_output_flow)
                 diff_appe, diff_flow = simple_diff(input_data_test, output_frame_G, gtFlow, output_flow_G)
                 patch_score_appe, patch_score_flow, _, _ = find_max_patch(diff_appe, diff_flow)
                 # score_appe = torch.mean(max_patch_appe)
                 # score_flow = torch.mean(max_patch_flow)
+                # print(patch_score_appe, patch_score_flow)
                 scores[test_counter+frame_num-1] = [patch_score_appe, patch_score_flow]
                 test_counter += 1
+                # import ipdb; ipdb.set_trace()
                 if test_counter >= test_iters:
                     scores[:frame_num-1] = [scores[frame_num-1]]
                     scores = torch.tensor(scores)
@@ -84,10 +86,11 @@ class AMCEvaluateHook(HookBase):
                     w_dict[video_name] = [len_dataset, frame_w, flow_w]
                     print(f'finish calc the scores of training set {video_name} in step:{current_step}')
                     break
-        
+            # import ipdb; ipdb.set_trace()
         wf, wi = calc_w(w_dict)
         # wf , wi = 1.0, 1.0
         tb_writer.add_text('weight of train set', f'w_f:{wf:.3f}, w_i:{wi:.3f}', global_steps)
+        print(f'wf:{wf}, wi:{wi}')
         num_videos = 0
         random_video_sn = torch.randint(0, len(self.trainer.test_dataset_keys), (1,))
         # calc the score for the test dataset
@@ -111,7 +114,7 @@ class AMCEvaluateHook(HookBase):
                 g_output_flow, g_output_frame = self.trainer.G(test_input)
                 gt_flow_esti_tensor = torch.cat([test_input, test_target], 1)
                 # flow_gt,_ = self.trainer.batch_estimate(gt_flow_esti_tensor)
-                flow_gt,_ = flow_batch_estimate(self.trainer.F, gt_flow_esti_tensor)
+                flow_gt,_ = flow_batch_estimate(self.trainer.F, gt_flow_esti_tensor, output_format=self.trainer.config.DATASET.optical_format, optical_size=self.trainer.config.DATASET.optical_size, normalize=self.trainer.config.ARGUMENT.val.normal.use, mean=self.trainer.config.ARGUMENT.val.normal.mean, std=self.trainer.config.ARGUMENT.val.normal.mean)
                 # score = amc_score(test_input, g_output_frame, flow_gt, g_output_flow)
                 test_psnr = psnr_error(g_output_frame, test_target)
                 score, _, _ = amc_score(test_input, g_output_frame, flow_gt, g_output_flow, wf, wi)

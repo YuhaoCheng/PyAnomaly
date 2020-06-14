@@ -227,7 +227,7 @@ def frame_gradient(x):
     gradient = dx + dy
     return dx, dy, gradient
 
-def flow_batch_estimate(flow_model, tensor_batch, scale=64.0, output_format='xym', normalize=True, mean=None, std=None):
+def flow_batch_estimate(flow_model, tensor_batch, scale=64.0, output_format='xym', optical_size=None, normalize=True, mean=None, std=None):
     '''
     output_format:
         general: u,v
@@ -237,8 +237,12 @@ def flow_batch_estimate(flow_model, tensor_batch, scale=64.0, output_format='xym
     '''
     flow_model.eval()
     # the tensor have been changed into [0.0, 1.0] and [b,c,h,w]
-    intWidth = tensor_batch.size(3)
-    intHeight = tensor_batch.size(2)
+    if optical_size is not None:
+        intHeight = optical_size[0]
+        intWidth = optical_size[1]
+    else:
+        intHeight = tensor_batch.size(2)
+        intWidth = tensor_batch.size(3)
 
     tensorFirst = tensor_batch[:,:3,]
     tensorSecond = tensor_batch[:,3:,]
@@ -253,7 +257,8 @@ def flow_batch_estimate(flow_model, tensor_batch, scale=64.0, output_format='xym
     new_temp = torch.stack([tensorPreprocessedFirst, tensorPreprocessedSecond], dim=2)
     # result = self.F(tensorPreprocessedFirst, tensorPreprocessedSecond)
     result = flow_model(new_temp)
-    optical_flow = torch.nn.functional.interpolate(input=result,size=(intHeight, intWidth), mode='bilinear', align_corners=False)
+    # optical_flow = torch.nn.functional.interpolate(input=result,size=(intHeight, intWidth), mode='bilinear', align_corners=False)
+    optical_flow = torch.nn.functional.interpolate(input=result,size=(tensor_batch.size(2), tensor_batch.size(3)), mode='bilinear', align_corners=False)
 
     optical_flow[:,0,:,:] *= float(intWidth) / float(intPreprocessedWidth)
     optical_flow[:,1,:,:] *= float(intHeight) / float(intPreprocessedHeight)
@@ -264,10 +269,10 @@ def flow_batch_estimate(flow_model, tensor_batch, scale=64.0, output_format='xym
     for i in range(temp.shape[0]):
         np_image = flow2img(temp[i], output_format, normalize, mean, std)
         temp_image = torch.from_numpy(np_image.transpose((2, 0, 1)))
-        # if normalize:
-        #     temp_image = temp_image / 255.0
-        #     if (mean is not None) and (std is not None):
-        #         temp_image = tf.normalize(temp_image, mean=mean, std=std)
+        if normalize:
+            temp_image = temp_image / 255.0
+            if (mean is not None) and (std is not None):
+                temp_image = tf.normalize(temp_image, mean=mean, std=std)
         temp_list.append(temp_image)
     optical_flow_image = torch.stack(temp_list, 0).cuda()
     return optical_flow_image, optical_flow
