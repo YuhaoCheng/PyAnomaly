@@ -247,21 +247,23 @@ def flow_batch_estimate(flow_model, tensor_batch, scale=64.0, output_format='xym
     tensorFirst = tensor_batch[:,:3,]
     tensorSecond = tensor_batch[:,3:,]
 
-    intPreprocessedWidth = int(math.floor(math.ceil(intWidth / scale)*scale))
-    intPreprocessedHeight = int(math.floor(math.ceil(intHeight / scale)*scale))
+    # intPreprocessedWidth = int(math.floor(math.ceil(intWidth / scale)*scale))
+    # intPreprocessedHeight = int(math.floor(math.ceil(intHeight / scale)*scale))
 
-    tensorPreprocessedFirst = torch.nn.functional.interpolate(input=tensorFirst, size=(intPreprocessedHeight, intPreprocessedWidth), mode='bilinear', align_corners=False)
-    tensorPreprocessedSecond = torch.nn.functional.interpolate(input=tensorSecond, size=(intPreprocessedHeight, intPreprocessedWidth), mode='bilinear', align_corners=False)
+    # tensorPreprocessedFirst = torch.nn.functional.interpolate(input=tensorFirst, size=(intPreprocessedHeight, intPreprocessedWidth), mode='bilinear', align_corners=False)
+    # tensorPreprocessedSecond = torch.nn.functional.interpolate(input=tensorSecond, size=(intPreprocessedHeight, intPreprocessedWidth), mode='bilinear', align_corners=False)
 
-    # import ipdb; ipdb.set_trace()
-    new_temp = torch.stack([tensorPreprocessedFirst, tensorPreprocessedSecond], dim=2)
-    # result = self.F(tensorPreprocessedFirst, tensorPreprocessedSecond)
+    # # import ipdb; ipdb.set_trace()
+    # new_temp = torch.stack([tensorPreprocessedFirst, tensorPreprocessedSecond], dim=2)
+    # # result = self.F(tensorPreprocessedFirst, tensorPreprocessedSecond)
+    # result = flow_model(new_temp)
+    new_temp = torch.stack([tensorFirst, tensorSecond], dim=2)
     result = flow_model(new_temp)
     # optical_flow = torch.nn.functional.interpolate(input=result,size=(intHeight, intWidth), mode='bilinear', align_corners=False)
     optical_flow = torch.nn.functional.interpolate(input=result,size=(tensor_batch.size(2), tensor_batch.size(3)), mode='bilinear', align_corners=False)
 
-    optical_flow[:,0,:,:] *= float(intWidth) / float(intPreprocessedWidth)
-    optical_flow[:,1,:,:] *= float(intHeight) / float(intPreprocessedHeight)
+    # optical_flow[:,0,:,:] *= float(intWidth) / float(intPreprocessedWidth)
+    # optical_flow[:,1,:,:] *= float(intHeight) / float(intPreprocessedHeight)
 
     temp = optical_flow.detach().cpu().permute(0,2,3,1).numpy()
     # import ipdb; ipdb.set_trace()
