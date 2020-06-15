@@ -141,7 +141,7 @@ class Trainer(DefaultTrainer):
         # in this method, D = 2 and not change
         input_data = data[:, :, 0, :, :] # input(1-st) frame
         target = data[:, :, 1,:, :] # target(2-nd) frame 
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         # squeeze the D dimension to C dimension, shape comes to [N, C, H, W]
         target = target.reshape(target.shape[0], -1, target.shape[-2], target.shape[-1]).cuda()
         input_data = input_data.reshape(input_data.shape[0], -1, input_data.shape[-2], input_data.shape[-1]).cuda()

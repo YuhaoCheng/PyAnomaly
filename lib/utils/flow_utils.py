@@ -69,7 +69,7 @@ def writeFlow(filename,uv,v=None):
 # 		plt.imsave(os.path.join(save_dir, "%s-vis.png" % flow_filename[idx:-4]), img)
 
 
-def flow2img(flow_data, output_format, normalize=True, mean=None, std=None):
+def flow2img(flow_data, output_format):
 	'''
 	Make the flow to 3 channel
 	'''

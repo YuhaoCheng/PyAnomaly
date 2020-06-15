@@ -57,14 +57,25 @@ def psnr_error(gen_frames, gt_frames, max_val_hat=1.0):
     @return: A scalar tensor. The mean Peak Signal to Noise Ratio error over each frame in the
              batch.
     """
-    shape = list(gen_frames.shape)
-    num_pixels = (shape[1] * shape[2] * shape[3])
-    gt_frames = (gt_frames + 1.0) / 2.0
-    gen_frames = (gen_frames + 1.0) / 2.0
-    square_diff = (gt_frames - gen_frames)**2
-
-    batch_errors = 10 * log10(max_val_hat ** 2 / ((1. / num_pixels) * torch.sum(square_diff, [1, 2, 3])))
-    return torch.mean(batch_errors)
+    gen_frames = gen_frames.detach().cpu()
+    gt_frames = gt_frames.detach().cpu()
+    batch_num = gen_frames.shape[0]
+    # shape = list(gen_frames.shape)
+    # num_pixels = (shape[1] * shape[2] * shape[3])
+    batch_errors = 0.0
+    for i in range(0, batch_num):
+        num_pixels = gen_frames[i].numel()
+        max_val_hat = gen_frames[i].max()
+    # gt_frames = (gt_frames + 1.0) / 2.0
+    # gen_frames = (gen_frames + 1.0) / 2.0
+        square_diff = (gt_frames[i] - gen_frames[i])**2
+        image_errors = 10 * (max_val_hat ** 2 / ((1. / num_pixels) * square_diff.sum())).log10()
+        batch_errors += image_errors
+    # batch_errors = 10 * log10(max_val_hat ** 2 / ((1. / num_pixels) * torch.sum(square_diff, [1, 2, 3])))
+    # return torch.mean(batch_errors)
+    batch_errors = torch.div(batch_errors, batch_num)
+    # import ipdb; ipdb.set_trace()
+    return batch_errors
 
 def load_pickle_results(loss_file, cfg):
     with open(loss_file, 'rb') as reader:
