@@ -57,7 +57,7 @@ class AugmentBuilder(UtilsBuilder):
         self.aug_functions = list()
         for transform_name in self._transforms.keys():
             if transform_name == 'resize':
-                self.aug_functions.append(iaa.Resize({"height": self._transforms[transform_name].height, "width": self._transforms[transform_name].width}, name='resize'))
+                self.aug_functions.append(iaa.Resize({"height": self._transforms[transform_name].height, "width": self._transforms[transform_name].width}, interpolation='linear', name='resize'))
                 continue
             elif transform_name == 'fliplr':
                 self.aug_functions.append(iaa.Fliplr(self._transforms[transform_name].p, name='fliplr'))

@@ -53,7 +53,7 @@ class AbstractVideoAnomalyDataset(AbstractImageDataset):
                 # print(video)
                 self.videos[video_name] = OrderedDict()
                 self.videos[video_name]['path'] = video
-                self.videos[video_name]['frames'] = glob.glob(os.path.join(video, '*.jpg'))
+                self.videos[video_name]['frames'] = glob.glob(os.path.join(video, f'*.{self.cfg.DATASET.image_format}'))
                 self.videos[video_name]['frames'].sort()
                 self.videos[video_name]['length'] = len(self.videos[video_name]['frames'])
                 self.videos[video_name]['cursor'] = 0
@@ -66,7 +66,7 @@ class AbstractVideoAnomalyDataset(AbstractImageDataset):
             video_name = os.path.split(self.dir)[-1]
             self.videos['name'] = video_name
             self.videos['path'] = self.dir
-            self.videos['frames'] =glob.glob(os.path.join(self.dir,'*.jpg'))
+            self.videos['frames'] =glob.glob(os.path.join(self.dir,f'*.{self.cfg.DATASET.image_format}'))
             self.videos['frames'].sort()
             self.pics_len=len(self.videos['frames'])
 

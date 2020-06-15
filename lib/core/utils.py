@@ -227,7 +227,7 @@ def frame_gradient(x):
     gradient = dx + dy
     return dx, dy, gradient
 
-def flow_batch_estimate(flow_model, tensor_batch, scale=64.0, output_format='xym', optical_size=None, normalize=True, mean=None, std=None):
+def flow_batch_estimate(flow_model, tensor_batch, scale=64.0, output_format='xym', optical_size=None, normalize=True, mean=[], std=[]):
     '''
     output_format:
         general: u,v
@@ -271,7 +271,7 @@ def flow_batch_estimate(flow_model, tensor_batch, scale=64.0, output_format='xym
         temp_image = torch.from_numpy(np_image.transpose((2, 0, 1)))
         if normalize:
             temp_image = temp_image / 255.0
-            if (mean is not None) and (std is not None):
+            if (len(mean)!=0) and (len(std) != 0):
                 temp_image = tf.normalize(temp_image, mean=mean, std=std)
         temp_list.append(temp_image)
     optical_flow_image = torch.stack(temp_list, 0).cuda()
@@ -290,7 +290,18 @@ def tsne_vis(feature, feature_labels, vis_path):
     plt.savefig(vis_path)
 
 
-def training_vis_images(vis_objects, writer, global_step):
+def training_vis_images(vis_objects, writer, global_step, normalize=True, mean=None, std=None):
+
+    # def verse_normalize(image_tensor):
+    #     std = self.trainer.config.ARGUMENT.val.normal.std
+    #     mean = self.trainer.config.ARGUMENT.val.normal.mean
+    #     if len(mean) == 0 and len(std) == 0:
+    #         return image_tensor
+    #     else:
+    #         for i in range(len(std)):
+    #             image_tensor[:,i,:,:] = image_tensor[:,i,:,:] * std[i] + mean[i]
+    #         return image_tensor
+    
     vis_keys = list(vis_objects.keys())
     for vis_key in vis_keys:
         temp = vis_objects[vis_key]

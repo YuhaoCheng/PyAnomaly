@@ -20,13 +20,13 @@ DATASET:
   channel_num: 3
   channel_name: 'rgb'
   train_path: './data/Avenue/training/frames'
-  train_clip_length: 2
+  train_clip_length: 32
   train_frame_step: 1
-  train_clip_step: 1
+  train_clip_step: 32
   test_path: './data/Avenue/testing/frames'
-  test_clip_length: 2
+  test_clip_length: 32
   test_frame_step: 1
-  test_clip_step: 1
+  test_clip_step: 32
   gt_path: './data/Avenue'
   number_of_class: 1
   score_normalize: true
@@ -43,8 +43,8 @@ ARGUMENT:
     use: true
     resize:
       use: true
-      height: 128
-      width: 192
+      height: 256
+      width: 256
     grayscale:
       use: false
     normal:
@@ -77,8 +77,8 @@ ARGUMENT:
     use: true
     resize:
       use: true
-      height: 128
-      width: 192
+      height: 256
+      width: 256
     grayscale:
       use: false
     normal:
@@ -125,14 +125,14 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
-  batch_size: 32
+  batch_size: 16
   start_step: 0
   max_steps: 20000
   log_step: 5
-  vis_step: 1000
-  mini_eval_step: 500
-  eval_step: 2000
-  save_step: 5000
+  vis_step: 958
+  mini_eval_step: 600
+  eval_step: 958
+  save_step: 958
   epochs: 1
   loss: ['rec_loss', 'pred_loss']
   loss_coefficients: [1,1]

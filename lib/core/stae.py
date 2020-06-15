@@ -92,7 +92,7 @@ class Trainer(DefaultTrainer):
         # self.total_steps = len(self.train_dataloader)
         self.result_path = ''
         self.log_step = self.config.TRAIN.log_step # how many the steps, we will show the information
-        self.vis_step = self.config.TRAIN.vis_step # how many the steps, we will show the information
+        self.vis_step = self.config.TRAIN.vis_step # how many the steps, we will vis
         self.eval_step = self.config.TRAIN.eval_step 
         self.save_step = self.config.TRAIN.save_step # save the model whatever the acc of the model
         self.max_steps = self.config.TRAIN.max_steps

@@ -154,7 +154,7 @@ def find_max_patch(diff_map_appe, diff_map_flow, kernel_size=16, stride=1, aggre
     
     max_appe_final = torch.div(max_appe_value, kernel_size**2) 
     max_flow_final = torch.div(max_flow_value, kernel_size**2) 
-
+    # import ipdb; ipdb.set_trace()
     # return max_patch_appe, max_patch_flow
     return max_appe_final, max_flow_final, (app_h, app_w), (flow_h, flow_w)
 

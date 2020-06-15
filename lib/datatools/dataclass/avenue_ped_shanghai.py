@@ -79,6 +79,7 @@ class MiniAvenuePedShanghai(AbstractVideoAnomalyDataset):
         temp = indice % self.video_nums
         key = list(self.videos_keys)[temp]
         rng = np.random.RandomState(2020)
+        # import ipdb; ipdb.set_trace()
         start = rng.randint(0, self.videos[key]['length'] - self.clip_length)
         video_clip = self.video_loader.read(self.videos[key]['frames'], start, start+self.clip_length, clip_length=self.clip_length, step=self.clip_step)
         return video_clip

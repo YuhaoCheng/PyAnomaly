@@ -139,8 +139,8 @@ class Trainer(DefaultTrainer):
         
         # base on the D to get each frame
         # in this method, D = 2 and not change
-        target = data[:, :, 1,:, :] # target(2-nd) frame 
         input_data = data[:, :, 0, :, :] # input(1-st) frame
+        target = data[:, :, 1,:, :] # target(2-nd) frame 
         
         # squeeze the D dimension to C dimension, shape comes to [N, C, H, W]
         target = target.reshape(target.shape[0], -1, target.shape[-2], target.shape[-1]).cuda()

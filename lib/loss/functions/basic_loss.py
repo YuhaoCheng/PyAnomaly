@@ -30,13 +30,13 @@ def conv2d_samepad(in_dim, in_ch, out_ch, ks, stride, dilation=1, bias=True):
                 nn.Conv2d(in_ch, out_ch, ks, stride, 0, dilation, bias=bias)]
 
 
-class FlowLoss(nn.Module):
-    def __init__(self):
-        super(FlowLoss, self).__init__()
+# class FlowLoss(nn.Module):
+#     def __init__(self):
+#         super(FlowLoss, self).__init__()
     
-    def forward(self, gen_flows, gt_flows):
-        x = torch.mean(torch.abs(gen_flows - gt_flows))
-        return x
+#     def forward(self, gen_flows, gt_flows):
+#         x = torch.mean(torch.abs(gen_flows - gt_flows))
+#         return x
 
 class IntensityLoss(nn.Module):
     def __init__(self):
@@ -193,7 +193,7 @@ LOSSDICT ={
     'cross': nn.CrossEntropyLoss(weight=None, size_average=True, reduce=False).cuda(),
     'g_adverserial_loss': Adversarial_Loss().cuda(),
     'd_adverserial_loss': Discriminate_Loss().cuda(),
-    'opticalflow_loss': FlowLoss().cuda(),
+    'opticalflow_loss': nn.L1Loss().cuda(),
     'gradient_loss':GradientLoss().cuda(),
     'intentsity_loss': IntensityLoss().cuda(),
     'amc_d_adverserial_loss_1': AMCDiscriminateLoss1().cuda(),

@@ -29,6 +29,7 @@ config.DATASET = CN()
 config.DATASET.name = ''
 config.DATASET.seed = 2020
 config.DATASET.read_format = 'opencv'
+config.DATASET.image_format = 'jpg'
 config.DATASET.channel_num = 3 # 1: grayscale image | 2: optical flow | 3: RGB or other 3 channel image
 config.DATASET.channel_name = 'rgb' # 'gray' | 'uv' | 'rgb' | ....
 config.DATASET.optical_format = 'Y'

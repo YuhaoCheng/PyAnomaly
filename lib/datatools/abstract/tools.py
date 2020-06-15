@@ -109,6 +109,7 @@ class VideoLoader(object):
         clip_list = list()
 
         for frame_id in range(start, end, step):
+            # import ipdb; ipdb.set_trace()
             frame_name = frames_list[frame_id]
             frame = self.image_loader.read(frame_name, array_type='ndarray')
             clip_list.append(frame)
