@@ -6,7 +6,7 @@ import mmcv
 import numpy as np
 from torch.utils.data import DataLoader
 from lib.datatools.evaluate.utils import psnr_error, oc_score
-from lib.core.utils import multi_obj_grid_crop, frame_gradient, flow_batch_estimate
+from lib.core.utils import multi_obj_grid_crop, frame_gradient, flow_batch_estimate, get_batch_dets
 from lib.core.other.kmeans import kmeans, kmeans_predict
 # from lib.datatools.evaluate import eval_api
 from .abstract.abstract_hook import HookBase
@@ -33,10 +33,10 @@ class ClusterHook(HookBase):
                 data_loader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, num_workers=1)
                 # import ipdb; ipdb.set_trace()
                 for data in data_loader:
-                    future = data[:, 2, :, :, :].cuda() # t+1 frame 
-                    current = data[:, 1, :, :, :].cuda() # t frame
-                    past = data[:, 0, :, :, :].cuda() # t frame
-                    bboxs = self.trainer.get_batch_dets(current)
+                    future = data[:, :, 2, :, :].cuda() # t+1 frame 
+                    current = data[:, :, 1, :, :].cuda() # t frame
+                    past = data[:, :, 0, :, :].cuda() # t frame
+                    bboxs = get_batch_dets(self.trainer.Detector, current)
                     for index, bbox in enumerate(bboxs):
                         # import ipdb; ipdb.set_trace()
                         if bbox.numel() == 0:
