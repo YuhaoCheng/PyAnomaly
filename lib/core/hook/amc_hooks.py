@@ -5,11 +5,10 @@ import pickle
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 from torch.utils.data import DataLoader
+from .abstract.abstract_hook import HookBase
+
 from lib.datatools.evaluate.utils import psnr_error
 from lib.core.utils import flow_batch_estimate, tensorboard_vis_images, save_results
-from .abstract.abstract_hook import HookBase
-# from lib.datatools.evaluate import eval_api
-# from lib.datatools.evaluate.amc_utils import calc_anomaly_score_one_frame
 from lib.datatools.evaluate.utils import simple_diff, find_max_patch, amc_score, calc_w
 
 HOOKS = ['AMCEvaluateHook']
@@ -99,19 +98,15 @@ class AMCEvaluateHook(HookBase):
             vis_range = range(int(len_dataset*0.5), int(len_dataset*0.5 + 5))
             psnrs = np.empty(shape=(len_dataset,),dtype=np.float32)
             scores = np.empty(shape=(len_dataset,),dtype=np.float32)
-            # scores = [0.0 for i in range(len_dataset)]
             for frame_sn, data in enumerate(data_loader):
                 test_input = data[:, :, 0, :, :].cuda()
                 test_target = data[:, :, 1, :, :].cuda()
 
                 g_output_flow, g_output_frame = self.trainer.G(test_input)
                 gt_flow_esti_tensor = torch.cat([test_input, test_target], 1)
-                # flow_gt,_ = self.trainer.batch_estimate(gt_flow_esti_tensor)
                 flow_gt,_ = flow_batch_estimate(self.trainer.F, gt_flow_esti_tensor, output_format=self.trainer.config.DATASET.optical_format, optical_size=self.trainer.config.DATASET.optical_size, normalize=self.trainer.config.ARGUMENT.val.normal.use, mean=self.trainer.config.ARGUMENT.val.normal.mean, std=self.trainer.config.ARGUMENT.val.normal.mean)
-                # score = amc_score(test_input, g_output_frame, flow_gt, g_output_flow)
                 test_psnr = psnr_error(g_output_frame, test_target)
                 score, _, _ = amc_score(test_target, g_output_frame, flow_gt, g_output_flow, wf, wi)
-                # import ipdb; ipdb.set_trace()
                 test_psnr = test_psnr.tolist()
                 score = score.tolist()
                 psnrs[test_counter+frame_num-1]=test_psnr
@@ -120,12 +115,11 @@ class AMCEvaluateHook(HookBase):
 
                 if sn == random_video_sn and (frame_sn in vis_range):
                     vis_objects = OrderedDict()
-                    vis_objects['eval_frame'] = test_target.detach()
-                    vis_objects['eval_frame_hat'] = g_output_frame.detach()
-                    vis_objects['eval_flow'] = flow_gt.detach()
-                    vis_objects['eval_flow_hat'] = g_output_flow.detach()
+                    vis_objects['amc_eval_frame'] = test_target.detach()
+                    vis_objects['amc_eval_frame_hat'] = g_output_frame.detach()
+                    vis_objects['amc_eval_flow'] = flow_gt.detach()
+                    vis_objects['amc_eval_flow_hat'] = g_output_flow.detach()
                     tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize, mean=self.trainer.mean, std=self.trainer.std)
-                    # self.add_images(test_target, flow_gt, g_output_frame, g_output_flow, tb_writer, global_steps)
                 
                 if test_counter >= test_iters:
                     psnrs[:frame_num-1]=psnrs[frame_num-1]
@@ -138,39 +132,12 @@ class AMCEvaluateHook(HookBase):
                     print(f'finish test video set {video_name}')
                     break
         
-        # result_dict = {'dataset': self.trainer.config.DATASET.name, 'psnr': psnr_records, 'flow': [], 'names': [], 'diff_mask': [], 'score':score_records, 'num_videos':num_videos}
-        # if not os.path.exists(self.trainer.config.TEST.result_output):
-        #     os.mkdir(self.trainer.config.TEST.result_output)
-        # result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}#step{current_step}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
-        # with open(result_path, 'wb') as writer:
-        #     pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
-        # results = eval_api.evaluate('compute_auc_score', result_path, self.trainer.logger, self.trainer.config)
         self.trainer.pkl_path = save_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records, psnr=psnr_records)
         results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
         self.trainer.logger.info(results)
         tb_writer.add_text('amc: AUC of ROC curve', f'auc is {results.auc}',global_steps)
         return results.auc
 
-    # def add_images(self, frame, flow, frame_hat, flow_hat, writer, global_steps):
-    #     frame = self.verse_normalize(frame.detach())
-    #     frame_hat = self.verse_normalize(frame_hat.detach())
-    #     flow = self.verse_normalize(flow.detach())
-    #     flow_hat = self.verse_normalize(flow_hat.detach())
-        
-    #     writer.add_images('eval_frame', frame, global_steps)
-    #     writer.add_images('eval_frame_hat', frame_hat, global_steps)
-    #     writer.add_images('eval_flow', flow, global_steps)
-    #     writer.add_images('eval_flow_hat', flow_hat, global_steps)
-    
-    # def verse_normalize(self, image_tensor):
-    #     std = self.trainer.config.ARGUMENT.val.normal.std
-    #     mean = self.trainer.config.ARGUMENT.val.normal.mean
-    #     if len(mean) == 0 and len(std) == 0:
-    #         return image_tensor
-    #     else:
-    #         for i in range(len(std)):
-    #             image_tensor[:,i,:,:] = image_tensor[:,i,:,:] * std[i] + mean[i]
-    #         return image_tensor
     
 def get_amc_hooks(name):
     if name in HOOKS:

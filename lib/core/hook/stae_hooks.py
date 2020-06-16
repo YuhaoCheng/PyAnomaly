@@ -92,7 +92,10 @@ class STAEEvaluateHook(HookBase):
                 test_counter += 1
 
                 if sn == random_video_sn and (clip_sn in vis_range):
-                    self.add_images(test_target, output, tb_writer, global_steps)
+                    vis_objects = OrderedDict()
+                    vis_objects['stae_eval_clip'] = test_target.detach()
+                    vis_objects['stae_eval_clip_hat'] = output.detach()
+                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
                 
                 if test_counter >= test_iters:
                     # import ipdb; ipdb.set_trace()
@@ -106,32 +109,11 @@ class STAEEvaluateHook(HookBase):
                     print(f'finish test video set {video_name}')
                     break
         
-        # result_dict = {'dataset': self.trainer.config.DATASET.name, 'psnr': psnr_records, 'flow': [], 'names': [], 'diff_mask': [], 'score':score_records, 'num_videos':num_videos}
-        # result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}#step{current_step}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
-        # with open(result_path, 'wb') as writer:
-        #     pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
         self.trainer.pkl_path = save_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records)
         results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
         self.trainer.logger.info(results)
         tb_writer.add_text('amc: AUC of ROC curve', f'auc is {results.auc}',global_steps)
         return results.auc
-
-    def add_images(self, clip, clip_hat, writer, global_steps):
-        clip = self.verse_normalize(clip.detach())
-        clip_hat = self.verse_normalize(clip_hat.detach())
-        
-        writer.add_images('eval_clip', clip, global_steps)
-        writer.add_images('eval_clip_hat', clip_hat, global_steps)
-    
-    def verse_normalize(self, image_tensor):
-        std = self.trainer.config.ARGUMENT.val.normal.std
-        mean = self.trainer.config.ARGUMENT.val.normal.mean
-        if len(mean) == 0 and len(std) == 0:
-            return image_tensor
-        else:
-            for i in range(len(std)):
-                image_tensor[:,i,:,:] = image_tensor[:,i,:,:] * std[i] + mean[i]
-            return image_tensor
 
 
 def get_stae_hooks(name):

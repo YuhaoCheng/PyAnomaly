@@ -6,11 +6,10 @@ from collections import OrderedDict
 from torch.utils.data import DataLoader
 from lib.datatools.evaluate.utils import psnr_error
 from .abstract.abstract_hook import HookBase
-# from lib.datatools.evaluate import eval_api
-# from lib.datatools.evaluate.amc_utils import calc_anomaly_score_one_frame
 from lib.core.utils import flow_batch_estimate, tensorboard_vis_images, save_results
 from lib.datatools.evaluate.utils import simple_diff, find_max_patch, amc_score, calc_w
 from lib.core.utils import save_results, tensorboard_vis_images
+
 HOOKS = ['AnoPredEvaluateHook']
 
 class AnoPredEvaluateHook(HookBase):
@@ -78,8 +77,7 @@ class AnoPredEvaluateHook(HookBase):
                     vis_objects = OrderedDict()
                     vis_objects['anopred_eval_frame'] = test_target.detach()
                     vis_objects['anopred_eval_frame_hat'] = g_output.detach()
-                    # self.add_images(test_target, g_output, tb_writer, global_steps)
-                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize, mean=self.trainer.mean, std=self.trainer.std)
+                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
                 
                 if test_counter >= test_iters:
                     psnrs[:frame_num-1]=psnrs[frame_num-1]
@@ -92,12 +90,6 @@ class AnoPredEvaluateHook(HookBase):
                     # print(f'finish test video set {video_name}')
                     break
 
-        # result_dict = {'dataset': self.trainer.config.DATASET.name, 'psnr': psnr_records, 'flow': [], 'names': [], 'diff_mask': [], 'score':score_records, 'num_videos':len(psnr_records)}
-        # result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}#step{current_step}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
-        # with open(result_path, 'wb') as writer:
-        #     pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
-        # # results = eval_api.evaluate('compute_auc_score', result_path, self.trainer.logger, self.trainer.config)
-        # results = self.trainer.evaluate_function(result_path, self.trainer.logger, self.trainer.config)
         self.trainer.pkl_path = save_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records, psnr=psnr_records)
         results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
         self.trainer.logger.info(results)
