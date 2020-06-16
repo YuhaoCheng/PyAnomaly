@@ -2,6 +2,35 @@ import os
 import numpy as np
 import scipy.io as scio
 
+class RecordResult(object):
+    def __init__(self, fpr=None, tpr=None, thresholds=None, auc=-np.inf, dataset=None, loss_file=None):
+        self.fpr = fpr
+        self.tpr = tpr
+        self.thresholds = thresholds
+        self.auc = auc
+        self.dataset = dataset
+        self.loss_file = loss_file
+
+    def __lt__(self, other):
+        return self.auc < other.auc
+
+    def __gt__(self, other):
+        return self.auc > other.auc
+
+    def __str__(self):
+        return f'dataset = {self.dataset}, loss file = {self.loss_file}, auc = {self.auc:.5f}'
+    
+    def get_threshold(self):
+        diff_list = list()
+        num_points = len(self.fpr)
+        for i in range(num_points):
+            temp = self.tpr[i] - self.fpr[i]
+            diff_list.append(temp)
+        index = diff_list.index(max(diff_list))
+
+        return self.thresholds[index]
+
+
 class GroundTruthLoader(object):
     # give the name of the supported datasets
     Avenue = 'avenue'

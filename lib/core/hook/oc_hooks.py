@@ -4,9 +4,10 @@ import cv2
 import torch
 import mmcv
 import numpy as np
+from collections import OrderedDict
 from torch.utils.data import DataLoader
 from lib.datatools.evaluate.utils import psnr_error, oc_score
-from lib.core.utils import multi_obj_grid_crop, frame_gradient, flow_batch_estimate, get_batch_dets
+from lib.core.utils import multi_obj_grid_crop, frame_gradient, flow_batch_estimate, get_batch_dets, tensorboard_vis_images, save_results
 from lib.core.other.kmeans import kmeans, kmeans_predict
 # from lib.datatools.evaluate import eval_api
 from .abstract.abstract_hook import HookBase
@@ -83,7 +84,7 @@ class ClusterHook(HookBase):
             for _ in range(10):
                 cluster_ids_x, cluster_center = kmeans(X=cluster_input, num_clusters=self.trainer.config.TRAIN.cluster.k, distance='euclidean', device=device)
                 cluster_centers += cluster_center
-            import ipdb; ipdb.set_trace()
+            # import ipdb; ipdb.set_trace()
             cluster_centers =  cluster_centers / 10
             # model.fit(cluster_input)
             # pusedo_labels = model.predict(cluster_input)
@@ -134,7 +135,8 @@ class OCEvaluateHook(HookBase):
         frame_num = self.trainer.config.DATASET.test_clip_length
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
-        score_records=[]
+        score_records = []
+        # psnr_records = []
         total = 0
         random_video_sn = torch.randint(0, len(self.trainer.test_dataset_keys), (1,))
         # random_video_sn = 0
@@ -155,10 +157,10 @@ class OCEvaluateHook(HookBase):
             random_frame_sn = torch.randint(0, len_dataset,(1,))
             for frame_sn, data in enumerate(data_loader):
                 feature_record_object = []
-                future = data[:, 2, :, :, :].cuda()
-                current = data[:, 1, :, :, :].cuda()
-                past = data[:, 1,:, :, :].cuda()
-                bboxs = self.trainer.get_batch_dets(current)
+                future = data[:, :, 2, :, :].cuda()
+                current = data[:, :, 1, :, :].cuda()
+                past = data[:, :, 0, :, :].cuda()
+                bboxs = get_batch_dets(self.trainer.Detector, current)
                 for index, bbox in enumerate(bboxs):
                     # import ipdb; ipdb.set_trace()
                     if bbox.numel() == 0:
@@ -182,7 +184,15 @@ class OCEvaluateHook(HookBase):
 
                     # import ipdb; ipdb.set_trace()
                     if sn == random_video_sn and frame_sn == random_frame_sn:
-                        self.add_vis_images(A_input, current_object, C_input, temp_a, temp_b,temp_c)
+                        vis_objects = OrderedDict()
+                        vis_objects['oc_input_a'] =A_input.detach()
+                        vis_objects['oc_output_a'] = temp_a.detach()
+                        vis_objects['oc_input_b'] = current_object.detach()
+                        vis_objects['oc_output_b'] = temp_b.detach()
+                        vis_objects['oc_input_c'] = C_input.detach()
+                        vis_objects['oc_output_c'] = temp_c.detach()
+                        tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize, mean=self.trainer.mean, std=self.trainer.std)
+
 
                     A_flatten_feature = A_feature.flatten(start_dim=1)
                     B_flatten_feature = B_feature.flatten(start_dim=1)
@@ -211,15 +221,16 @@ class OCEvaluateHook(HookBase):
                     break
         
         # import ipdb; ipdb.set_trace()
-        result_dict = {'dataset': self.trainer.config.DATASET.name, 'psnr': [], 'score': score_records, 'flow': [], 'names': [], 'diff_mask': [], 'num_videos':len(score_records)}
-        result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}#step{current_step}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
-        with open(result_path, 'wb') as writer:
-            pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
+        # result_dict = {'dataset': self.trainer.config.DATASET.name, 'psnr': [], 'score': score_records, 'flow': [], 'names': [], 'diff_mask': [], 'num_videos':len(score_records)}
+        # result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}#step{current_step}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
+        # with open(result_path, 'wb') as writer:
+        #     pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
+        self.pkl_path = save_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records)
         # import ipdb; ipdb.set_trace()
         # results = eval_api.evaluate('compute_auc_score', result_path, self.trainer.logger, self.trainer.config)
-        results = self.trainer.evaluate_function(result_path, self.trainer.logger, self.trainer.config)
+        results = self.trainer.evaluate_function(self.pkl_path, self.trainer.logger, self.trainer.config)
         self.trainer.logger.info(results)
-        tb_writer.add_text('AUC of ROC curve', f'auc is {results.auc}',global_steps)
+        tb_writer.add_text('AUC of ROC curve', f'AUC is {results.auc:.5f}',global_steps)
         return results.auc
 
     def add_vis_images(self, A_input, current_object, C_input, temp_a, temp_b,temp_c):

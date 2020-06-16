@@ -14,8 +14,8 @@ import pickle
 from sklearn import metrics
 import json
 
-from .utils import RecordResult, log10, psnr_error, load_pickle_results
-from .gtloader import GroundTruthLoader
+from .utils import load_pickle_results
+from .gtloader import GroundTruthLoader, RecordResult
 
 
 def get_scores_labels(loss_file, cfg):
@@ -202,11 +202,14 @@ def compute_auc_psnr(loss_file, logger, cfg, score_type='normal'):
             distance = psnr_records[i]
             scores = np.concatenate((scores, distance[DECIDABLE_IDX:]), axis=0)
             labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:]), axis=0)
-        if cfg.DATASET.score_normalize:
-            smin = scores.min()
-            smax = scores.max()
-            scores = scores - scores.min()  # scores = (scores - min) / (max - min)
-            scores = scores / (smax - smin)
+        '''
+        Normalization is in the process of calculate the scores, instead of beforing getting the AUC
+        '''
+        # if cfg.DATASET.score_normalize:
+        #     smin = scores.min()
+        #     smax = scores.max()
+        #     scores = scores - scores.min()  # scores = (scores - min) / (max - min)
+        #     scores = scores / (smax - smin)
         fpr, tpr, thresholds = metrics.roc_curve(labels, scores, pos_label=0)
         auc = metrics.auc(fpr, tpr)
 
@@ -258,11 +261,14 @@ def compute_auc_score(loss_file, logger, cfg, score_type='normal'):
             
             scores = np.concatenate((scores, distance[DECIDABLE_IDX:]), axis=0)
             labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:]), axis=0)
-        if cfg.DATASET.score_normalize:
-            smin = scores.min()
-            smax = scores.max()
-            scores = scores - smin  # scores = (scores - min) / (max - min)
-            scores = scores / (smax - smin)
+        '''
+        Normalization is in the process of calculate the scores, instead of beforing getting the AUC
+        '''
+        # if cfg.DATASET.score_normalize:
+        #     smin = scores.min()
+        #     smax = scores.max()
+        #     scores = scores - smin  # scores = (scores - min) / (max - min)
+        #     scores = scores / (smax - smin)
         fpr, tpr, thresholds = metrics.roc_curve(labels, scores, pos_label=pos_label)
         auc = metrics.auc(fpr, tpr)
 

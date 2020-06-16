@@ -5,8 +5,10 @@ Some useful tools in training process
 # sys.path.append('/export/home/chengyh/Anomaly_DA')
 import torch
 import cv2
+import os
 import numpy as np
 import math
+from scipy.ndimage import gaussian_filter1d
 import torch.nn.functional as F
 import torchvision.transforms as T
 import torchvision.transforms.functional as tf
@@ -293,30 +295,53 @@ def tsne_vis(feature, feature_labels, vis_path):
     plt.savefig(vis_path)
 
 
-def training_vis_images(vis_objects, writer, global_step, normalize=True, mean=None, std=None):
-
-    # def verse_normalize(image_tensor):
-    #     std = self.trainer.config.ARGUMENT.val.normal.std
-    #     mean = self.trainer.config.ARGUMENT.val.normal.mean
-    #     if len(mean) == 0 and len(std) == 0:
-    #         return image_tensor
-    #     else:
-    #         for i in range(len(std)):
-    #             image_tensor[:,i,:,:] = image_tensor[:,i,:,:] * std[i] + mean[i]
-    #         return image_tensor
+def tensorboard_vis_images(vis_objects, writer, global_step, normalize=True, mean=None, std=None):
+    '''
+    Visualize the images in tensorboard
+    Args:
+        vis_objects: the dict of visualized images.{'name1':iamge, ...}
+        writer: tensorboard
+        global_step: the step
+        normalize: whether the image is normalize
+        mean, std
+    '''
+    def verse_normalize(image_tensor, mean, std, video=False):
+        if len(mean) == 0 and len(std) == 0:
+            return image_tensor * 255
+        else:
+            if video:
+                # [N, C, D, H, W]
+                for i in range(len(std)):
+                    image_tensor[:, i, :, :, :] = image_tensor[:, i, :, :,:] * std[i] + mean[i]
+            else:
+                # [N, C, H, W]
+                for i in range(len(std)):
+                    image_tensor[:, i, :, :] = image_tensor[:, i, :, :] * std[i] + mean[i]
+            return image_tensor
     
     vis_keys = list(vis_objects.keys())
     # import ipdb; ipdb.set_trace()
     for vis_key in vis_keys:
+        video_flag=False
         temp = vis_objects[vis_key]
         if len(temp.shape) == 5:
+            video_flag=True
+            if normalize:
+                temp = verse_normalize(temp, mean, std, video=video_flag)
             batch_num = temp.shape[0]
             for i in range(batch_num):
                 temp_one = temp[i,:,:,:,:].permute(1,0,2,3)
                 writer.add_images(vis_key+f'video_{i}in{batch_num}', temp_one, global_step)
         elif len(temp.shape) == 4:
+            # visualize a batch of image
+            if normalize:
+                temp = verse_normalize(temp, mean, std, video=video_flag)
             writer.add_images(vis_key+'_batch', temp, global_step)
         elif len(temp.shape) == 3:
+            # vis a single image
+            if normalize:
+                temp = temp.unsqueeze(0)
+                temp = verse_normalize(temp, mean, std, video=video_flag)
             writer.add_image(vis_key+'_image', temp, global_step)
 
 
@@ -347,7 +372,52 @@ def get_batch_dets(det_model, batch_image):
         
         return bboxs
 
+def save_results(cfg, logger, verbose=None, config_name='None', current_step=0, time_stamp='time_step', **kwargs):
+    if not os.path.exists(cfg.TEST.result_output):
+        os.mkdir(cfg.TEST.result_output)
 
+    result_path = os.path.join(cfg.TEST.result_output, f'{verbose}_cfg#{config_name}#step{current_step}@{time_stamp}_results.pkl')
+    result_keys = kwargs.keys()
+    result_dict = OrderedDict()
+    result_dict['dataset'] = cfg.DATASET.name
+    # get the number of video
+    if 'psnr' in result_keys:
+        result_dict['num_videos'] = len(kwargs['psnr'])
+    elif 'score' in result_keys:
+        result_dict['num_videos'] = len(kwargs['score'])
+    else:
+        raise Exception('Have no psnr or score')
+    
+    # Sometimes we do not record the PSNR
+    if 'psnr' not in result_keys:
+        result_dict['psnr'] = []
+    
+    for key in result_keys:
+        result_dict[key] = kwargs[key]
+    if cfg.DATASET.smooth.guassian:
+        score = kwargs['score']
+        new_score = []
+        for index, item in enumerate(score):
+            temp = gaussian_filter1d(score[index], cfg.DATASET.smooth.guassian_sigma)
+            new_score.append(temp)
+        result_dict['score_smooth'] = new_score
+
+        if 'psnr' in result_keys:
+            psnr = kwargs['psnr']
+            new_psnr = []
+            for index, item in enumerate(psnr):
+                temp = gaussian_filter1d(psnr[index], cfg.DATASET.smooth.guassian_sigma)
+                new_psnr.append(temp)
+            result_dict['psnr_smooth'] = new_psnr
+        else:
+            result_dict['psnr_smooth'] = []
+        
+        logger.info(f'Smooth the value with sigma:{cfg.DATASET.smooth.guassian_sigma}')
+    # result_dict = {'dataset': self.trainer.config.DATASET.name, 'psnr': [], 'score': score_records, 'flow': [], 'names': [], 'diff_mask': [], 'num_videos':len(score_records)}
+    with open(result_path, 'wb') as writer:
+        pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
+
+    return result_path
 
 if __name__ == '__main__':
     path = '/export/home/chengyh/data/COCO/MSCOCO/images/test2017/000000000019.jpg'

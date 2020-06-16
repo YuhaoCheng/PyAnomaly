@@ -26,20 +26,24 @@ class VisScoreHook(HookBase):
             os.mkdir(self.trainer.config.LOG.vis_dir)
         
         if current_step % self.trainer.config.TRAIN.eval_step == 0 and current_step != 0:
-            result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}#step{current_step}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
-            with open(result_path, 'rb') as reader:
+            # result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}#step{current_step}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
+            with open(self.pkl_path, 'rb') as reader:
                 results = pickle.load(reader)
             
             psnrs = results['psnr']
+            smooth_psnrs = results['score_smooth']
             scores = results['score']
+            smooth_scores = results['score_smooth']
             gt_loader = GroundTruthLoader(self.trainer.config)
             gt = gt_loader()
             if psnrs == []:
                 for i in range(len(scores)):
                     psnrs.append(np.zeros(shape=(scores[i].shape[0],)))
+                    smooth_psnrs.append(np.zeros(shape=(scores[i].shape[0],)))
             elif scores == []:
                 for i in range(len(psnrs)):
                     scores.append(np.zeros(shape=(psnrs[i].shape[0],)))
+                    smooth_scores.append(np.zeros(shape=(scores[i].shape[0],)))
             else:
                 assert len(psnrs) == len(scores), 'the number of psnr and score is not equal'
             
@@ -51,25 +55,29 @@ class VisScoreHook(HookBase):
                 fig = plt.figure()
                 fig.tight_layout()
                 fig.subplots_adjust(wspace=0.4)
-                ax1 = fig.add_subplot(2,2,1)
+                ax1 = fig.add_subplot(2,3,1)
                 ax1.plot([i for i in range(len(psnrs[video_id]))], psnrs[video_id])
                 ax1.set_ylabel('psnr')
-                ax2 = fig.add_subplot(2,2,2)
+                ax2 = fig.add_subplot(2,3,2)
                 ax2.plot([i for i in range(len(scores[video_id]))], scores[video_id])
                 ax2.set_ylabel('score')
-                ax3 = fig.add_subplot(2,2,3)
+                ax3 = fig.add_subplot(2,3,3)
                 ax3.plot([i for i in range(len(gt[video_id]))], gt[video_id])
                 ax3.set_ylabel('GT')
                 ax3.set_xlabel('frames')
-                ax4 = fig.add_subplot(2,2,4)
+                ax4 = fig.add_subplot(2,3,4)
                 # import ipdb; ipdb.set_trace()
-                if self.trainer.config.DATASET.smooth.guassian:
-                    smooth_score = gaussian_filter1d(scores[video_id], self.trainer.config.DATASET.smooth.guassian_sigma)
-                else:
-                    smooth_score = scores[video_id]
-                ax4.plot([i for i in range(len(smooth_score))], smooth_score)
-                ax4.set_ylabel(f'Guassian Smooth{self.trainer.config.DATASET.smooth.guassian_sigma}')
+                # if self.trainer.config.DATASET.smooth.guassian:
+                #     smooth_score = gaussian_filter1d(scores[video_id], self.trainer.config.DATASET.smooth.guassian_sigma)
+                # else:
+                #     smooth_score = scores[video_id]
+                ax4.plot([i for i in range(len(smooth_scores))], smooth_scores)
+                ax4.set_ylabel(f'Guassian Smooth score{self.trainer.config.DATASET.smooth.guassian_sigma}')
                 ax4.set_xlabel('frames')
+                ax5 = fig.add_subplot(2,3,5)
+                ax5.plot([i for i in range(len(smooth_psnrs))], smooth_psnrs)
+                ax5.set_ylabel(f'Guassian Smooth psnr{self.trainer.config.DATASET.smooth.guassian_sigma}')
+                # ax5.set_xlabel('frames')
                 writer.add_figure(f'verbose_{self.trainer.verbose}_{self.trainer.config_name}_{self.trainer.kwargs["time_stamp"]}_vis{video_id}', fig, global_steps)
                 # plt.savefig(vis_path)
             

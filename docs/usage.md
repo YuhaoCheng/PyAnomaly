@@ -1,5 +1,6 @@
 ## Content
 - [Quick Start](#Quick-Start)
+- [Support](#Support-Method)
 - [Build Components](#build-components)
 - [Tools](#tools)
 - [Model Zoo](#model-zoo)
@@ -35,6 +36,30 @@ cd $PATH/TO/ROOT
 sh inference.sh -m amc -d avenue -p PATH/TO/ANOMALY -g 0 -c default.yaml /
 -im MODEL_PATH -v inference_test
 ```
+
+## Support
+### Methods
+
+| Method Name | `-m`      |
+| ----------- | --------- |
+| [STAE]()    | `stae`    |
+| [AMC]()     | `amc`     |
+| [OCAE]()    | `ocae`    |
+| [AnoPred]() | `anopred` |
+| [AnoPCN]()  | `anopcn`  |
+| [MemAE]()   | `memae`   |
+
+
+
+### Dataset
+
+| Dataset Name            | `-d`       |
+| ----------------------- | ---------- |
+| [UCSD Ped2]()           | `ped2`     |
+| [Avenue]()              | `avenue`   |
+| [ShanghaiTech Campus]() | `shanghai` |
+
+
 
 ## Build Components
 

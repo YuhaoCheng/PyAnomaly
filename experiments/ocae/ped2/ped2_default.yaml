@@ -23,7 +23,7 @@ DATASET:
   test_path: './data/ped2/testing/frames'
   test_clip_length: 7
   test_clip_step: 3
-  gt_path: './data/Ped2'
+  gt_path: './data/ped2'
   number_of_class: 1
   score_normalize: true
   score_type: 'abnormal'
@@ -126,8 +126,8 @@ TRAIN:
   max_steps: 20000
   log_step: 5
   vis_step: 1000
-  mini_eval_step: 500
-  eval_step: 2000
+  mini_eval_step: 5
+  eval_step: 20
   save_step: 5000
   epochs: 1
   loss: ['A_loss', 'B_loss', 'C_loss']

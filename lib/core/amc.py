@@ -16,7 +16,7 @@ import torchvision.transforms as T
 import torchvision.transforms.functional as tf
 from torch.utils.data import DataLoader
 
-from lib.core.utils import AverageMeter, flow_batch_estimate, training_vis_images
+from lib.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images
 from lib.datatools.evaluate.utils import psnr_error
 from lib.utils.flow_utils import flow2img
 from lib.core.engine.default_engine import DefaultTrainer, DefaultInference
@@ -94,6 +94,9 @@ class Trainer(DefaultTrainer):
         self.accuarcy = 0.0  # to store the accuracy varies from epoch to epoch
         self.config_name = kwargs['config_name']
         self.kwargs = kwargs
+        self.normalize = self.config.ARGUMENT.train.normal.use
+        self.mean = self.config.ARGUMENT.train.normal.mean
+        self.std = self.config.ARGUMENT.train.normal.std
         # self.total_steps = len(self.train_dataloader)
         self.result_path = ''
         self.log_step = self.config.TRAIN.log_step # how many the steps, we will show the information
@@ -151,7 +154,7 @@ class Trainer(DefaultTrainer):
         self.set_requires_grad(self.D, False)
         output_flow_G,  output_frame_G = self.G(input_data)
         gt_flow_esti_tensor = torch.cat([input_data, target], 1)
-        flow_gt, _ = flow_batch_estimate(self.F, gt_flow_esti_tensor, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
+        flow_gt, _ = flow_batch_estimate(self.F, gt_flow_esti_tensor, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.std)
         fake_g= self.D(torch.cat([target, output_flow_G], dim=1))
         loss_g_adv = self.gan_loss(fake_g, True)
         loss_op = self.op_loss(output_flow_G, flow_gt)
@@ -202,7 +205,7 @@ class Trainer(DefaultTrainer):
             vis_objects['train_output_flow_G'] = output_flow_G.detach()
             vis_objects['train_target_frame'] =  target.detach()
             vis_objects['train_output_frame_G'] = output_frame_G.detach()
-            training_vis_images(vis_objects, writer, global_steps)
+            tensorboard_vis_images(vis_objects, writer, global_steps, self.normalize, self.mean, self.std)
         global_steps += 1 
         
         # reset start
@@ -283,6 +286,9 @@ class Inference(DefaultInference):
         self.verbose = kwargs['verbose']
         self.kwargs = kwargs
         self.config_name = kwargs['config_name']
+        self.normalize = self.config.ARGUMENT.val.normal.use
+        self.mean = self.config.ARGUMENT.val.normal.mean
+        self.std = self.config.ARGUMENT.val.normal.std
         # self.mode = kwargs['mode']
 
         self.test_dataset_keys = kwargs['test_dataset_keys']

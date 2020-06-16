@@ -17,7 +17,7 @@ import torchvision.transforms as T
 import torchvision.transforms.functional as tf
 
 from lib.core.engine.default_engine import DefaultTrainer, DefaultInference
-from lib.core.utils import AverageMeter, multi_obj_grid_crop, frame_gradient, get_batch_dets, training_vis_images
+from lib.core.utils import AverageMeter, multi_obj_grid_crop, frame_gradient, get_batch_dets, tensorboard_vis_images
 from lib.datatools.evaluate.utils import psnr_error
 
 
@@ -95,6 +95,9 @@ class Trainer(DefaultTrainer):
         self.accuarcy = 0.0  # to store the accuracy varies from epoch to epoch
         self.config_name = kwargs['config_name']
         self.kwargs = kwargs
+        self.normalize = self.config.ARGUMENT.train.normal.use
+        self.mean = self.config.ARGUMENT.train.normal.mean
+        self.std = self.config.ARGUMENT.train.normal.std
         # self.total_steps = len(self.train_dataloader)
         self.result_path = ''
         self.log_step = self.config.TRAIN.log_step # how many the steps, we will show the information
@@ -203,7 +206,7 @@ class Trainer(DefaultTrainer):
             vis_objects['train_output_recGradient_A'] =  output_recGradient_A.detach()
             vis_objects['train_output_recObject_B'] =  output_recObject_B.detach()
             vis_objects['train_output_recGradient_C'] = output_recGradient_C.detach()
-            training_vis_images(vis_objects, writer, global_steps)
+            tensorboard_vis_images(vis_objects, writer, global_steps, self.normalize, self.mean, self.std)
         global_steps += 1 
         # reset start
         start = time.time()
@@ -302,6 +305,9 @@ class Inference(DefaultInference):
         self.verbose = kwargs['verbose']
         self.kwargs = kwargs
         self.config_name = kwargs['config_name']
+        self.normalize = self.config.ARGUMENT.val.normal.use
+        self.mean = self.config.ARGUMENT.val.normal.mean
+        self.std = self.config.ARGUMENT.val.normal.std
         # self.mode = kwargs['mode']
 
         self.test_dataset_keys = kwargs['test_dataset_keys']

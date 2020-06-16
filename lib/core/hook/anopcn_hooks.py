@@ -41,7 +41,7 @@ class AnoPCNEvaluateHook(HookBase):
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
 
-        frame_num = self.config.DATASET.test_clip_length
+        frame_num = self.trainer.config.DATASET.test_clip_length
         psnr_records=[]
         score_records=[]
         total = 0
