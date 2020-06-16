@@ -27,11 +27,12 @@ class VisScoreHook(HookBase):
         
         if current_step % self.trainer.config.TRAIN.eval_step == 0 and current_step != 0:
             # result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}#step{current_step}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
-            with open(self.pkl_path, 'rb') as reader:
+            with open(self.trainer.pkl_path, 'rb') as reader:
                 results = pickle.load(reader)
+            print(f'The results in {self.trainer.pkl_path}')
             
             psnrs = results['psnr']
-            smooth_psnrs = results['score_smooth']
+            smooth_psnrs = results['psnr_smooth']
             scores = results['score']
             smooth_scores = results['score_smooth']
             gt_loader = GroundTruthLoader(self.trainer.config)
@@ -50,6 +51,7 @@ class VisScoreHook(HookBase):
             assert len(gt) == len(psnrs) == len(scores), f'the number of gt {len(gt)}, psnrs {len(psnrs)}, scores {len(scores)}'
             
             # plt the figure
+            # import ipdb; ipdb.set_trace()
             for video_id in range(len(psnrs)):
                 assert len(psnrs[video_id]) == len(scores[video_id]) == len(gt[video_id]), f'video_id:{video_id},the number of gt {len(gt)}, psnrs {len(psnrs)}, scores {len(scores)}'
                 fig = plt.figure()
@@ -71,11 +73,11 @@ class VisScoreHook(HookBase):
                 #     smooth_score = gaussian_filter1d(scores[video_id], self.trainer.config.DATASET.smooth.guassian_sigma)
                 # else:
                 #     smooth_score = scores[video_id]
-                ax4.plot([i for i in range(len(smooth_scores))], smooth_scores)
+                ax4.plot([i for i in range(len(smooth_scores[video_id]))], smooth_scores[video_id])
                 ax4.set_ylabel(f'Guassian Smooth score{self.trainer.config.DATASET.smooth.guassian_sigma}')
                 ax4.set_xlabel('frames')
                 ax5 = fig.add_subplot(2,3,5)
-                ax5.plot([i for i in range(len(smooth_psnrs))], smooth_psnrs)
+                ax5.plot([i for i in range(len(smooth_psnrs[video_id]))], smooth_psnrs[video_id])
                 ax5.set_ylabel(f'Guassian Smooth psnr{self.trainer.config.DATASET.smooth.guassian_sigma}')
                 # ax5.set_xlabel('frames')
                 writer.add_figure(f'verbose_{self.trainer.verbose}_{self.trainer.config_name}_{self.trainer.kwargs["time_stamp"]}_vis{video_id}', fig, global_steps)

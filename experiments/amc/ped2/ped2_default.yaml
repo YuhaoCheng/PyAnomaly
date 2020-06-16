@@ -131,9 +131,9 @@ TRAIN:
   start_step: 0
   max_steps: 6400
   log_step: 5
-  vis_step: 160
+  vis_step: 10
   mini_eval_step: 80
-  eval_step: 160
+  eval_step: 10
   save_step: 160
   epochs: 1
   loss: ['gan_loss','gradient_loss', 'intentsity_loss', 'opticalflow_loss']

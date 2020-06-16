@@ -13,7 +13,7 @@ from .abstract.abstract_hook import HookBase
 from lib.datatools.evaluate.utils import reconstruction_loss
 from lib.datatools.evaluate.gtloader import GroundTruthLoader
 # from lib.datatools.evaluate import eval_api
-from lib.core.utils import tsne_vis
+from lib.core.utils import tsne_vis, tensorboard_vis_images, save_results
 
 HOOKS = ['STAEEvaluateHook']
 
@@ -106,12 +106,12 @@ class STAEEvaluateHook(HookBase):
                     print(f'finish test video set {video_name}')
                     break
         
-        result_dict = {'dataset': self.trainer.config.DATASET.name, 'psnr': psnr_records, 'flow': [], 'names': [], 'diff_mask': [], 'score':score_records, 'num_videos':num_videos}
-        result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}#step{current_step}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
-        with open(result_path, 'wb') as writer:
-            pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
-        
-        results = self.trainer.evaluate_function(result_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
+        # result_dict = {'dataset': self.trainer.config.DATASET.name, 'psnr': psnr_records, 'flow': [], 'names': [], 'diff_mask': [], 'score':score_records, 'num_videos':num_videos}
+        # result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}#step{current_step}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
+        # with open(result_path, 'wb') as writer:
+        #     pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
+        self.trainer.pkl_path = save_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records)
+        results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
         self.trainer.logger.info(results)
         tb_writer.add_text('amc: AUC of ROC curve', f'auc is {results.auc}',global_steps)
         return results.auc

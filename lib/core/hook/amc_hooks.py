@@ -124,7 +124,7 @@ class AMCEvaluateHook(HookBase):
                     vis_objects['eval_frame_hat'] = g_output_frame.detach()
                     vis_objects['eval_flow'] = flow_gt.detach()
                     vis_objects['eval_flow_hat'] = g_output_flow.detach()
-                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.config.ARGUMENT.val.normal.use, mean=self.trainer.config.ARGUMENT.val.normal.mean, std=self.trainer.config.ARGUMENT.val.normal.mean)
+                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize, mean=self.trainer.mean, std=self.trainer.std)
                     # self.add_images(test_target, flow_gt, g_output_frame, g_output_flow, tb_writer, global_steps)
                 
                 if test_counter >= test_iters:
@@ -144,9 +144,9 @@ class AMCEvaluateHook(HookBase):
         # result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}#step{current_step}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
         # with open(result_path, 'wb') as writer:
         #     pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
-        self.pkl_path = save_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records, psnr=psnr_records)
         # results = eval_api.evaluate('compute_auc_score', result_path, self.trainer.logger, self.trainer.config)
-        results = self.trainer.evaluate_function(self.pkl_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
+        self.trainer.pkl_path = save_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records, psnr=psnr_records)
+        results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
         self.trainer.logger.info(results)
         tb_writer.add_text('amc: AUC of ROC curve', f'auc is {results.auc}',global_steps)
         return results.auc

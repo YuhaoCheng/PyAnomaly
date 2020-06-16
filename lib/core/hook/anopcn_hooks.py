@@ -9,7 +9,7 @@ from .abstract.abstract_hook import HookBase
 # from lib.datatools.evaluate import eval_api
 # from lib.datatools.evaluate.amc_utils import calc_anomaly_score_one_frame
 # from lib.datatools.evaluate.utils import simple_diff, find_max_patch, amc_score, calc_w
-
+from lib.core.utils import save_results, tensorboard_vis_images
 HOOKS = ['AnoPCNEvaluateHook']
 
 class AnoPCNEvaluateHook(HookBase):
@@ -76,7 +76,11 @@ class AnoPCNEvaluateHook(HookBase):
                 scores[test_counter+frame_num-1]=test_psnr
                 
                 if sn == random_video_sn and (frame_sn in vis_range):
-                    self.add_images(test_target, g_output, tb_writer, global_steps)
+                    vis_objecs = OrderedDict()
+                    vis_objecs['anopcn_eval_frame'] = test_target.detach()
+                    vis_objecs['anopcn_eval_frame_hat'] = g_output.detach()
+                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize, mean=self.trainer.mean, std=self.trainer.std)
+                    # self.add_images(test_target, g_output, tb_writer, global_steps)
                 test_counter += 1
                 total+=1
                 if test_counter >= test_iters:
@@ -90,20 +94,22 @@ class AnoPCNEvaluateHook(HookBase):
                     print(f'finish test video set {video_name}')
                     break
 
-        result_dict = {'dataset': self.trainer.config.DATASET.name, 'psnr': psnr_records, 'flow': [], 'names': [], 'diff_mask': [], 'score':score_records, 'num_vides':len(psnr_records)}
-        result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
-        with open(result_path, 'wb') as writer:
-            pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
+        # result_dict = {'dataset': self.trainer.config.DATASET.name, 'psnr': psnr_records, 'flow': [], 'names': [], 'diff_mask': [], 'score':score_records, 'num_vides':len(psnr_records)}
+        # result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
+        # with open(result_path, 'wb') as writer:
+        #     pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
         
-        # results = eval_api.evaluate('compute_auc_score', result_path, self.trainer.logger, self.trainer.config)
-        results = self.trainer.evaluate_function(result_path, self.trainer.logger, self.trainer.config)
+        # # results = eval_api.evaluate('compute_auc_score', result_path, self.trainer.logger, self.trainer.config)
+        # results = self.trainer.evaluate_function(result_path, self.trainer.logger, self.trainer.config)
+        self.trainer.pkl_path = save_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records, psnr=psnr_records)
+        results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
         self.trainer.logger.info(results)
         tb_writer.add_text('anopcn: AUC of ROC curve', f'auc is {results.auc}',global_steps)
         return results.auc
 
-    def add_images(self, frame, frame_hat, writer, global_steps):
-        writer.add_images('anopcn_frame', frame.detach(), global_steps)
-        writer.add_images('anopcn_frame_hat', frame_hat.detach(), global_steps)
+    # def add_images(self, frame, frame_hat, writer, global_steps):
+    #     writer.add_images('anopcn_frame', frame.detach(), global_steps)
+    #     writer.add_images('anopcn_frame_hat', frame_hat.detach(), global_steps)
         
 def get_anopcn_hooks(name):
     if name in HOOKS:
