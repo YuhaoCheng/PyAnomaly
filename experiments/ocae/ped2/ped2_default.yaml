@@ -17,12 +17,12 @@ DATASET:
   name: 'ped2'
   seed: 2020
   read_format: 'opencv'
-  train_path: './data/Ped2/training/frames'
-  train_clip_length: 2
-  train_clip_step: 1
-  test_path: './data/Ped2/testing/frames'
-  test_clip_length: 2
-  test_clip_step: 1
+  train_path: './data/ped2/training/frames'
+  train_clip_length: 7
+  train_clip_step: 3
+  test_path: './data/ped2/testing/frames'
+  test_clip_length: 7
+  test_clip_step: 3
   gt_path: './data/Ped2'
   number_of_class: 1
   score_normalize: true
@@ -45,8 +45,8 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: [0.5, 0.5, 0.5]
-      std: [0.5, 0.5, 0.5]
+      mean: []
+      std: []
     fliplr:
       use: true
       p: 0.5
@@ -66,7 +66,7 @@ ARGUMENT:
       low: 0.03
     CropToFixedSize:
       use: false
-      hight: 256
+      height: 256
       width: 256
       position: 'center'
   val:
@@ -79,10 +79,10 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: [0.5, 0.5, 0.5]
-      std: [0.5, 0.5, 0.5]
+      mean: []
+      std: []
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
       use: false
@@ -100,12 +100,12 @@ ARGUMENT:
       low: 0.03
     CropToFixedSize:
       use: false
-      hight: 256
+      height: 256
       width: 256
       position: 'center'
 MODEL:
-  name: 'oc'
-  type: 'oc'
+  name: 'ocae'
+  type: 'ocae'
   hooks:
     train: ['oc.ClusterHook', 'oc.OCEvaluateHook', 'base.VisScoreHook']
     val: ['oc.ClusterHook', 'oc.OCEvaluateHook']
@@ -130,9 +130,9 @@ TRAIN:
   eval_step: 2000
   save_step: 5000
   epochs: 1
-  loss: ['gan_loss','gradient_loss', 'intentsity_loss', 'opticalflow_loss']
-  loss_coefficients: [0.25,1,1,2]
-  mode: 'adversarial'
+  loss: ['A_loss', 'B_loss', 'C_loss']
+  loss_coefficients: [1,2,1]
+  mode: 'general'
   general:
     optimizer:
       include: ['A', 'B', 'C']

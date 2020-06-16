@@ -29,7 +29,7 @@ def register_hooks():
     HookCatalog.register('base.VisScoreHook', lambda name:get_base_hooks(name))
     HookCatalog.register('base.TSNEHook', lambda name:get_base_hooks(name))
     HookCatalog.register('amc.AMCEvaluateHook', lambda name:get_amc_hooks(name))
-    HookCatalog.register('anopcn.AnoPCNEvaluateHook', lambda name:get_amc_hooks(name))
+    HookCatalog.register('anopcn.AnoPCNEvaluateHook', lambda name:get_anopcn_hooks(name))
     HookCatalog.register('anopred.AnoPredEvaluateHook', lambda name:get_anopred_hooks(name))
     HookCatalog.register('oc.ClusterHook', lambda name:get_oc_hooks(name))
     HookCatalog.register('oc.OCEvaluateHook', lambda name:get_oc_hooks(name))

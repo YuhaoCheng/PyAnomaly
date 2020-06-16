@@ -17,8 +17,8 @@ import torchvision.transforms.functional as tf
 from torch.utils.data import DataLoader
 
 from lib.core.utils import AverageMeter, flow_batch_estimate, training_vis_images
-from lib.core.utils import psnr_error
-from lib.utils.flow_utils import flow2img
+from lib.datatools.evaluate.utils import psnr_error
+# from lib.utils.flow_utils import flow2img
 from lib.core.engine.default_engine import DefaultTrainer, DefaultInference
 
 
@@ -44,6 +44,9 @@ class Trainer(DefaultTrainer):
                     test_dataset_keys: the dataset keys of each video
                     test_dataset_dict: the dataset dict of whole test videos
         '''
+        self._hooks = []
+        self._eval_hooks = []
+        self._register_hooks(kwargs['hooks'])
         # print('in AnoPredTrainer')
         # logger & config
         self.logger = defaults[5]
@@ -99,6 +102,7 @@ class Trainer(DefaultTrainer):
         # self.total_steps = len(self.train_dataloader)
         self.result_path = ''
         self.log_step = self.config.TRAIN.log_step # how many the steps, we will show the information
+        self.vis_step = self.config.TRAIN.vis_step # how many the steps, we will vis 
         self.eval_step = self.config.TRAIN.eval_step 
         self.save_step = self.config.TRAIN.save_step # save the model whatever the acc of the model
         self.max_steps = self.config.TRAIN.max_steps
@@ -111,8 +115,9 @@ class Trainer(DefaultTrainer):
         self.loss_lamada = kwargs['loss_lamada']
 
         # the lr scheduler
-        self.lr_g = kwargs['lr_shechulder_g']
-        self.lr_d = kwargs['lr_shechulder_d']
+        scheduler_dict = kwargs['lr_scheduler_dict']
+        self.lr_g = scheduler_dict['optimizer_g_scheduler']
+        self.lr_d = scheduler_dict['optimizer_d_scheduler']
 
         if self.config.RESUME.flag:
             self.resume()
@@ -136,7 +141,7 @@ class Trainer(DefaultTrainer):
         
         # base on the D to get each frame
         target = data[:, :, -1, :, :].cuda() # t frame 
-        input_data = data[:, :, :-1, :, :] # 0 ~ t frame
+        input_data = data[:, :, :-1, :, :].cuda() # 0 ~ t frame
         input_last = input_data[:, :, -1, :, :].cuda() # t-1 frame
         
         # True Process =================Start===================
@@ -145,8 +150,8 @@ class Trainer(DefaultTrainer):
         
         predFlowEstim = torch.cat([input_last, output_frame_G],1).cuda()
         gtFlowEstim = torch.cat([input_last, target], 1).cuda()
-        gtFlow = flow_batch_estimate(self.F, gtFlowEstim)
-        predFlow = flow_batch_estimate(self.F, predFlowEstim)
+        gtFlow, _ = flow_batch_estimate(self.F, gtFlowEstim)
+        predFlow, _ = flow_batch_estimate(self.F, predFlowEstim)
         
         loss_g_adv = self.gan_loss(self.D(output_frame_G), True)
         loss_op = self.op_loss(predFlow, gtFlow)

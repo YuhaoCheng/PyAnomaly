@@ -169,9 +169,9 @@ TRAIN:
       weight_decay: 0.0001
       output_name: ['optimizer_g', 'optimizer_d']
     scheduler:
-      use: false
+      use: true
       name: 'stepLR'
-      step_size: 1600
+      step_size: 320
       steps: [400, 800]
       gamma: 0.1
       T_max: 1200

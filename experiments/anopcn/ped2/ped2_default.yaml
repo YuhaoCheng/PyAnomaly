@@ -66,7 +66,7 @@ ARGUMENT:
       low: 0.03
     CropToFixedSize:
       use: false
-      hight: 256
+      height: 256
       width: 256
       position: 'center'
   val:
@@ -100,7 +100,7 @@ ARGUMENT:
       low: 0.03
     CropToFixedSize:
       use: false
-      hight: 256
+      height: 256
       width: 256
       position: 'center'
 MODEL:

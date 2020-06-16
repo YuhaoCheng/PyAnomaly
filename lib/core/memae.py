@@ -102,6 +102,9 @@ class Trainer(DefaultTrainer):
         scheduler_dict = kwargs['lr_scheduler_dict']
         self.lr_memae = scheduler_dict['optimizer_memae_scheduler']
 
+        self.test_dataset_keys = kwargs['test_dataset_keys']
+        self.test_dataset_dict = kwargs['test_dataset_dict']
+
         if self.config.RESUME.flag:
             self.resume()
         

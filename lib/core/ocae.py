@@ -98,7 +98,8 @@ class Trainer(DefaultTrainer):
         # self.total_steps = len(self.train_dataloader)
         self.result_path = ''
         self.log_step = self.config.TRAIN.log_step # how many the steps, we will show the information
-        self.eval_step = self.config.TRAIN.eval_step 
+        self.eval_step = self.config.TRAIN.eval_step
+        self.vis_step = self.config.TRAIN.vis_step # how many the steps, we will vis
         self.save_step = self.config.TRAIN.save_step # save the model whatever the acc of the model
         self.max_steps = self.config.TRAIN.max_steps
         # self.testing_data_folder = self.config.DATASET.test_path
@@ -141,9 +142,9 @@ class Trainer(DefaultTrainer):
         
         # base on the D to get each frame
         # in this method, D = 3 and not change
-        future = data[:, -1, :, :, :].cuda() # t+1 frame 
-        current = data[:, 1, :, :, :].cuda() # t frame
-        past = data[:, 0, :, :, :].cuda() # t-1 frame
+        future = data[:, :, -1, :, :].cuda() # t+1 frame 
+        current = data[:, :, 1, :, :].cuda() # t frame
+        past = data[:, :, 0, :, :].cuda() # t-1 frame
 
         bboxs = get_batch_dets(self.Detector, current)
         # this method is based on the objects to train the model insted of frames
@@ -160,8 +161,8 @@ class Trainer(DefaultTrainer):
             _, _, input_objectGradient_A = frame_gradient(future2current)
             input_objectGradient_A = input_objectGradient_A.sum(1)
             _, _, input_objectGradient_C = frame_gradient(current2past)
-            input_objectGradient_C = input_objectGradient_A.sum(1)
-            
+            input_objectGradient_C = input_objectGradient_C.sum(1)
+            # import ipdb; ipdb.set_trace()
             # True Process =================Start===================
             _, output_recGradient_A = self.A(input_objectGradient_A)
             _, output_recObject_B = self.B(input_currentObject_B)
@@ -225,9 +226,9 @@ class Trainer(DefaultTrainer):
         for data in self.val_dataloader:
             # base on the D to get each frame
             # in this method, D = 3 and not change
-            future_mini = data[:, -1, :, :, :].cuda() # t+1 frame 
-            current_mini = data[:, 1, :, :, :].cuda() # t frame
-            past_mini = data[:, 0, :, :, :].cuda() # t-1 frame
+            future_mini = data[:, :, -1, :, :].cuda() # t+1 frame 
+            current_mini = data[:, :, 1, :, :].cuda() # t frame
+            past_mini = data[:, :, 0, :, :].cuda() # t-1 frame
 
             bboxs_mini = get_batch_dets(self.Detector, current_mini)
 
@@ -244,7 +245,7 @@ class Trainer(DefaultTrainer):
                 _, _, input_objectGradient_A = frame_gradient(future2current)
                 input_objectGradient_A = input_objectGradient_A.sum(1)
                 _, _, input_objectGradient_C = frame_gradient(current2past)
-                input_objectGradient_C = input_objectGradient_A.sum(1)
+                input_objectGradient_C = input_objectGradient_C.sum(1)
             
                 _, output_recGradient_A = self.A(input_objectGradient_A)
                 _, output_recObject_B = self.B(input_currentObject_B)

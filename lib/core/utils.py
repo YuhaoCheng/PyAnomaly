@@ -227,7 +227,7 @@ def frame_gradient(x):
     gradient = dx + dy
     return dx, dy, gradient
 
-def flow_batch_estimate(flow_model, tensor_batch, scale=64.0, output_format='xym', optical_size=None, normalize=True, mean=[], std=[]):
+def flow_batch_estimate(flow_model, tensor_batch, output_format='xym', optical_size=None, normalize=True, mean=[], std=[]):
     '''
     output_format:
         general: u,v
@@ -260,13 +260,13 @@ def flow_batch_estimate(flow_model, tensor_batch, scale=64.0, output_format='xym
     new_temp = torch.stack([tensorFirst, tensorSecond], dim=2)
     result = flow_model(new_temp)
     # optical_flow = torch.nn.functional.interpolate(input=result,size=(intHeight, intWidth), mode='bilinear', align_corners=False)
-    # optical_flow = torch.nn.functional.interpolate(input=result,size=(tensor_batch.size(2), tensor_batch.size(3)), mode='bilinear', align_corners=False)
+    optical_flow = torch.nn.functional.interpolate(input=result,size=(tensor_batch.size(2), tensor_batch.size(3)), mode='bilinear', align_corners=False)
 
     # optical_flow[:,0,:,:] *= float(intWidth) / float(intPreprocessedWidth)
     # optical_flow[:,1,:,:] *= float(intHeight) / float(intPreprocessedHeight)
 
     # temp = optical_flow.detach().cpu().permute(0,2,3,1).numpy()
-    temp = result.detach().cpu().permute(0,2,3,1).numpy()
+    temp = optical_flow.detach().cpu().permute(0,2,3,1).numpy()
     # import ipdb; ipdb.set_trace()
     temp_list = list()
     for i in range(temp.shape[0]):
@@ -278,8 +278,7 @@ def flow_batch_estimate(flow_model, tensor_batch, scale=64.0, output_format='xym
                 temp_image = tf.normalize(temp_image, mean=mean, std=std)
         temp_list.append(temp_image)
     optical_flow_image = torch.stack(temp_list, 0).cuda()
-    # return optical_flow_image, optical_flow
-    return optical_flow_image, result
+    return optical_flow_image, optical_flow
 
 
 def tsne_vis(feature, feature_labels, vis_path):
