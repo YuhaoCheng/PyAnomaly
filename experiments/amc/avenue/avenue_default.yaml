@@ -49,10 +49,10 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: []
-      std: []
+      mean: [0.5, 0.5, 0.5]
+      std: [0.5,0.5,0.5]
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
       use: false
@@ -83,10 +83,10 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: []
-      std: []
+      mean: [0.5,0.5,0.5]
+      std: [0.5,0.5,0.5]
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
       use: false
@@ -149,7 +149,7 @@ TRAIN:
     scheduler:
       use: true
       name: 'stepLR'
-      step_size: 1000
+      step_size: 958
       steps: [10000, 15000]
       gamma: 0.1
       T_max: 300
@@ -169,7 +169,7 @@ TRAIN:
     scheduler:
       use: true
       name: 'stepLR'
-      step_size: 9580
+      step_size: 1916
       steps: [10000, 15000]
       gamma: 0.1
       T_max: 300

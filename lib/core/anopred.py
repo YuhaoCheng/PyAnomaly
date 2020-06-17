@@ -99,9 +99,12 @@ class Trainer(DefaultTrainer):
         self.accuarcy = 0.0  # to store the accuracy varies from epoch to epoch
         self.config_name = kwargs['config_name']
         self.kwargs = kwargs
-        self.normalize = self.config.ARGUMENT.train.normal.use
-        self.mean = self.config.ARGUMENT.train.normal.mean
-        self.std = self.config.ARGUMENT.train.normal.std
+        self.train_normalize = self.config.ARGUMENT.train.normal.use
+        self.train_mean = self.config.ARGUMENT.train.normal.mean
+        self.train_std = self.config.ARGUMENT.train.normal.std
+        self.val_normalize = self.config.ARGUMENT.val.normal.use
+        self.val_mean = self.config.ARGUMENT.val.normal.mean
+        self.val_std = self.config.ARGUMENT.val.normal.std
         # self.total_steps = len(self.train_dataloader)
         self.result_path = ''
         self.log_step = self.config.TRAIN.log_step # how many the steps, we will show the information
@@ -214,7 +217,7 @@ class Trainer(DefaultTrainer):
             vis_objects['train_gtFlow'] = gtFlow.detach()
             vis_objects['train_predFlow'] = predFlow.detach()
             # import ipdb; ipdb.set_trace()
-            tensorboard_vis_images(vis_objects, writer, global_steps, self.normalize, self.mean, self.std)
+            tensorboard_vis_images(vis_objects, writer, global_steps, self.train_normalize, self.train_mean, self.train_std)
         global_steps += 1 
         # reset start
         start = time.time()
