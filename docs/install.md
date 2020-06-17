@@ -9,9 +9,10 @@ The requirement packages are as follows, and if users have some problems in inst
 
 - PyTorch >= 1.3
 - [Detectron2](https://github.com/facebookresearch/detectron2)
-  - we use this package to get the object detection
+  - we use this package to get the object detection. 
 - [Flownet2](https://github.com/NVIDIA/flownet2-pytorch)
   - Installing this means that users should install the dependency packages of Flownet2 and build the layers.
+  - Users should go the `scripts` and execute `sh install.sh` 
 - `cupy`
   - `cupy` must match the CUDA version, if having the problem, please try this: `pip install cupy-cudaxxx`. `xxx` is the version of the CUDA, e.g. cuda101 is CUDA 10.1
 - `tensorboard`
