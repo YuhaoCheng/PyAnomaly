@@ -49,8 +49,6 @@ sh inference.sh -m amc -d avenue -p PATH/TO/ANOMALY -g 0 -c default.yaml /
 | [AnoPCN]()  | `anopcn`  |
 | [MemAE]()   | `memae`   |
 
-
-
 ### Dataset
 
 | Dataset Name            | `-d`       |
@@ -59,6 +57,7 @@ sh inference.sh -m amc -d avenue -p PATH/TO/ANOMALY -g 0 -c default.yaml /
 | [Avenue]()              | `avenue`   |
 | [ShanghaiTech Campus]() | `shanghai` |
 
+######  Note: More support will come in the future, if you have the interests, please refer to the [PLAN](./plan.md)
 
 
 ## Build Components
