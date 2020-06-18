@@ -8,6 +8,8 @@
 The requirement packages are as follows, and if users have some problems in installation, please submit an issue, and we will solve it ASAP.
 
 - PyTorch >= 1.3
+- cuda == 10.0
+  - This one can be installed through anaconda, `cudatoolkit`
 - [Detectron2](https://github.com/facebookresearch/detectron2)
   - we use this package to get the object detection. 
 - [Flownet2](https://github.com/NVIDIA/flownet2-pytorch)
