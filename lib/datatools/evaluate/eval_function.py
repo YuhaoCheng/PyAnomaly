@@ -35,14 +35,16 @@ def get_scores_labels(loss_file, cfg):
     labels = np.array([], dtype=np.int8)
     # video normalization
     for i in range(num_videos):
-        distance = psnr_records[i]
+        psnr_single_video = psnr_records[i]
+        psnr_min = psnr_single_video.min()
+        psnr_max = psnr_single_video.max()
 
         if cfg.DATASET.score_normalize:
-            distance -= distance.min()  # distances = (distance - min) / (max - min)
-            distance /= distance.max()
+            psnr_single_video -= psnr_min  # distances = (distance - min) / (max - min)
+            psnr_single_video /= psnr_max
             # distance = 1 - distance
 
-        scores = np.concatenate((scores[:], distance[DECIDABLE_IDX:]), axis=0)
+        scores = np.concatenate((scores[:], psnr_single_video[DECIDABLE_IDX:]), axis=0)
         labels = np.concatenate((labels[:], gt[i][DECIDABLE_IDX:]), axis=0)
     return dataset, scores, labels
 
@@ -257,9 +259,9 @@ def compute_auc_score(loss_file, logger, cfg, score_type='normal'):
         
         # video normalization
         for i in range(num_videos):
-            distance = score_records[i]
-            
-            scores = np.concatenate((scores, distance[DECIDABLE_IDX:]), axis=0)
+            score_one_video = score_records[i]
+            score_one_video = np.clip(score_one_video, 0, None)
+            scores = np.concatenate((scores, score_one_video[DECIDABLE_IDX:]), axis=0)
             labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:]), axis=0)
         '''
         Normalization is in the process of calculate the scores, instead of beforing getting the AUC
@@ -295,6 +297,9 @@ eval_functions = {
 }
 
 
+'''
+Functions for testing the evaluation functions
+'''
 def evaluate(eval_type, save_file, logger, cfg):
     assert eval_type in eval_functions, f'there is no type of evaluation {eval_type}, please check {eval_functions.keys()}'
     

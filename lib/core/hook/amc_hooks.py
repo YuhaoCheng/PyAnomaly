@@ -119,7 +119,7 @@ class AMCEvaluateHook(HookBase):
                     vis_objects['amc_eval_frame_hat'] = g_output_frame.detach()
                     vis_objects['amc_eval_flow'] = flow_gt.detach()
                     vis_objects['amc_eval_flow_hat'] = g_output_flow.detach()
-                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize, mean=self.trainer.mean, std=self.trainer.std)
+                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
                 
                 if test_counter >= test_iters:
                     psnrs[:frame_num-1]=psnrs[frame_num-1]

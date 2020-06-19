@@ -101,11 +101,12 @@ def simple_diff(frame_true, frame_hat, flow_true, flow_hat, aggregation=False):
 
     return loss_appe, loss_flow
 
-def find_max_patch(diff_map_appe, diff_map_flow, kernel_size=16, stride=1, aggregation=True):
+def find_max_patch(diff_map_appe, diff_map_flow, kernel_size=16, stride=4, aggregation=True):
     '''
     kernel size = window size
     '''
-    max_pool = torch.nn.MaxPool2d(kernel_size=kernel_size, stride=stride)
+    # max_pool = torch.nn.MaxPool2d(kernel_size=kernel_size, stride=stride)
+    max_pool = torch.nn.AvgPool2d(kernel_size=kernel_size, stride=stride)
     max_patch_appe = max_pool(diff_map_appe)
     max_patch_flow = max_pool(diff_map_flow)
     # import ipdb; ipdb.set_trace()
@@ -123,8 +124,10 @@ def find_max_patch(diff_map_appe, diff_map_flow, kernel_size=16, stride=1, aggre
     app_h, app_w =  torch.where(torch.eq(max_patch_appe, max_appe_value))
     flow_h, flow_w =  torch.where(torch.eq(max_patch_flow, max_flow_value))
     
-    max_appe_final = torch.div(max_appe_value, kernel_size**2) 
-    max_flow_final = torch.div(max_flow_value, kernel_size**2) 
+    max_appe_final = max_appe_value
+    max_flow_final = max_flow_value
+    # max_appe_final = torch.div(max_appe_value, kernel_size**2)
+    # max_flow_final = torch.div(max_flow_value, kernel_size**2) 
     # import ipdb; ipdb.set_trace()
     # return max_patch_appe, max_patch_flow
     return max_appe_final, max_flow_final, (app_h, app_w), (flow_h, flow_w)
@@ -149,7 +152,7 @@ def amc_normal_score(wf, sf, wi, si, lambada_s=0.2):
 
     return final_score
 
-def amc_score(frame, frame_hat, flow, flow_hat, wf, wi, kernel_size=16, stride=1, lambada_s=0.2):
+def amc_score(frame, frame_hat, flow, flow_hat, wf, wi, kernel_size=16, stride=4, lambada_s=0.2):
     '''
     wf, wi is different from videos
     '''

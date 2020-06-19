@@ -20,11 +20,11 @@ DATASET:
   channel_num: 3
   channel_name: 'rgb'
   train_path: './data/Avenue/training/frames'
-  train_clip_length: 2
+  train_clip_length: 16
   train_frame_step: 1
   train_clip_step: 1
   test_path: './data/Avenue/testing/frames'
-  test_clip_length: 2
+  test_clip_length: 16
   test_frame_step: 1
   test_clip_step: 1
   gt_path: './data/Avenue'
@@ -43,8 +43,8 @@ ARGUMENT:
     use: true
     resize:
       use: true
-      height: 128
-      width: 192
+      height: 256
+      width: 256
     grayscale:
       use: false
     normal:
@@ -52,7 +52,7 @@ ARGUMENT:
       mean: [0.5, 0.5, 0.5]
       std: [0.5, 0.5, 0.5]
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
       use: false
@@ -77,8 +77,8 @@ ARGUMENT:
     use: true
     resize:
       use: true
-      height: 128
-      width: 192
+      height: 256
+      width: 256
     grayscale:
       use: false
     normal:
@@ -86,7 +86,7 @@ ARGUMENT:
       mean: [0.5, 0.5, 0.5]
       std: [0.5, 0.5, 0.5]
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
       use: false
@@ -134,18 +134,18 @@ TRAIN:
   eval_step: 2000
   save_step: 5000
   epochs: 1
-  loss: ['gan_loss','gradient_loss', 'intentsity_loss', 'opticalflow_loss']
-  loss_coefficients: [0.25,1,1,2]
-  mode: 'adversarial'
+  loss: ['rec_loss', 'mem_loss']
+  loss_coefficients: [1,0.0002]
+  mode: 'general'
   general:
     optimizer:
-      include: ['A', 'B', 'C']
+      include: ['MemAE']
       name: 'adam'
       lr: 1e-3
       momentum: 0.9
       weight_decay: 0.0001
       nesterov: false
-      output_name: ['optimizer_abc']
+      output_name: ['optimizer_memae']
     scheduler:
       use: true
       name: 'stepLR'

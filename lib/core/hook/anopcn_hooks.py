@@ -66,8 +66,8 @@ class AnoPCNEvaluateHook(HookBase):
             # for test_input, _ in data_loader:
             vis_range = range(int(len_dataset*0.5), int(len_dataset*0.5 + 5))
             for frame_sn, test_input in enumerate(data_loader):
-                test_target = test_input[:, -1].cuda()
-                test_input = test_input[:, :-1].transpose_(1,2).cuda()
+                test_target = test_input[:, :, -1, :, :].cuda()
+                test_input = test_input[:, :, :-1, :, :].cuda()
 
                 g_output = self.trainer.G(test_input, test_target)
                 test_psnr = psnr_error(g_output, test_target)
