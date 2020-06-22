@@ -15,7 +15,7 @@ The toolbox uses the shell file to start the training or inference process, and 
 -g GPUS(e.g. 0,1)
 -c CONFIG_NAME
 -v VERBOSE
--im(only in inference.sh) INFERENCE MODEL
+-f(only in inference.sh) INFERENCE MODEL
 ```
 
 The name list of methods and datasets are in the [MODEL ZOO](./model_zoo.md)
@@ -26,15 +26,15 @@ Train: use the `amc` in `avenue`
 
 ```shell
 cd $PATH/TO/ROOT
-sh train.sh -m amc -d avenue -p PATH/TO/ANOMALY -g 0 -c default.yaml -v train_test
+sh ./script/train.sh -m amc -d avenue -p PATH/TO/ANOMALY -g 0 -c default.yaml -v train_test
 ```
 
 Inference: use the `amc` in `avenue`
 
 ```shell
 cd $PATH/TO/ROOT
-sh inference.sh -m amc -d avenue -p PATH/TO/ANOMALY -g 0 -c default.yaml /
--im MODEL_PATH -v inference_test
+sh ./script/inference.sh -m amc -d avenue -p PATH/TO/ANOMALY -g 0 -c default.yaml /
+-f MODEL_FILE -v inference_test
 ```
 
 ## Support
