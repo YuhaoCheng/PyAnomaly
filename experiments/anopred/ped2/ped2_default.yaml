@@ -1,10 +1,10 @@
 SYSTEM:
   multigpus: false
-  num_gpus: 2
-  gpus: [0,1]
+  num_gpus: 1
+  gpus: [0]
   cudnn:
     benchmark: true
-    deterministic: false
+    deterministic: true
     enable: true
   distributed:
     use: false
@@ -26,11 +26,11 @@ DATASET:
   gt_path: './data/ped2'
   number_of_class: 1
   score_normalize: true
-  score_type: 'abnormal'
-  decidable_idx: 1
+  score_type: 'normal'
+  decidable_idx: 4
   smooth:
     guassian: true
-    guassian_sigma: 10
+    guassian_sigma: 3
   mini_dataset:
     samples: 100
   evaluate_function_type: 'compute_auc_score'
@@ -48,7 +48,7 @@ ARGUMENT:
       mean: [0.5, 0.5, 0.5]
       std: [0.5, 0.5, 0.5]
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
       use: false
@@ -82,7 +82,7 @@ ARGUMENT:
       mean: [0.5, 0.5, 0.5]
       std: [0.5, 0.5, 0.5]
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
       use: false
@@ -121,45 +121,25 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
-  batch_size: 32
+  batch_size: 16
   start_step: 0
-  max_steps: 1200
-  log_step: 5
-  vis_step: 80
-  mini_eval_step: 50
-  eval_step: 80
-  save_step: 80
+  max_steps: 6400
+  log_step: 10
+  vis_step: 160
+  mini_eval_step: 100
+  eval_step: 160
+  save_step: 160
   epochs: 1
   loss: ['gan_loss','gradient_loss', 'intentsity_loss', 'opticalflow_loss']
   loss_coefficients: [0.05,1,1,2]
   mode: 'adversarial'
-  general:
-    optimizer:
-      include: ['A', 'B', 'C']
-      name: 'adam'
-      lr: 1e-3
-      momentum: 0.9
-      weight_decay: 0.0001
-      nesterov: false
-      output_name: ['optimizer_abc']
-    scheduler:
-      use: false
-      name: 'stepLR'
-      step_size: 1000
-      steps: [10000, 15000]
-      gamma: 0.1
-      T_max: 300
-      eta_min: 0
-      warmup_factor: 0.001
-      warmup_iters: 1000
-      warmup_method: 'linear'
   adversarial:
     optimizer:
       include: ['Generator', 'Discriminator']
       name: 'adam'
-      g_lr: 0.0002
-      d_lr: 0.00002
-      weight_decay: 0.0001
+      g_lr: 0.0001
+      d_lr: 0.00001
+      weight_decay: 0.1
       output_name: ['optimizer_g', 'optimizer_d']
     scheduler:
       use: true
@@ -167,10 +147,10 @@ TRAIN:
       step_size: 1000
       steps: [10000, 15000]
       gamma: 0.1
-      T_max: 300
+      T_max: 1600
       eta_min: 0
-      warmup_factor: 0.001
-      warmup_iters: 1000
+      warmup_factor: 0.01
+      warmup_iters: 320
       warmup_method: 'linear' # 'linear' | 'constant'
   split: ''
   model_output: './output/models'

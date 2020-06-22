@@ -105,13 +105,19 @@ class AMCDiscriminiator(nn.Module):
         return x_sigmod
 
 def get_model_amc(cfg):
-    from collections import namedtuple
-    temp = namedtuple('Args', ['fp16', 'rgb_max'])
-    args = temp(False, 1.0)
-    generator_model = AMCGenerator(c_in=3, opticalflow_channel_num=2, image_channel_num=cfg.DATASET.channel_num, dropout_prob=0.7)
-    discriminator_model = AMCDiscriminiator(c_in=5, filters=64)
+    if cfg.MODEL.flownet == 'flownet2':
+        from collections import namedtuple
+        from lib.networks.auxiliary.flownet2.models import FlowNet2
+        temp = namedtuple('Args', ['fp16', 'rgb_max'])
+        args = temp(False, 1.0)
+    elif cfg.MODEL.flownet == 'liteflownet':
+        from lib.networks.auxiliary.liteflownet.models import LiteFlowNet
+    
     flow_model = FlowNet2(args)
     flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path)['state_dict'])
+    
+    generator_model = AMCGenerator(c_in=3, opticalflow_channel_num=2, image_channel_num=cfg.DATASET.channel_num, dropout_prob=0.7)
+    discriminator_model = AMCDiscriminiator(c_in=5, filters=64)
     model_dict = OrderedDict()
     model_dict['Generator'] = generator_model
     model_dict['Discriminator'] = discriminator_model

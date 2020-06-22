@@ -138,6 +138,7 @@ config.MODEL.type = ''   # the type of the network, such as resnet50, resnet101 
 config.MODEL.hooks = CN()  # determine the hooks use in the training
 config.MODEL.hooks.train = []  # determine the hooks use in the training
 config.MODEL.hooks.val = []  # determine the hooks use in the training
+config.MODEL.flownet = 'flownet2' # the flownet type 'flownet2' | 'liteflownet'
 config.MODEL.flow_model_path = ''
 config.MODEL.discriminator_channels = []
 config.MODEL.pretrain_model = ''

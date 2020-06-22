@@ -65,8 +65,7 @@ class Trainer(DefaultTrainer):
             self.F = model['FlowNet'].cuda() # lite flownet
         
         self.F.eval()
-        self.set_requires_grad(self.F, False)
-
+        
         if kwargs['pretrain']:
             self.load_pretrain()
 
@@ -140,6 +139,7 @@ class Trainer(DefaultTrainer):
         start = time.time()
         self.G.train()
         self.D.train()
+        self.set_requires_grad(self.F, False)
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
 
@@ -297,15 +297,16 @@ class Inference(DefaultInference):
         self.verbose = kwargs['verbose']
         self.kwargs = kwargs
         self.config_name = kwargs['config_name']
-        self.normalize = self.config.ARGUMENT.val.normal.use
-        self.mean = self.config.ARGUMENT.val.normal.mean
-        self.std = self.config.ARGUMENT.val.normal.std
+        self.val_normalize = self.config.ARGUMENT.val.normal.use
+        self.val_mean = self.config.ARGUMENT.val.normal.mean
+        self.val_std = self.config.ARGUMENT.val.normal.std
         # self.mode = kwargs['mode']
 
         self.test_dataset_keys = kwargs['test_dataset_keys']
         self.test_dataset_dict = kwargs['test_dataset_dict']
 
         self.metric = 0.0
+        self.evaluate_function = kwargs['evaluate_function']
     
     def inference(self):
         for h in self._hooks:
