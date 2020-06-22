@@ -33,7 +33,7 @@ class ClusterHook(HookBase):
                 dataset = self.trainer.cluster_dataset_dict[video_name]
                 data_loader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, num_workers=1)
                 # import ipdb; ipdb.set_trace()
-                for data in data_loader:
+                for data, _ in data_loader:
                     future = data[:, :, 2, :, :].cuda() # t+1 frame 
                     current = data[:, :, 1, :, :].cuda() # t frame
                     past = data[:, :, 0, :, :].cuda() # t frame
@@ -155,7 +155,7 @@ class OCEvaluateHook(HookBase):
             scores = np.empty(shape=(len_dataset,),dtype=np.float32)
             # for test_input, _ in data_loader:
             random_frame_sn = torch.randint(0, len_dataset,(1,))
-            for frame_sn, data in enumerate(data_loader):
+            for frame_sn, (data, _) in enumerate(data_loader):
                 feature_record_object = []
                 future = data[:, :, 2, :, :].cuda()
                 current = data[:, :, 1, :, :].cuda()

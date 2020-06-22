@@ -53,7 +53,7 @@ class VisScoreHook(HookBase):
                 assert len(psnrs[video_id]) == len(scores[video_id]) == len(gt[video_id]), f'video_id:{video_id},the number of gt {len(gt)}, psnrs {len(psnrs)}, scores {len(scores)}'
                 fig = plt.figure()
                 fig.tight_layout()
-                fig.subplots_adjust(wspace=0.4)
+                fig.subplots_adjust(wspace=0.6)
                 ax1 = fig.add_subplot(2,3,1)
                 ax1.plot([i for i in range(len(psnrs[video_id]))], psnrs[video_id])
                 ax1.set_ylabel('psnr')
@@ -70,7 +70,7 @@ class VisScoreHook(HookBase):
                 ax4.set_xlabel('frames')
                 ax5 = fig.add_subplot(2,3,5)
                 ax5.plot([i for i in range(len(smooth_psnrs[video_id]))], smooth_psnrs[video_id])
-                ax5.set_ylabel(f'Guassian Smooth psnr{self.trainer.config.DATASET.smooth.guassian_sigma}')
+                ax5.set_ylabel(f'Guassian Smooth PSNR{self.trainer.config.DATASET.smooth.guassian_sigma}')
                 writer.add_figure(f'verbose_{self.trainer.verbose}_{self.trainer.config_name}_{self.trainer.kwargs["time_stamp"]}_vis{video_id}', fig, global_steps)
             
         

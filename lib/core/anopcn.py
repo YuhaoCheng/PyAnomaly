@@ -64,7 +64,7 @@ class Trainer(DefaultTrainer):
             self.F = model['FlowNet'].cuda()
         
         self.F.eval()
-
+        self.set_requires_grad(self.F, False)
         if kwargs['pretrain']:
             self.load_pretrain()
 
@@ -142,7 +142,7 @@ class Trainer(DefaultTrainer):
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
         
         # get the data
-        data = next(self._train_loader_iter)  # the core for dataloader
+        data, _ = next(self._train_loader_iter)  # the core for dataloader
         self.data_time.update(time.time() - start)
         
         # base on the D to get each frame
@@ -156,8 +156,8 @@ class Trainer(DefaultTrainer):
         
         predFlowEstim = torch.cat([input_last, output_frame_G],1).cuda()
         gtFlowEstim = torch.cat([input_last, target], 1).cuda()
-        gtFlow, _ = flow_batch_estimate(self.F, gtFlowEstim)
-        predFlow, _ = flow_batch_estimate(self.F, predFlowEstim)
+        gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim)
+        predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim)
         
         loss_g_adv = self.gan_loss(self.D(output_frame_G), True)
         loss_op = self.op_loss(predFlow, gtFlow)
@@ -205,8 +205,8 @@ class Trainer(DefaultTrainer):
         writer.add_scalar('Train_loss_D', self.loss_meter_D.val, global_steps)
         if (current_step % self.vis_step == 0):
             vis_objects = OrderedDict()
-            vis_objects['train_target_flow'] =  gtFlow.detach()
-            vis_objects['train_pred_flow'] = predFlow.detach()
+            vis_objects['train_target_flow'] =  gtFlow_vis.detach()
+            vis_objects['train_pred_flow'] = predFlow_vis.detach()
             vis_objects['train_target_frame'] =  target.detach()
             vis_objects['train_output_frame_G'] = output_frame_G.detach()
             tensorboard_vis_images(vis_objects, writer, global_steps, self.train_normalize, self.train_mean, self.train_std)
@@ -225,7 +225,7 @@ class Trainer(DefaultTrainer):
         temp_meter = AverageMeter()
         self.G.eval()
         self.D.eval()
-        for data in self.val_dataloader:
+        for data, _ in self.val_dataloader:
             # get the data
             target_mini = data[:, :, -1, :, :].cuda()
             input_data_mini = data[:, :, :-1, :, :].cuda()
@@ -278,6 +278,8 @@ class Inference(DefaultInference):
             self.F = model['FlowNet'].cuda()
         
         # self.load()
+        self.F.eval()
+        self.set_requires_grad(self.F, False)
 
         self.verbose = kwargs['verbose']
         self.kwargs = kwargs

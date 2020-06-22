@@ -34,7 +34,7 @@ DATASET:
   decidable_idx: 1
   smooth:
     guassian: true
-    guassian_sigma: 10
+    guassian_sigma: 3
   mini_dataset:
     samples: 100
   evaluate_function_type: 'compute_auc_score'
@@ -143,7 +143,7 @@ TRAIN:
       name: 'adam'
       lr: 1e-3
       momentum: 0.9
-      weight_decay: 0.0001
+      weight_decay: 0.001
       nesterov: false
       output_name: ['optimizer_abc']
     scheduler:

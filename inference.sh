@@ -6,7 +6,8 @@ project_path=""
 GPU="0"
 config=""
 verobose=""
-while getopts "m:d:p:g:c:v:im" opt
+
+while getopts "m:d:p:g:c:v:f:" opt
 do
     case $opt in 
     m) 
@@ -33,9 +34,10 @@ do
     verobose=$OPTARG
     echo "verbose:"$verobose
     ;;
-    im)
+    f)
     inference_model=$OPTARG
     echo "inference_model:"$inference_model
+    ;;
     ?)
     exit 1
     ;;
@@ -44,4 +46,5 @@ done
 
 SCRIPT_NAME="inference_script.sh"
 echo "Using the training script: $SCRIPT_NAME"
+echo $SCRIPT_NAME $GPU $MODEL $DATASET $project_path $inference_model $config $verobose 
 sh $SCRIPT_NAME $GPU $MODEL $DATASET $project_path $inference_model $config $verobose 

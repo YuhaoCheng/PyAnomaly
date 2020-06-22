@@ -204,7 +204,24 @@ def frame_gradient(x):
     gradient = dx + dy
     return dx, dy, gradient
 
-def flow_batch_estimate(flow_model, tensor_batch, output_format='xym', optical_size=None, normalize=True, mean=[], std=[]):
+
+def vis_optical_flow(batch_optical, output_format, output_size, normalize, mean=[], std=[]):
+    temp = batch_optical.detach().cpu().permute(0,2,3,1).numpy()
+    temp_list = list()
+    for i in range(temp.shape[0]):
+        np_image = flow2img(temp[i], output_format)
+        temp_image = torch.from_numpy(np_image.transpose((2, 0, 1)))
+        if normalize:
+            temp_image = temp_image / 255.0
+            if (len(mean)!=0) and (len(std) != 0):
+                temp_image = tf.normalize(temp_image, mean=mean, std=std)
+        temp_list.append(temp_image)
+    optical_flow_image = torch.stack(temp_list, 0).cuda()
+    optical_flow_image = torch.nn.functional.interpolate(input=optical_flow_image,size=output_size, mode='bilinear', align_corners=False)
+    return optical_flow_image
+
+
+def flow_batch_estimate(flow_model, tensor_batch, output_format='xym', optical_size=None, output_size=None, normalize=True, mean=[], std=[]):
     '''
     output_format:
         general: u,v
@@ -220,42 +237,29 @@ def flow_batch_estimate(flow_model, tensor_batch, output_format='xym', optical_s
     else:
         intHeight = tensor_batch.size(2)
         intWidth = tensor_batch.size(3)
+    
+    if output_size is not None:
+        intHeight_o = optical_size[0]
+        intWidth_o = optical_size[1]
+    else:
+        intHeight_o = tensor_batch.size(2)
+        intWidth_o = tensor_batch.size(3)
 
     tensorFirst = tensor_batch[:, :3, :, :]
     tensorSecond = tensor_batch[:, 3:, :, :]
     # import ipdb; ipdb.set_trace()
-    # intPreprocessedWidth = int(math.floor(math.ceil(intWidth / scale)*scale))
-    # intPreprocessedHeight = int(math.floor(math.ceil(intHeight / scale)*scale))
 
-    # tensorPreprocessedFirst = torch.nn.functional.interpolate(input=tensorFirst, size=(intPreprocessedHeight, intPreprocessedWidth), mode='bilinear', align_corners=False)
-    # tensorPreprocessedSecond = torch.nn.functional.interpolate(input=tensorSecond, size=(intPreprocessedHeight, intPreprocessedWidth), mode='bilinear', align_corners=False)
+    tensorPreprocessedFirst = torch.nn.functional.interpolate(input=tensorFirst, size=(intHeight, intWidth), mode='bilinear', align_corners=False)
+    tensorPreprocessedSecond = torch.nn.functional.interpolate(input=tensorSecond, size=(intHeight, intWidth), mode='bilinear', align_corners=False)
 
     # # import ipdb; ipdb.set_trace()
-    # new_temp = torch.stack([tensorPreprocessedFirst, tensorPreprocessedSecond], dim=2)
-    # # result = self.F(tensorPreprocessedFirst, tensorPreprocessedSecond)
-    # result = flow_model(new_temp)
-    new_temp = torch.stack([tensorFirst, tensorSecond], dim=2)
-    result = flow_model(new_temp)
-    # optical_flow = torch.nn.functional.interpolate(input=result,size=(intHeight, intWidth), mode='bilinear', align_corners=False)
-    optical_flow = torch.nn.functional.interpolate(input=result,size=(tensor_batch.size(2), tensor_batch.size(3)), mode='bilinear', align_corners=False)
-
-    # optical_flow[:,0,:,:] *= float(intWidth) / float(intPreprocessedWidth)
-    # optical_flow[:,1,:,:] *= float(intHeight) / float(intPreprocessedHeight)
-
-    # temp = optical_flow.detach().cpu().permute(0,2,3,1).numpy()
-    temp = optical_flow.detach().cpu().permute(0,2,3,1).numpy()
-    # import ipdb; ipdb.set_trace()
-    temp_list = list()
-    for i in range(temp.shape[0]):
-        np_image = flow2img(temp[i], output_format)
-        temp_image = torch.from_numpy(np_image.transpose((2, 0, 1)))
-        if normalize:
-            temp_image = temp_image / 255.0
-            if (len(mean)!=0) and (len(std) != 0):
-                temp_image = tf.normalize(temp_image, mean=mean, std=std)
-        temp_list.append(temp_image)
-    optical_flow_image = torch.stack(temp_list, 0).cuda()
-    return optical_flow_image, optical_flow
+    input_flowmodel = torch.stack([tensorPreprocessedFirst, tensorPreprocessedSecond], dim=2)
+    output_flowmodel = flow_model(input_flowmodel)
+    
+    optical_flow_uv = torch.nn.functional.interpolate(input=output_flowmodel,size=(intHeight_o, intWidth_o), mode='bilinear', align_corners=False)
+    optical_flow_3channel = vis_optical_flow(output_flowmodel, output_format=output_format, output_size=(intHeight_o, intWidth_o), normalize=normalize, mean=mean, std=std)
+    
+    return optical_flow_3channel, optical_flow_uv
 
 
 def tsne_vis(feature, feature_labels, vis_path):

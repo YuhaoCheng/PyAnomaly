@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from .abstract.abstract_hook import HookBase
 
 from lib.datatools.evaluate.utils import psnr_error
-from lib.core.utils import flow_batch_estimate, tensorboard_vis_images, save_results
+from lib.core.utils import flow_batch_estimate, tensorboard_vis_images, save_results, vis_optical_flow
 from lib.datatools.evaluate.utils import simple_diff, find_max_patch, amc_score, calc_w
 
 HOOKS = ['AMCEvaluateHook']
@@ -61,12 +61,12 @@ class AMCEvaluateHook(HookBase):
             data_loader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, num_workers=1)
             scores = [0.0 for i in range(len_dataset)]
 
-            for data in data_loader:
+            for data, _ in data_loader:
                 input_data_test = data[:, :, 0, :, :].cuda()
                 target_test = data[:, :, 1, :, :].cuda()
                 output_flow_G, output_frame_G = self.trainer.G(input_data_test)
                 gtFlowEstim = torch.cat([input_data_test, target_test], 1)
-                gtFlow, _ = flow_batch_estimate(self.trainer.F, gtFlowEstim, output_format=self.trainer.config.DATASET.optical_format, optical_size=self.trainer.config.DATASET.optical_size, normalize=self.trainer.config.ARGUMENT.val.normal.use, mean=self.trainer.config.ARGUMENT.val.normal.mean, std=self.trainer.config.ARGUMENT.val.normal.mean)
+                gtFlow_vis, gtFlow = flow_batch_estimate(self.trainer.F, gtFlowEstim, output_format=self.trainer.config.DATASET.optical_format, optical_size=self.trainer.config.DATASET.optical_size, normalize=self.trainer.config.ARGUMENT.val.normal.use, mean=self.trainer.config.ARGUMENT.val.normal.mean, std=self.trainer.config.ARGUMENT.val.normal.mean)
                 diff_appe, diff_flow = simple_diff(target_test, output_frame_G, gtFlow, output_flow_G)
                 patch_score_appe, patch_score_flow, _, _ = find_max_patch(diff_appe, diff_flow)
                 scores[test_counter+frame_num-1] = [patch_score_appe, patch_score_flow]
@@ -98,13 +98,13 @@ class AMCEvaluateHook(HookBase):
             vis_range = range(int(len_dataset*0.5), int(len_dataset*0.5 + 5))
             psnrs = np.empty(shape=(len_dataset,),dtype=np.float32)
             scores = np.empty(shape=(len_dataset,),dtype=np.float32)
-            for frame_sn, data in enumerate(data_loader):
+            for frame_sn, (data, _) in enumerate(data_loader):
                 test_input = data[:, :, 0, :, :].cuda()
                 test_target = data[:, :, 1, :, :].cuda()
 
                 g_output_flow, g_output_frame = self.trainer.G(test_input)
                 gt_flow_esti_tensor = torch.cat([test_input, test_target], 1)
-                flow_gt,_ = flow_batch_estimate(self.trainer.F, gt_flow_esti_tensor, output_format=self.trainer.config.DATASET.optical_format, optical_size=self.trainer.config.DATASET.optical_size, normalize=self.trainer.config.ARGUMENT.val.normal.use, mean=self.trainer.config.ARGUMENT.val.normal.mean, std=self.trainer.config.ARGUMENT.val.normal.mean)
+                flow_gt_vis,flow_gt = flow_batch_estimate(self.trainer.F, gt_flow_esti_tensor, output_format=self.trainer.config.DATASET.optical_format, optical_size=self.trainer.config.DATASET.optical_size, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
                 test_psnr = psnr_error(g_output_frame, test_target)
                 score, _, _ = amc_score(test_target, g_output_frame, flow_gt, g_output_flow, wf, wi)
                 test_psnr = test_psnr.tolist()
@@ -117,8 +117,8 @@ class AMCEvaluateHook(HookBase):
                     vis_objects = OrderedDict()
                     vis_objects['amc_eval_frame'] = test_target.detach()
                     vis_objects['amc_eval_frame_hat'] = g_output_frame.detach()
-                    vis_objects['amc_eval_flow'] = flow_gt.detach()
-                    vis_objects['amc_eval_flow_hat'] = g_output_flow.detach()
+                    vis_objects['amc_eval_flow'] = flow_gt_vis.detach()
+                    vis_objects['amc_eval_flow_hat'] = vis_optical_flow(g_output_flow.detach(), output_format=self.trainer.config.DATASET.optical_format, output_size=(g_output_flow.shape[-2], g_output_flow.shape[-1]), normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
                     tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
                 
                 if test_counter >= test_iters:
@@ -127,6 +127,7 @@ class AMCEvaluateHook(HookBase):
                     scores[:frame_num-1]=(scores[frame_num-1],) # fix the bug: TypeError: can only assign an iterable
                     smax = max(scores)
                     normal_scores = np.array([np.divide(s, smax) for s in scores])
+                    normal_scores = np.clip(normal_scores, 0, None)
                     psnr_records.append(psnrs)
                     score_records.append(normal_scores)
                     print(f'finish test video set {video_name}')

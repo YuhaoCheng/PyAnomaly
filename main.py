@@ -147,7 +147,6 @@ def inference(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name
 
 if __name__ == '__main__':
     args = parse_args()
-    
     # Get the root path of the project
     root_path = Path(args.project_path)
     

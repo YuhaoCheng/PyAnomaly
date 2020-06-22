@@ -5,7 +5,7 @@ project_path=""
 GPU="0"
 config=""
 verobose=""
-while getopts "m:d:p:g:c:v" opt
+while getopts "m:d:p:g:c:v:" opt
 do
     case $opt in 
     m) 

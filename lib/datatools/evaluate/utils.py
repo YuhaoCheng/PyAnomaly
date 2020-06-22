@@ -73,9 +73,11 @@ def psnr_error(gen_frames, gt_frames, max_val_hat=1.0):
     batch_errors = 0.0
     for i in range(0, batch_num):
         num_pixels = gen_frames[i].numel()
-        max_val_hat = gen_frames[i].max()
+        # max_val_hat = gen_frames[i].max()
+        max_val = gt_frames[i].max()
         square_diff = (gt_frames[i] - gen_frames[i])**2
-        image_errors = 10 * (max_val_hat ** 2 / ((1. / num_pixels) * square_diff.sum())).log10()
+        log_value = torch.log10(max_val ** 2 / ((1. / num_pixels) * torch.sum(square_diff)))
+        image_errors = 10 * log_value
         batch_errors += image_errors
     
     batch_errors = torch.div(batch_errors, batch_num)
@@ -106,9 +108,9 @@ def find_max_patch(diff_map_appe, diff_map_flow, kernel_size=16, stride=4, aggre
     kernel size = window size
     '''
     # max_pool = torch.nn.MaxPool2d(kernel_size=kernel_size, stride=stride)
-    max_pool = torch.nn.AvgPool2d(kernel_size=kernel_size, stride=stride)
-    max_patch_appe = max_pool(diff_map_appe)
-    max_patch_flow = max_pool(diff_map_flow)
+    avg_pool = torch.nn.AvgPool2d(kernel_size=kernel_size, stride=stride)
+    max_patch_appe = avg_pool(diff_map_appe)
+    max_patch_flow = avg_pool(diff_map_flow)
     # import ipdb; ipdb.set_trace()
     assert len(max_patch_appe.shape) == 3, f'the shape of max_patch_appe is {max_patch_appe.shape}'
     assert len(max_patch_flow.shape) == 3, f'the shape of max_patch_flow is {max_patch_flow.shape}'
@@ -118,9 +120,52 @@ def find_max_patch(diff_map_appe, diff_map_flow, kernel_size=16, stride=4, aggre
         max_patch_appe = torch.mean(max_patch_appe, dim=0) 
         max_patch_flow = torch.mean(max_patch_flow, dim=0)
 
-    
     max_appe_value = torch.max(max_patch_appe)
     max_flow_value = torch.max(max_patch_flow)
+    
+    # max_val_flow_std = 0.0
+    # max_val_appe_std = 0.0
+    # pos_flow_std = [0, 0]
+    # pos_appe_std = [0, 0]
+
+    # for i in range(0, diff_map_flow.shape[0]-kernel_size, stride):
+    #     for j in range(0, diff_map_flow.shape[1]-kernel_size, stride):
+    #         curr_std_flow = torch.std(diff_map_flow[i:i+kernel_size, j:j+kernel_size])
+    #         # curr_mean = np.mean(diff_map_flow[i:i+kernel_size, j:j+kernel_size])
+    #         # curr_std_appe = torch.std(diff_map_appe[i:i+kernel_size, j:j+kernel_size])
+    #         # curr_mean_appe = np.mean(diff_map_appe[i:i+kernel_size, j:j+kernel_size])
+    #         # if curr_mean > max_val_mean:
+    #         #     max_val_mean = curr_mean
+    #         #     std_1 = curr_std
+    #         #     pos_1 = [i, j]
+    #         #     std_appe_1 = curr_std_appe
+    #         #     mean_appe_1 = curr_mean_appe
+    #         if curr_std_flow > max_val_flow_std:
+    #             max_val_flow_std = curr_std_flow
+    #             # mean_2 = curr_mean
+    #             pos_flow_std = [i, j]
+    #             # std_appe_2 = curr_std_appe
+    #             # mean_appe_2 = curr_mean_appe
+    
+    # for i in range(0, diff_map_appe.shape[0]-kernel_size, stride):
+    #     for j in range(0, diff_map_appe.shape[1]-kernel_size, stride):
+    #         # curr_std_flow = torch.std(diff_map_flow[i:i+kernel_size, j:j+kernel_size])
+    #         # curr_mean = np.mean(diff_map_flow[i:i+kernel_size, j:j+kernel_size])
+    #         curr_std_appe = torch.std(diff_map_appe[i:i+kernel_size, j:j+kernel_size])
+    #         # curr_mean_appe = np.mean(diff_map_appe[i:i+kernel_size, j:j+kernel_size])
+    #         # if curr_mean > max_val_mean:
+    #         #     max_val_mean = curr_mean
+    #         #     std_1 = curr_std
+    #         #     pos_1 = [i, j]
+    #         #     std_appe_1 = curr_std_appe
+    #         #     mean_appe_1 = curr_mean_appe
+    #         if curr_std_appe > max_val_appe_std:
+    #             max_val_appe_std = curr_std_appe
+    #             # mean_2 = curr_mean
+    #             pos_appe_std = [i, j]
+    #             # std_appe_2 = curr_std_appe
+    #             # mean_appe_2 = curr_mean_appe
+    
     app_h, app_w =  torch.where(torch.eq(max_patch_appe, max_appe_value))
     flow_h, flow_w =  torch.where(torch.eq(max_patch_flow, max_flow_value))
     
@@ -131,6 +176,7 @@ def find_max_patch(diff_map_appe, diff_map_flow, kernel_size=16, stride=4, aggre
     # import ipdb; ipdb.set_trace()
     # return max_patch_appe, max_patch_flow
     return max_appe_final, max_flow_final, (app_h, app_w), (flow_h, flow_w)
+    # return max_val_appe_std, max_val_flow_std, (app_h, app_w), (flow_h, flow_w)
 
 def calc_w(w_dict):
     wf = 0.0

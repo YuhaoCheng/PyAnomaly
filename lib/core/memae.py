@@ -127,7 +127,7 @@ class Trainer(DefaultTrainer):
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
         
         # get the data
-        data  = next(self._train_loader_iter)  # the core for dataloader
+        data, _ = next(self._train_loader_iter)  # the core for dataloader
         self.data_time.update(time.time() - start)
         
         input_data = data.cuda() 
@@ -136,7 +136,7 @@ class Trainer(DefaultTrainer):
         output_rec, att = self.MemAE(input_data)
         loss_rec = self.rec_loss(output_rec, input_data)
         loss_mem = self.mem_loss(att)
-
+        import ipdb; ipdb.set_trace()
         loss_memae_all = self.loss_lamada['rec_loss'] * loss_rec + self.loss_lamada['mem_loss'] * loss_mem 
         self.optim_MemAE.zero_grad()
         loss_memae_all.backward()
@@ -178,11 +178,10 @@ class Trainer(DefaultTrainer):
             return
         temp_meter_frame = AverageMeter()
         self.MemAE.eval()
-        for data in self.val_dataloader:
+        for data, _ in self.val_dataloader:
             # get the data
             input_data_mini = data.cuda()
             output_rec, _ = self.MemAE(input_data_mini)
-
             frame_psnr_mini = psnr_error(output_rec.detach(), input_data_mini)
             temp_meter_frame.update(frame_psnr_mini.detach())
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the frame PSNR is {temp_meter_frame.avg:.3f}')

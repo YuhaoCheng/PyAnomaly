@@ -143,7 +143,7 @@ class Trainer(DefaultTrainer):
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
 
         # get the data
-        data = next(self._train_loader_iter)  # the core for dataloader
+        data, _ = next(self._train_loader_iter)  # the core for dataloader
         self.data_time.update(time.time() - start)
         
         # base on the D to get each frame
@@ -229,7 +229,7 @@ class Trainer(DefaultTrainer):
         self.B.eval()
         self.C.eval()
         self.Detector.eval()
-        for data in self.val_dataloader:
+        for data, _ in self.val_dataloader:
             # base on the D to get each frame
             # in this method, D = 3 and not change
             future_mini = data[:, :, -1, :, :].cuda() # t+1 frame 

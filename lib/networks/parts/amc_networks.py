@@ -12,10 +12,9 @@ from lib.networks.auxiliary.flownet2.models import FlowNet2
 from lib.networks.parts.base.commonness import Conv2dLeakly, ConcatDeconv2d, Deconv2d, BasicConv2d, Inception
 
 class AMCGenerator(nn.Module):
-    def __init__(self, c_in, c_out, channel_num=3, dropout_prob=0, bilinear=True):
+    def __init__(self, c_in, opticalflow_channel_num=2, image_channel_num=3, dropout_prob=0, bilinear=True):
         super(AMCGenerator, self).__init__()
         self.c_in = c_in
-        self.c_out = c_out
         self.bilinear = bilinear
 
         # common encoder
@@ -30,14 +29,14 @@ class AMCGenerator(nn.Module):
         self.h3fl = ConcatDeconv2d(768, 256, dropout_prob)
         self.h2fl = ConcatDeconv2d(512, 128, dropout_prob)
         self.h1fl = ConcatDeconv2d(256, 64, dropout_prob)
-        self.conv_fl = BasicConv2d(128,3,kernel_size=3, stride=1, padding=1)
+        self.conv_fl = BasicConv2d(128, opticalflow_channel_num,kernel_size=3, stride=1, padding=1)
         
         # decoder for frame
         self.h4fr = Deconv2d(512, 256, dropout_prob)
         self.h3fr = Deconv2d(256, 256, dropout_prob)
         self.h2fr = Deconv2d(256, 128, dropout_prob)
         self.h1fr = Deconv2d(128, 64, dropout_prob)
-        self.conv_fr = BasicConv2d(64,channel_num, kernel_size=3, stride=1, padding=1)
+        self.conv_fr = BasicConv2d(64, image_channel_num, kernel_size=3, stride=1, padding=1)
 
         self._init_weights()
 
@@ -82,6 +81,8 @@ class AMCDiscriminiator(nn.Module):
         self.bn3 = nn.BatchNorm2d(filters*4)
         self.conv4 = nn.Conv2d(filters*4, filters*8, kernel_size=4, stride=2)
         self.bn4 = nn.BatchNorm2d(filters*8)
+
+        self._init_weights()
     
     def _init_weights(self):
         for m in self.modules():
@@ -99,17 +100,16 @@ class AMCDiscriminiator(nn.Module):
         x = F.leaky_relu_(x)
         x = self.conv4(x)
         x = self.bn4(x)
-        # x_sigmod = F.sigmoid(x)
+        x_sigmod = F.sigmoid(x)
         
-        # return x_sigmod, x
-        return x
+        return x_sigmod
 
 def get_model_amc(cfg):
     from collections import namedtuple
     temp = namedtuple('Args', ['fp16', 'rgb_max'])
     args = temp(False, 1.0)
-    generator_model = AMCGenerator(c_in=3, c_out=3, channel_num=cfg.DATASET.channel_num, dropout_prob=0.7)
-    discriminator_model = AMCDiscriminiator(c_in=6, filters=64)
+    generator_model = AMCGenerator(c_in=3, opticalflow_channel_num=2, image_channel_num=cfg.DATASET.channel_num, dropout_prob=0.7)
+    discriminator_model = AMCDiscriminiator(c_in=5, filters=64)
     flow_model = FlowNet2(args)
     flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path)['state_dict'])
     model_dict = OrderedDict()

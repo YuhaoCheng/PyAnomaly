@@ -16,7 +16,7 @@ import torchvision.transforms as T
 import torchvision.transforms.functional as tf
 from torch.utils.data import DataLoader
 
-from lib.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images
+from lib.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images, vis_optical_flow
 from lib.datatools.evaluate.utils import psnr_error
 from lib.utils.flow_utils import flow2img
 from lib.core.engine.default_engine import DefaultTrainer, DefaultInference
@@ -136,29 +136,28 @@ class Trainer(DefaultTrainer):
         start = time.time()
         self.G.train()
         self.D.train()
+        self.set_requires_grad(self.F, False)
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
         
         # get the data
-        data  = next(self._train_loader_iter)
+        data, _  = next(self._train_loader_iter)
         self.data_time.update(time.time() - start)
         
         # base on the D to get each frame
         # in this method, D = 2 and not change
-        input_data = data[:, :, 0, :, :] # input(1-st) frame
-        target = data[:, :, 1,:, :] # target(2-nd) frame 
-        # import ipdb; ipdb.set_trace()
-        # squeeze the D dimension to C dimension, shape comes to [N, C, H, W]
-        target = target.reshape(target.shape[0], -1, target.shape[-2], target.shape[-1]).cuda()
-        input_data = input_data.reshape(input_data.shape[0], -1, input_data.shape[-2], input_data.shape[-1]).cuda()
+        input_data = data[:, :, 0, :, :].cuda() # input(1-st) frame
+        target = data[:, :, 1,:, :].cuda() # target(2-nd) frame 
         
         # True Process =================Start===================
         #---------update optim_G ---------
         self.set_requires_grad(self.D, False)
         output_flow_G,  output_frame_G = self.G(input_data)
         gt_flow_esti_tensor = torch.cat([input_data, target], 1)
-        flow_gt, _ = flow_batch_estimate(self.F, gt_flow_esti_tensor, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.std)
-        fake_g= self.D(torch.cat([target, output_flow_G], dim=1))
+        # gt_flow_esti_tensor = torch.cat([input_data_original, target_original], 1)
+        # flow_gt, _ = flow_batch_estimate(self.F, gt_flow_esti_tensor, optical_size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.std)
+        flow_gt_vis, flow_gt  = flow_batch_estimate(self.F, gt_flow_esti_tensor, optical_size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.std)
+        fake_g = self.D(torch.cat([target, output_flow_G], dim=1))
         loss_g_adv = self.gan_loss(fake_g, True)
         loss_op = self.op_loss(output_flow_G, flow_gt)
         loss_int = self.int_loss(output_frame_G, target)
@@ -197,17 +196,18 @@ class Trainer(DefaultTrainer):
                 'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
                 'Speed: {speed:.1f} samples/s\t' \
                 'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' \
-                'Loss_G: {losses_G.val:.5f} ({losses_G.avg:.5f})\t'   \
-                'Loss_D:{losses_D.val:.5f}({losses_D.avg:.5f})'.format(current_step, self.max_steps, cae_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses_G=self.loss_meter_G, losses_D=self.loss_meter_D)
+                'Loss_G: {losses_G.val:.5f} ({losses_G.avg:.3f})\t'   \
+                'Loss_D:{losses_D.val:.5f}({losses_D.avg:.3f})'.format(current_step, self.max_steps, cae_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses_G=self.loss_meter_G, losses_D=self.loss_meter_D)
             self.logger.info(msg)
         writer.add_scalar('Train_loss_G', self.loss_meter_G.val, global_steps)
         writer.add_scalar('Train_loss_D', self.loss_meter_D.val, global_steps)
         if (current_step % self.vis_step == 0):
             vis_objects = OrderedDict()
-            vis_objects['train_target_flow'] =  flow_gt.detach()
-            vis_objects['train_output_flow_G'] = output_flow_G.detach()
+            vis_objects['train_target_flow'] =  flow_gt_vis.detach()
+            vis_objects['train_output_flow_G'] = vis_optical_flow(output_flow_G.detach(), output_format=self.config.DATASET.optical_format, output_size=(output_flow_G.shape[-2], output_flow_G.shape[-1]), normalize=self.config.ARGUMENT.train.normal.use, mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.std)
             vis_objects['train_target_frame'] =  target.detach()
             vis_objects['train_output_frame_G'] = output_frame_G.detach()
+            # import ipdb; ipdb.set_trace()
             tensorboard_vis_images(vis_objects, writer, global_steps, self.train_normalize, self.train_mean, self.train_std)
         global_steps += 1 
         
@@ -226,7 +226,7 @@ class Trainer(DefaultTrainer):
         temp_meter_flow = AverageMeter()
         self.G.eval()
         self.D.eval()
-        for data in self.val_dataloader:
+        for data , _ in self.val_dataloader:
             # get the data
             target_mini = data[:, :, 1, :, :]
             input_data_mini = data[:, :, 0, :, :]
@@ -237,7 +237,7 @@ class Trainer(DefaultTrainer):
             # Use the model, get the output
             output_flow_G_mini, output_frame_G_mini = self.G(input_data_mini)
             input_gtFlowEstimTensor = torch.cat([input_data_mini, target_mini], 1)
-            gtFlow, _ = flow_batch_estimate(self.F, input_gtFlowEstimTensor, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
+            gtFlow_vis, gtFlow = flow_batch_estimate(self.F, input_gtFlowEstimTensor, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
             
             frame_psnr_mini = psnr_error(output_frame_G_mini.detach(), target_mini)
             flow_psnr_mini = psnr_error(output_flow_G_mini.detach(), gtFlow)
@@ -285,6 +285,8 @@ class Inference(DefaultInference):
             self.F = model['FlowNet'].cuda()
         
         # self.load()
+        self.F.eval()
+        self.set_requires_grad(self.F, False)
 
         self.verbose = kwargs['verbose']
         self.kwargs = kwargs

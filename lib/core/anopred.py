@@ -65,7 +65,8 @@ class Trainer(DefaultTrainer):
             self.F = model['FlowNet'].cuda() # lite flownet
         
         self.F.eval()
-        
+        self.set_requires_grad(self.F, False)
+
         if kwargs['pretrain']:
             self.load_pretrain()
 
@@ -143,7 +144,7 @@ class Trainer(DefaultTrainer):
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
 
         # get the data
-        data = next(self._train_loader_iter) 
+        data, _ = next(self._train_loader_iter) 
         self.data_time.update(time.time() - start)
 
         # base on the D to get each frame
@@ -161,8 +162,8 @@ class Trainer(DefaultTrainer):
         # import ipdb; ipdb.set_trace()
         predFlowEstim = torch.cat([input_last, output_pred_G],1)
         gtFlowEstim = torch.cat([input_last, target], 1)
-        gtFlow, _ = flow_batch_estimate(self.F, gtFlowEstim)
-        predFlow, _ = flow_batch_estimate(self.F, predFlowEstim)
+        gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim)
+        predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim)
 
         # loss_g_adv = self.g_adv_loss(self.D(G_output))
         loss_g_adv = self.gan_loss(self.D(output_pred_G), True)
@@ -214,8 +215,8 @@ class Trainer(DefaultTrainer):
             vis_objects = OrderedDict()
             vis_objects['train_target'] =  target.detach()
             vis_objects['train_output_pred_G'] = output_pred_G.detach()
-            vis_objects['train_gtFlow'] = gtFlow.detach()
-            vis_objects['train_predFlow'] = predFlow.detach()
+            vis_objects['train_gtFlow'] = gtFlow_vis.detach()
+            vis_objects['train_predFlow'] = predFlow_vis.detach()
             # import ipdb; ipdb.set_trace()
             tensorboard_vis_images(vis_objects, writer, global_steps, self.train_normalize, self.train_mean, self.train_std)
         global_steps += 1 

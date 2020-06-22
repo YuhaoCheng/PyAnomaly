@@ -33,10 +33,10 @@ DATASET:
   number_of_class: 1
   score_normalize: false
   score_type: 'abnormal'
-  decidable_idx: 1
+  decidable_idx: 0
   smooth:
     guassian: true
-    guassian_sigma: 30
+    guassian_sigma: 3
   mini_dataset:
     samples: 100
   evaluate_function_type: 'compute_auc_score'

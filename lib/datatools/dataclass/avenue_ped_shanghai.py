@@ -26,9 +26,9 @@ class AvenuePedShanghai(AbstractVideoAnomalyDataset):
             cusrsor = 0
         start = cusrsor
 
-        video_clip = self.video_loader.read(self.videos[key]['frames'], start, start+self.clip_length, clip_length=self.clip_length,step=self.frame_step)
+        video_clip, video_clip_original = self.video_loader.read(self.videos[key]['frames'], start, start+self.clip_length, clip_length=self.clip_length,step=self.frame_step)
         self.videos[key]['cursor'] = cusrsor + self.clip_step
-        return video_clip
+        return video_clip, video_clip_original
     
     def get_image(self, image_name):
         # keep for debug
@@ -59,8 +59,8 @@ class AvenuePedShanghaiOneVideo(AbstractVideoAnomalyDataset):
             end = self.pics_len - 1
         else:
             end = start + self.clip_length
-        video_clip = self.video_loader.read(self.videos['frames'], start, end, clip_length=self.clip_length, step=self.frame_step)
-        return video_clip
+        video_clip, video_clip_original = self.video_loader.read(self.videos['frames'], start, end, clip_length=self.clip_length, step=self.frame_step)
+        return video_clip, video_clip_original
     
     def get_image(self,name):
         # keep for debug
@@ -81,8 +81,8 @@ class MiniAvenuePedShanghai(AbstractVideoAnomalyDataset):
         rng = np.random.RandomState(2020)
         # import ipdb; ipdb.set_trace()
         start = rng.randint(0, self.videos[key]['length'] - self.clip_length)
-        video_clip = self.video_loader.read(self.videos[key]['frames'], start, start+self.clip_length, clip_length=self.clip_length, step=self.clip_step)
-        return video_clip
+        video_clip, video_clip_original = self.video_loader.read(self.videos[key]['frames'], start, start+self.clip_length, clip_length=self.clip_length, step=self.clip_step)
+        return video_clip, video_clip_original
 
     def __len__(self):
         return self.cfg.DATASET.mini_dataset.samples
