@@ -125,6 +125,13 @@ class OCEvaluateHook(HookBase):
                     pass
         else:
             pass
+    
+    def inference(self):
+        self.trainer.set_requires_grad(self.trainer.A, False)
+        self.trainer.set_requires_grad(self.trainer.B, False)
+        self.trainer.set_requires_grad(self.trainer.C, False)
+        acc = self.evaluate(0)
+        self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
         
     def evaluate(self, current_step):
         '''
@@ -132,6 +139,8 @@ class OCEvaluateHook(HookBase):
         !!! Will change, e.g. accuracy, mAP.....
         !!! Or can call other methods written by the official
         '''
+        self.trainer.A.eval()
+        
         frame_num = self.trainer.config.DATASET.test_clip_length
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]

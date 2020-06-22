@@ -31,13 +31,20 @@ class AnoPredEvaluateHook(HookBase):
         else:
             pass
     
+    def inference(self):
+        self.trainer.set_requires_grad(self.F, False)
+        self.trainer.set_requires_grad(self.G, False)
+        self.trainer.set_requires_grad(self.D, False)
+        acc = self.evaluate(0)
+        self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
+    
     def evaluate(self, current_step):
         '''
         Evaluate the results of the model
         !!! Will change, e.g. accuracy, mAP.....
         !!! Or can call other methods written by the official
         '''
-        
+        self.trainer.G.eval()
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
         frame_num = self.trainer.config.DATASET.test_clip_length
@@ -61,7 +68,7 @@ class AnoPredEvaluateHook(HookBase):
             scores = np.empty(shape=(len_dataset,),dtype=np.float32)
             vis_range = range(int(len_dataset*0.5), int(len_dataset*0.5 + 5))
             
-            for frame_sn, test_input in enumerate(data_loader):
+            for frame_sn, (test_input, _) in enumerate(data_loader):
                 test_target = test_input[:, :, -1, :, :].cuda()
                 test_input = test_input[:, :, :-1, :, :].reshape(test_input.shape[0], -1, test_input.shape[-2],test_input.shape[-1]).cuda()
 

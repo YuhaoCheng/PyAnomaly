@@ -39,6 +39,7 @@ class MemAEEvaluateHook(HookBase):
             pass
     
     def inference(self):
+        self.trainer.set_requires_grad(self.trainer.MemAE, False)
         acc = self.evaluate(0)
         self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
     
@@ -48,6 +49,7 @@ class MemAEEvaluateHook(HookBase):
         !!! Will change, e.g. accuracy, mAP.....
         !!! Or can call other methods written by the official
         '''
+        self.trainer.MemAE.eval()
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
         frame_num = self.trainer.config.DATASET.test_clip_length

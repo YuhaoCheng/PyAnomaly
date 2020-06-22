@@ -266,6 +266,7 @@ class Trainer(DefaultTrainer):
 
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the  A PSNR is {temp_meter_A.avg:.2f}, the B PSNR is {temp_meter_B.avg:.2f}, the C PSNR is {temp_meter_C.avg:.2f}')
 
+
 class Inference(DefaultInference):
     NAME = ["OCAE.INFERENCE"]
     def __init__(self, *defaults,**kwargs):
@@ -319,6 +320,7 @@ class Inference(DefaultInference):
         self.test_dataset_keys_w = kwargs['test_dataset_keys_w']
         self.test_dataset_dict_w = kwargs['test_dataset_dict_w']
         self.metric = 0.0
+        self.evaluate_function = kwargs['evaluate_function']
 
        
     

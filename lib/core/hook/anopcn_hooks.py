@@ -31,13 +31,21 @@ class AnoPCNEvaluateHook(HookBase):
         else:
             pass
     
+    def inference(self):
+        self.trainer.set_requires_grad(self.trainer.F, False)
+        self.trainer.set_requires_grad(self.trainer.G, False)
+        self.trainer.set_requires_grad(self.trainer.D, False)
+        acc = self.evaluate(0)
+        self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
+    
     def evaluate(self, current_step):
         '''
         Evaluate the results of the model
         !!! Will change, e.g. accuracy, mAP.....
         !!! Or can call other methods written by the official
         '''
-
+        self.trainer.G.eval()
+        self.trainer.D.eval()
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
 
@@ -65,7 +73,7 @@ class AnoPCNEvaluateHook(HookBase):
             scores = np.empty(shape=(len_dataset,),dtype=np.float32)
             # for test_input, _ in data_loader:
             vis_range = range(int(len_dataset*0.5), int(len_dataset*0.5 + 5))
-            for frame_sn, test_input in enumerate(data_loader):
+            for frame_sn, (test_input, _) in enumerate(data_loader):
                 test_target = test_input[:, :, -1, :, :].cuda()
                 test_input = test_input[:, :, :-1, :, :].cuda()
 

@@ -235,7 +235,7 @@ class Trainer(DefaultTrainer):
         temp_meter_flow = AverageMeter()
         self.G.eval()
         self.D.eval()
-        for data in self.val_dataloader:
+        for data, _ in self.val_dataloader:
             # base on the D to get each frame
             target_mini = data[:, :, -1, :, :].cuda() # t+1 frame 
             input_data = data[:, :, :-1, :, :] # 0 ~ t frame

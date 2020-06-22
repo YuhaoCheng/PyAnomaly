@@ -291,9 +291,9 @@ class Inference(DefaultInference):
         self.verbose = kwargs['verbose']
         self.kwargs = kwargs
         self.config_name = kwargs['config_name']
-        self.normalize = self.config.ARGUMENT.val.normal.use
-        self.mean = self.config.ARGUMENT.val.normal.mean
-        self.std = self.config.ARGUMENT.val.normal.std
+        self.val_normalize = self.config.ARGUMENT.val.normal.use
+        self.val_mean = self.config.ARGUMENT.val.normal.mean
+        self.val_std = self.config.ARGUMENT.val.normal.std
         # self.mode = kwargs['mode']
 
         self.test_dataset_keys = kwargs['test_dataset_keys']
@@ -303,8 +303,8 @@ class Inference(DefaultInference):
         self.test_dataset_dict_w = kwargs['test_dataset_dict_w']
         self.metric = 0.0
 
-       
-    
+        self.evaluate_function = kwargs['evaluate_function']
+
     def inference(self):
         for h in self._hooks:
             h.inference()

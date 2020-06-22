@@ -125,6 +125,18 @@ class AbstractInference(object):
             h.trainer = weakref.proxy(self)
         self._hooks.extend(hooks)
     
+    def set_requires_grad(self, nets, requires_grad=False):
+        '''
+        Parameters:
+            nets(list) --- a list of networks
+            requores_grad(bool) --- whether the networks require gradients or not  
+        '''
+        if not isinstance(nets, list):
+            nets = [nets]
+        for net in nets:
+            if net is not None:
+                for param in net.parameters():
+                    param.requires_grad = requires_grad
     def run(self):
         '''
         The basic loop of implement the algorithm

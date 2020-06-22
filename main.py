@@ -125,11 +125,15 @@ def inference(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name
     test_dataset_dict_w, test_dataset_keys_w = da(flag='train_w', aug=val_augment)
 
     # Add the Summary writer 
-    writer_dict = get_tensorboard(tensorboard_log_dir, time_stamp, cfg.MODEL.name)
+    writer_dict = get_tensorboard(tensorboard_log_dir, time_stamp, cfg.MODEL.name, log_file_name)
 
     # build hook
     ha = HookAPI(cfg, logger)
     hooks = ha('val')
+
+    # get the evaluate function
+    ea = EvaluateAPI(cfg, logger)
+    evaluate_function = ea(cfg.DATASET.evaluate_function_type)
 
     # instance the inference
     core = importlib.import_module(f'lib.core.{cfg.MODEL.name}')
@@ -138,7 +142,7 @@ def inference(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name
                             pretrain=False, verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, 
                             test_dataset_dict=test_dataset_dict, test_dataset_keys=test_dataset_keys, 
                             test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w, 
-                            hooks=hooks,
+                            hooks=hooks,evaluate_function=evaluate_function
                             )
     
     inference.run()

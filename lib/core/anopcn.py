@@ -65,6 +65,7 @@ class Trainer(DefaultTrainer):
         
         self.F.eval()
         self.set_requires_grad(self.F, False)
+        
         if kwargs['pretrain']:
             self.load_pretrain()
 

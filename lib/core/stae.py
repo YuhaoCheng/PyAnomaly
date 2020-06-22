@@ -205,6 +205,7 @@ class Trainer(DefaultTrainer):
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the rec PSNR is {temp_meter_rec.avg:.3f}, the pred PSNR is {temp_meter_pred.avg:.3f}')
         # return temp_meter.avg
 
+
 class Inference(DefaultInference):
     NAME = ["MEMAE.INFERENCE"]
     def __init__(self, *defaults,**kwargs):
@@ -252,6 +253,8 @@ class Inference(DefaultInference):
         self.test_dataset_dict = kwargs['test_dataset_dict']
 
         self.metric = 0.0
+
+        self.evaluate_function = kwargs['evaluate_function']
     
     def inference(self):
         for h in self._hooks:

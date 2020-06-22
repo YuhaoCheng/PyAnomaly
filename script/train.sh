@@ -3,7 +3,7 @@ project_path='/export/home/chengyh/PyAnomaly'
 model="amc"
 dataset="ped2"
 verbose='default'
-config="ped2_default.yaml"
+config=""
 GPUS="0"
 MULTIGPUS=False
 func() {
@@ -70,10 +70,18 @@ else
     echo 'Use single gpus, the device id is:'$GPUS
 fi
 
+echo "Using the project path:"$project_path
 cfg_folder=$model'/'$dataset # e.g amc/avenue
 echo 'The cfg folder is:'$cfg_folder
-echo "Using the config:"$config
-echo "Using the project path:"$project_path
+
+if test -n "$config" # $config is not null, it is true 
+then
+    echo "the config file is:" $config
+else
+    config=$dataset'_default.yaml'
+    echo "Using the default config:"$config
+fi
+
 echo "Using the verbose:"$verbose
 
 # Go to the main file location

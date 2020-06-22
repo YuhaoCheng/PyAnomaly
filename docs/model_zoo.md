@@ -12,3 +12,27 @@
 |  AnoPCN[7]  | [94.2]()(96.8) | [87.1]()(86.2) | [72.1]() (73.6) |
 |   AMC[13]   | [95.0]()(96.2) | [83.5]() (86.9) | - |
 | AnoPred[14] | [93.9]()(96.4) | [86.7]() (85.1) | [69.9]() (72.8) |
+
+### Details
+
+#### Optical Flow
+
+- Some methods using other optical flow methods to get the optical in video
+
+- We choose to use the different optical flow methods implemented in PyTorch
+
+  - [FlowNet2](https://github.com/NVIDIA/flownet2-pytorch)
+  - [LiteFlowNet](https://github.com/sniklaus/pytorch-liteflownet)
+
+- We use the pre-trained models in these methods, which can be download from their GitHub repo. 
+
+  | Method  | Optical Flow Method | Ped2 | Avenue | Shanghai |
+  | ------- | ------------------- | ---- | ------ | -------- |
+  | AMC     | FlowNet2            |      |        |          |
+  | AMC     | LiteFlowNet         |      |        |          |
+  | AnoPred | FlowNet2            |      |        |          |
+  | AnoPred | LiteFlowNet         |      |        |          |
+  | AnoPCN  | FlowNet2            |      |        |          |
+  | AnoPCN  | LiteFlowNet         |      |        |          |
+
+  
