@@ -4,7 +4,7 @@ SYSTEM:
   gpus: [0,1]
   cudnn:
     benchmark: true
-    deterministic: false
+    deterministic: true
     enable: true
   distributed:
     use: false

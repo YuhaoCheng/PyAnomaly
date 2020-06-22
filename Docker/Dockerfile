@@ -29,7 +29,7 @@ RUN useradd -m --no-log-init --system  --uid ${USER_ID} appuser -g sudo \
 
 USER appuser
 WORKDIR /home/appuser
-
+COPY .condarc /home/appuser
 # Create the environment
 RUN conda create -n pyanomaly python=3.6 \
     && /bin/bash -c "source activate pyanomaly" \
@@ -37,11 +37,19 @@ RUN conda create -n pyanomaly python=3.6 \
     && pqi use tuna \
     && conda install pytorch==1.4 torchvision cudatoolkit=10.1 -c pytorch \
     && pip install cupy-cuda101 \
-    && python -m pip install 'git+https://github.com/facebookresearch/detectron2.git' 
+    && pip install 'git+https://github.com/facebookresearch/detectron2.git' 
+
+RUN pip install yacs \
+    && pip install torchsnooper \
+    && pip install sklearn \
+    && pip install opencv-python \
+    && pip install colorama \
+    && pip install pillow \
+    && pip install ipdb
 
 # Get the Pyanomaly
 RUN git clone https://github.com/YuhaoCheng/PyAnomaly.git pyanomaly_repo\
-    && cd PyAnomaly \
+    && cd pyanomaly_repo \
     && cd ./script \
     && sh ./install.sh \
     && cd ..
