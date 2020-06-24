@@ -77,7 +77,7 @@ def main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, tim
 
     
     # instance the trainer
-    core = importlib.import_module(f'lib.core.{cfg.MODEL.name}')
+    core = importlib.import_module(f'pyanomaly.core.{cfg.MODEL.name}')
     logger.info(f'Build the trainer in {core}')
     trainer = core.Trainer(model_dict, train_dataloader, valid_dataloder, optimizer_dict, loss_function_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
                             pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, 
@@ -85,7 +85,6 @@ def main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, tim
                             test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w,
                             cluster_dataset_dict=cluster_dataset_dict, cluster_dataset_keys=cluster_dataset_keys,
                             hooks=hooks, evaluate_function=evaluate_function,
-                            # lr_shechulder_g=lr_shechulder_g, lr_shechulder_d=lr_shechulder_d
                             lr_scheduler_dict=lr_scheduler_dict
                             )
     
@@ -136,7 +135,7 @@ def inference(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name
     evaluate_function = ea(cfg.DATASET.evaluate_function_type)
 
     # instance the inference
-    core = importlib.import_module(f'lib.core.{cfg.MODEL.name}')
+    core = importlib.import_module(f'pyanomaly.core.{cfg.MODEL.name}')
     logger.info(f'Build the inference in {core}')
     inference = core.Inference(model_dict, model_path, valid_dataloder, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
                             pretrain=False, verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, 
