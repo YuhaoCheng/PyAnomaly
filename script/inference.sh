@@ -30,11 +30,11 @@ do
     case $opt in 
     m) 
     model=$OPTARG
-    echo "model:"$MODEL
+    echo "model:"$model
     ;;
     d)
     dataset=$OPTARG
-    echo "dataset":$DATASET
+    echo "dataset":$dataset
     ;;
     p)
     project_path=$OPTARG

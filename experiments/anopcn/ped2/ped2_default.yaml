@@ -4,7 +4,7 @@ SYSTEM:
   gpus: [0,1]
   cudnn:
     benchmark: true
-    deterministic: false
+    deterministic: true
     enable: true
   distributed:
     use: false
@@ -48,7 +48,7 @@ ARGUMENT:
       mean: [0.5, 0.5, 0.5]
       std: [0.5, 0.5, 0.5]
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
       use: false
@@ -82,7 +82,7 @@ ARGUMENT:
       mean: [0.5, 0.5, 0.5]
       std: [0.5, 0.5, 0.5]
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
       use: false
@@ -133,26 +133,6 @@ TRAIN:
   loss: ['gan_loss','gradient_loss', 'intentsity_loss', 'opticalflow_loss']
   loss_coefficients: [0.25,1,1,2]
   mode: 'adversarial'
-  general:
-    optimizer:
-      include: ['A', 'B', 'C']
-      name: 'adam'
-      lr: 1e-3
-      momentum: 0.9
-      weight_decay: 0.0001
-      nesterov: false
-      output_name: ['optimizer_abc']
-    scheduler:
-      use: true
-      name: 'stepLR'
-      step_size: 1000
-      steps: [10000, 15000]
-      gamma: 0.1
-      T_max: 300
-      eta_min: 0
-      warmup_factor: 0.001
-      warmup_iters: 1000
-      warmup_method: 'linear'
   adversarial:
     optimizer:
       include: ['Generator', 'Discriminator']

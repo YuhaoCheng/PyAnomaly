@@ -41,14 +41,25 @@ class GeneratorUnet(nn.Module):
         return torch.tanh(x)
 
 def get_model_ano_pred(cfg):
-    from collections import namedtuple
-    temp = namedtuple('Args', ['fp16', 'rgb_max'])
-    args = temp(False, 1.0)
-    flow_model = FlowNet2(args)
-    if cfg.MODEL.name == 'anopred':
-        flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path)['state_dict'])
-    for n,p in flow_model.named_parameters():
-        p.requires_grad = False
+    if cfg.ARGUMENT.train.normal.use:
+        rgb_max = 1.0
+    else:
+        rgb_max = 255.0
+    if cfg.MODEL.flownet == 'flownet2':
+        from collections import namedtuple
+        from lib.networks.auxiliary.flownet2.models import FlowNet2
+        temp = namedtuple('Args', ['fp16', 'rgb_max'])
+        args = temp(False, rgb_max)
+        flow_model = FlowNet2(args)
+    elif cfg.MODEL.flownet == 'liteflownet':
+        from lib.networks.auxiliary.liteflownet.models import LiteFlowNet
+        flow_model = LiteFlowNet()
+    else:
+        raise Exception('Not support optical flow methods')
+    
+    flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path)['state_dict'])
+    
+
     generator_model = GeneratorUnet(12,3) # 4*3 =12
     discriminator_model = PixelDiscriminator(3, cfg.MODEL.discriminator_channels, use_norm=False)
     model_dict = OrderedDict()

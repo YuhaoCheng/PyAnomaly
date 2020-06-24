@@ -63,8 +63,6 @@ class Trainer(DefaultTrainer):
             self.D = model['Discriminator'].cuda()
             self.F = model['FlowNet'].cuda()
         
-        self.F.eval()
-        self.set_requires_grad(self.F, False)
         
         if kwargs['pretrain']:
             self.load_pretrain()
@@ -103,6 +101,7 @@ class Trainer(DefaultTrainer):
         self.train_normalize = self.config.ARGUMENT.train.normal.use
         self.train_mean = self.config.ARGUMENT.train.normal.mean
         self.train_std = self.config.ARGUMENT.train.normal.std
+
         self.val_normalize = self.config.ARGUMENT.val.normal.use
         self.val_mean = self.config.ARGUMENT.val.normal.mean
         self.val_std = self.config.ARGUMENT.val.normal.std
@@ -139,6 +138,9 @@ class Trainer(DefaultTrainer):
         start = time.time()
         self.G.train()
         self.D.train()
+        self.F.eval()
+        self.set_requires_grad(self.F, False)
+
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
         
@@ -153,12 +155,13 @@ class Trainer(DefaultTrainer):
         
         # True Process =================Start===================
         #---------update optim_G ---------
+        self.set_requires_grad(self.D, False)
         output_frame_G = self.G(input_data, target)
         
         predFlowEstim = torch.cat([input_last, output_frame_G],1).cuda()
         gtFlowEstim = torch.cat([input_last, target], 1).cuda()
-        gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim)
-        predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim)
+        gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
+        predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
         
         loss_g_adv = self.gan_loss(self.D(output_frame_G), True)
         loss_op = self.op_loss(predFlow, gtFlow)
@@ -175,16 +178,14 @@ class Trainer(DefaultTrainer):
             self.lr_g.step()
         
         #---------update optim_D ---------------
+        self.set_requires_grad(self.D, True)
         self.optim_D.zero_grad()
         temp_t = self.D(target)
         temp_g = self.D(output_frame_G.detach())
         loss_d_1 = self.gan_loss(temp_t, True)
         loss_d_2 = self.gan_loss(temp_g, False)
         loss_d = (loss_d_1 + loss_d_2) * 0.5
-        # loss_d = self.d_adv_loss(temp_t, temp_g)
-        # import ipdb; ipdb.set_trace()
         loss_d.backward()
-
         self.optim_D.step()
         if self.config.TRAIN.adversarial.scheduler.use:
             self.lr_d.step()
@@ -221,7 +222,7 @@ class Trainer(DefaultTrainer):
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
     def mini_eval(self, current_step):
-        if current_step % 10 != 0 or current_step == 0:
+        if current_step % self.config.TRAIN.mini_eval_step != 0:
             return
         temp_meter = AverageMeter()
         self.G.eval()
@@ -230,7 +231,6 @@ class Trainer(DefaultTrainer):
             # get the data
             target_mini = data[:, :, -1, :, :].cuda()
             input_data_mini = data[:, :, :-1, :, :].cuda()
-
             output_frame_G_mini = self.G(input_data_mini, target_mini)
             vaild_psnr = psnr_error(output_frame_G_mini.detach(), target_mini)
             temp_meter.update(vaild_psnr.detach())
@@ -285,16 +285,17 @@ class Inference(DefaultInference):
         self.verbose = kwargs['verbose']
         self.kwargs = kwargs
         self.config_name = kwargs['config_name']
-        self.normalize = self.config.ARGUMENT.val.normal.use
-        self.mean = self.config.ARGUMENT.val.normal.mean
-        self.std = self.config.ARGUMENT.val.normal.std
+        self.val_normalize = self.config.ARGUMENT.val.normal.use
+        self.val_mean = self.config.ARGUMENT.val.normal.mean
+        self.val_std = self.config.ARGUMENT.val.normal.std
         # self.mode = kwargs['mode']
 
         self.test_dataset_keys = kwargs['test_dataset_keys']
         self.test_dataset_dict = kwargs['test_dataset_dict']
 
         self.metric = 0.0
-  
+        self.evaluate_function = kwargs['evaluate_function']
+
     def inference(self):
         for h in self._hooks:
             h.inference()

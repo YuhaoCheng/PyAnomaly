@@ -82,7 +82,7 @@ class Trainer(DefaultTrainer):
 
         # get the loss_fucntion
         loss_function = defaults[4]
-        self.gan_loss = loss_function['gan_loss']
+        self.gan_loss = loss_function['gan_loss_mse']
         self.gd_loss = loss_function['gradient_loss']
         self.int_loss = loss_function['intentsity_loss']
         self.op_loss = loss_function['opticalflow_loss']
@@ -162,15 +162,15 @@ class Trainer(DefaultTrainer):
         # import ipdb; ipdb.set_trace()
         predFlowEstim = torch.cat([input_last, output_pred_G],1)
         gtFlowEstim = torch.cat([input_last, target], 1)
-        gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim)
-        predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim)
+        gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
+        predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
 
         # loss_g_adv = self.g_adv_loss(self.D(G_output))
         loss_g_adv = self.gan_loss(self.D(output_pred_G), True)
         loss_op = self.op_loss(predFlow, gtFlow)
         loss_int = self.int_loss(output_pred_G, target)
         loss_gd = self.gd_loss(output_pred_G, target)
-        loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + self.loss_lamada['opticalflow_loss'] * loss_op + self.loss_lamada['gan_loss'] * loss_g_adv
+        loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + self.loss_lamada['opticalflow_loss'] * loss_op + self.loss_lamada['gan_loss_mse'] * loss_g_adv
         self.optim_G.zero_grad()
         loss_g_all.backward()
         self.optim_G.step()
@@ -229,7 +229,7 @@ class Trainer(DefaultTrainer):
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
     def mini_eval(self, current_step):
-        if current_step % 10 != 0 or current_step == 0:
+        if current_step % self.config.TRAIN.mini_eval_step != 0:
             return
         temp_meter_frame = AverageMeter()
         temp_meter_flow = AverageMeter()
@@ -246,11 +246,11 @@ class Trainer(DefaultTrainer):
             output_pred_G = self.G(input_data_mini)
             gtFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, target_mini], 1))
             predFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, output_pred_G], 1))
-            frame_psnr_mini = psnr_error(output_pred_G.detach(), target_mini)
+            frame_psnr_mini = psnr_error(output_pred_G.detach(), target_mini, hat=True)
             flow_psnr_mini = psnr_error(predFlow, gtFlow)
             temp_meter_frame.update(frame_psnr_mini.detach())
             temp_meter_flow.update(flow_psnr_mini.detach())
-        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the PSNR is {temp_meter_frame.avg:.2f}, the flow PSNR is {temp_meter_flow.avg:.2f}')
+        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the frame PSNR is {temp_meter_frame.avg:.2f}, the flow PSNR is {temp_meter_flow.avg:.2f}')
 
     
 

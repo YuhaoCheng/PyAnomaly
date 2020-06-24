@@ -4,19 +4,19 @@ import importlib
 from pathlib import Path
 from collections import OrderedDict
 
-from lib.config.config import update_config
-from lib.utils.cmd import parse_args
-from lib.utils.system import system_setup
-from lib.utils.utils import create_logger, get_tensorboard
+from pyanomaly.config.config import update_config
+from pyanomaly.utils.cmd import parse_args
+from pyanomaly.utils.system import system_setup
+from pyanomaly.utils.utils import create_logger, get_tensorboard
 
-from lib.networks.build_model import ModelAPI
-from lib.loss.build_loss import LossAPI
-from lib.core.optimizer.build_optimizer import OptimizerAPI
-from lib.core.scheduler.build_scheduler import SchedulerAPI
-from lib.core.hook.build.build_hooks import HookAPI
-from lib.datatools.build_augment import AugmentAPI
-from lib.datatools.build_datasets import DataAPI
-from lib.datatools.build_evaluate import EvaluateAPI
+from pyanomaly.networks.build_model import ModelAPI
+from pyanomaly.loss.build_loss import LossAPI
+from pyanomaly.core.optimizer.build_optimizer import OptimizerAPI
+from pyanomaly.core.scheduler.build_scheduler import SchedulerAPI
+from pyanomaly.core.hook.build.build_hooks import HookAPI
+from pyanomaly.datatools.build_augment import AugmentAPI
+from pyanomaly.datatools.build_datasets import DataAPI
+from pyanomaly.datatools.build_evaluate import EvaluateAPI
 
 def main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name):
     

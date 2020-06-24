@@ -8,7 +8,7 @@ import torch.nn as nn
 import torchsnooper
 import torch.nn.functional as F
 from collections import OrderedDict
-from lib.networks.auxiliary.flownet2.models import FlowNet2
+# from lib.networks.auxiliary.flownet2.models import FlowNet2
 from lib.networks.parts.base.commonness import Conv2dLeakly, ConcatDeconv2d, Deconv2d, BasicConv2d, Inception
 
 class AMCGenerator(nn.Module):
@@ -105,15 +105,22 @@ class AMCDiscriminiator(nn.Module):
         return x_sigmod
 
 def get_model_amc(cfg):
+    if cfg.ARGUMENT.train.normal.use:
+        rgb_max = 1.0
+    else:
+        rgb_max = 255.0
     if cfg.MODEL.flownet == 'flownet2':
         from collections import namedtuple
         from lib.networks.auxiliary.flownet2.models import FlowNet2
         temp = namedtuple('Args', ['fp16', 'rgb_max'])
-        args = temp(False, 1.0)
+        args = temp(False, rgb_max)
+        flow_model = FlowNet2(args)
     elif cfg.MODEL.flownet == 'liteflownet':
         from lib.networks.auxiliary.liteflownet.models import LiteFlowNet
+        flow_model = LiteFlowNet()
+    else:
+        raise Exception('Not support optical flow methods')
     
-    flow_model = FlowNet2(args)
     flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path)['state_dict'])
     
     generator_model = AMCGenerator(c_in=3, opticalflow_channel_num=2, image_channel_num=cfg.DATASET.channel_num, dropout_prob=0.7)

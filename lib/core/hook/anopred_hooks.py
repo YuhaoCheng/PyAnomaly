@@ -32,9 +32,9 @@ class AnoPredEvaluateHook(HookBase):
             pass
     
     def inference(self):
-        self.trainer.set_requires_grad(self.F, False)
-        self.trainer.set_requires_grad(self.G, False)
-        self.trainer.set_requires_grad(self.D, False)
+        self.trainer.set_requires_grad(self.trainer.F, False)
+        self.trainer.set_requires_grad(self.trainer.G, False)
+        self.trainer.set_requires_grad(self.trainer.D, False)
         acc = self.evaluate(0)
         self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
     
@@ -45,12 +45,14 @@ class AnoPredEvaluateHook(HookBase):
         !!! Or can call other methods written by the official
         '''
         self.trainer.G.eval()
+        self.trainer.D.eval()
+        self.trainer.F.eval()
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
         frame_num = self.trainer.config.DATASET.test_clip_length
         psnr_records=[]
         score_records=[]
-        total = 0
+        # total = 0
 
         # for dirs in video_dirs:
         random_video_sn = torch.randint(0, len(self.trainer.test_dataset_keys), (1,))
@@ -73,13 +75,13 @@ class AnoPredEvaluateHook(HookBase):
                 test_input = test_input[:, :, :-1, :, :].reshape(test_input.shape[0], -1, test_input.shape[-2],test_input.shape[-1]).cuda()
 
                 g_output = self.trainer.G(test_input)
-                test_psnr = psnr_error(g_output, test_target)
+                test_psnr = psnr_error(g_output.detach(), test_target, hat=True)
                 test_psnr = test_psnr.tolist()
                 psnrs[test_counter+frame_num-1]=test_psnr
                 scores[test_counter+frame_num-1]=test_psnr
 
                 test_counter += 1
-                total+=1
+                # total+=1
                 if sn == random_video_sn and (frame_sn in vis_range):
                     vis_objects = OrderedDict()
                     vis_objects['anopred_eval_frame'] = test_target.detach()
@@ -92,6 +94,7 @@ class AnoPredEvaluateHook(HookBase):
                     smax = max(scores)
                     smin = min(scores)
                     normal_scores = np.array([np.divide(s-smin, smax-smin) for s in scores])
+                    normal_scores = np.clip(normal_scores, 0, None)
                     psnr_records.append(psnrs)
                     score_records.append(normal_scores)
                     # print(f'finish test video set {video_name}')
