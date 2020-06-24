@@ -3,7 +3,7 @@ SYSTEM:
   num_gpus: 2
   gpus: [0,1]
   cudnn:
-    benchmark: true
+    benchmark: false
     deterministic: true
     enable: true
   distributed:

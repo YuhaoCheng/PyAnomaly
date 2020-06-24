@@ -1,8 +1,6 @@
 from .build.abstract import ModelBuilder
 from collections import OrderedDict
 import torch
-from colorama import init,Fore
-init(autoreset=True)
 
 class ModelAPI(ModelBuilder):
     def __init__(self, cfg, logger):
@@ -12,16 +10,16 @@ class ModelAPI(ModelBuilder):
 
     def __call__(self):
         model = super(ModelAPI, self).build()
-        self.logger.info('the name is' +Fore.RED +f'{self.cfg.MODEL.name}')
+        self.logger.info('The name is ' +f'\033[1;31m {self.cfg.MODEL.name} \033[0m')
         if isinstance(model, OrderedDict):
-            self.logger.info('Make the model is the'+ Fore.RED + ' OrderedDict')
+            self.logger.info('Make the model is the ' + '\033[1;31m OrderedDict \033[0m')
             message = 'The model keys are: '
             for key in model.keys():
-                temp = Fore.RED + str(key) + Fore.GREEN + ','
+                temp = f'\033[1;31m {key} \033[0m ,'
                 message += temp
             self.logger.info(message)
         elif isinstance(model, torch.nn. Module):
-            self.logger.info('Make the model is the' + Fore.RED + 'nn.Module')
+            self.logger.info('Make the model is the ' + ' \033[1:31m nn.Module \033[0m')
         else:
             raise Exception('No supprot model type')
 

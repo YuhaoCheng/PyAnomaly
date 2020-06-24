@@ -7,9 +7,6 @@ import os
 from torch.utils.data import Dataset
 from pyanomaly.datatools.abstract.anomaly_video_dataset import AbstractVideoAnomalyDataset
 from pyanomaly.datatools.abstract.tools import ImageLoader, VideoLoader
-from colorama import init,Fore
-
-init(autoreset=True)
 
 class AvenuePedShanghai(AbstractVideoAnomalyDataset):
     _NAME = 'AvenuePedShanghai Dataset'
@@ -135,7 +132,7 @@ def get_avenue_ped_shanghai(cfg, flag, aug):
         t = AvenuePedShanghai(cfg.DATASET.train_path, clip_length=cfg.DATASET.train_clip_length, clip_step=cfg.DATASET.train_clip_step, frame_step=cfg.DATASET.train_frame_step,transforms=aug, cfg=cfg)
     elif flag == 'val':
         t = MiniAvenuePedShanghai(cfg.DATASET.test_path, clip_length=cfg.DATASET.test_clip_length, clip_step=cfg.DATASET.test_clip_step, frame_step=cfg.DATASET.test_frame_step, transforms=aug, cfg=cfg)
-        print(Fore.RED + 'Using the mini dataset!!!!')
+        print(f'\033[1;31mUsing the MINI dataset of {cfg.DATASET.name} \033[0m')
     elif flag == 'test':
         t = _get_test_dataset(cfg, aug)
     elif flag == 'train_w':

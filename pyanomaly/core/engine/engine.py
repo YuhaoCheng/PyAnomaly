@@ -6,8 +6,8 @@ import time
 from PIL import Image
 from torch.autograd import Variable
 import torchvision.transforms.functional as tf
-from pyanomaly.utils.utils import save_checkpoint
-from pyanomaly.utils.utils import save_model
+from .utils import engine_save_checkpoint
+from .utils import engine_save_model
 from pyanomaly.core.utils import AverageMeter
 
 from .abstract_engine import AbstractTrainer, AbstractInference

@@ -1,6 +1,4 @@
 import torch
-from colorama import init, Fore, Back
-init(autoreset=True)
 from pathlib import Path
 from collections import OrderedDict
 class EngineAverageMeter(object):
@@ -41,8 +39,8 @@ def engine_save_model(cfg, cfg_name, model, logger, time_stamp,metric,verbose='N
         if best:
             torch.save(model.state_dict(), output_best)
 
-    logger.info(Fore.RED + f'=>Saved Model name:{model_name}')
-    logger.info(Fore.GREEN + f'=>Saved Best Model name:{model_name_best}')
+    logger.info(f'\033[1;31m =>Saved Model name:{model_name} \033[0m')
+    logger.info(f'\033[1;32m =>Saved Best Model name:{model_name_best} \033[0m')
 
     return str(output)
 
@@ -78,7 +76,7 @@ def engine_save_checkpoint(cfg, cfg_name, model, epoch, loss, optimizer, logger,
     output = output / file_name
     output_best = Path(cfg.TRAIN.checkpoint_output) / file_name_best
     torch.save(checkpoint, output)
-    logger.info(Fore.BLUE + f'=>Save checkpoint:{file_name}')
+    logger.info(f'\033[1;34m =>Save checkpoint:{file_name} \033[0m')
     if best:
         torch.save(checkpoint, output_best)
-        logger.info(Fore.GREEN + f'=>Save Best checkpoint:{file_name}')
+        logger.info(f'\033[1;32m =>Save Best checkpoint:{file_name} \033[0m')

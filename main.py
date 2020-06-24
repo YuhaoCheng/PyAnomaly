@@ -158,8 +158,8 @@ if __name__ == '__main__':
     cfg = update_config(cfg_path, args.opts)
     # get the logger
     logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name = create_logger(root_path, cfg, args.cfg_name, phase='train', verbose=args.verbose)
-    logger.info('^_^==> Use the following tensorboard:{}'.format(tensorboard_log_dir))
-    logger.info('@_@==> Use the following config in path: {}'.format(cfg_path))
+    logger.info(f'^_^==> Use the following tensorboard:{tensorboard_log_dir}')
+    logger.info(f'@_@==> Use the following config in path: {cfg_path}')
     logger.info(f'the configure name is {cfg_name}, the content is:\n{cfg}')
     
     # decide the spcific function: train or inference
