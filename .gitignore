@@ -17,6 +17,7 @@ final_model/
 
 # Distribution / packaging
 .Python
+build/
 .idea/
 .ipynb_checkpoints/
 develop-eggs/
@@ -24,7 +25,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-# lib/
+lib/
 lib64/
 sdist/
 var/

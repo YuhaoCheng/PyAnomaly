@@ -1,4 +1,4 @@
-from pyanomaly.datatools.evaluate.eval_function import eval_functions
+from .evaluate.eval_function import eval_functions
 
 class EvaluateAPI(object):
     def __init__(self, cfg, logger):

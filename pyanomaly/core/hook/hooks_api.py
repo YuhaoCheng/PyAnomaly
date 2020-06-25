@@ -1,4 +1,4 @@
-from .hookcatalog import HookCatalog
+from .abstract.hookcatalog import HookCatalog
 
 class HookAPI(object):
     def __init__(self, cfg, logger):

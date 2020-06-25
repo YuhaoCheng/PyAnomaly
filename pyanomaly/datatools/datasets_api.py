@@ -1,4 +1,4 @@
-from .build.build import DatasetBuilder
+from .dataclass.dataset_builder import DatasetBuilder
 
 class DataAPI(DatasetBuilder):
     def __init__(self, cfg):

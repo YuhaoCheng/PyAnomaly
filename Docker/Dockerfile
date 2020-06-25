@@ -39,13 +39,18 @@ RUN conda create -n pyanomaly python=3.6 \
     && pip install cupy-cuda101 \
     && pip install 'git+https://github.com/facebookresearch/detectron2.git' 
 
+# Install the requirements
 RUN pip install yacs \
     && pip install torchsnooper \
     && pip install sklearn \
     && pip install opencv-python \
     && pip install pillow \
     && pip install tsnecuda \
-    && pip install ipdb
+    && pip install ipdb \
+    && pip install tsnecuda \
+    && pip install scikit-image \
+    && pip install mmcv \
+    && pip install imgaug 
 
 # Get the Pyanomaly
 RUN git clone https://github.com/YuhaoCheng/PyAnomaly.git pyanomaly_docker\
@@ -54,7 +59,7 @@ RUN git clone https://github.com/YuhaoCheng/PyAnomaly.git pyanomaly_docker\
     && sh ./install.sh \
     && cd ..
 
-WORKDIR /home/appuser/pyanomaly_repo
+WORKDIR /home/appuser/pyanomaly_docker
 # Inital 
 # CMD conda run -n pyanomaly
 # ENTRYPOINT conda run -n pyanomaly

@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import Sampler
 
-from .abstract_build import AbstractBuilder
+from ..abstract.abstract_datasets_builder import AbstractBuilder
 
 from ..sampler.inf_sampler import TrainSampler
 from ..sampler.dist_inf_sampler import DistTrainSampler

@@ -9,14 +9,14 @@ from pyanomaly.utils.cmd import parse_args
 from pyanomaly.utils.system import system_setup
 from pyanomaly.utils.utils import create_logger, get_tensorboard
 
-from pyanomaly.networks.build_model import ModelAPI
-from pyanomaly.loss.build_loss import LossAPI
-from pyanomaly.core.optimizer.build_optimizer import OptimizerAPI
-from pyanomaly.core.scheduler.build_scheduler import SchedulerAPI
-from pyanomaly.core.hook.build.build_hooks import HookAPI
-from pyanomaly.datatools.build_augment import AugmentAPI
-from pyanomaly.datatools.build_datasets import DataAPI
-from pyanomaly.datatools.build_evaluate import EvaluateAPI
+from pyanomaly.networks.model_api import ModelAPI
+from pyanomaly.loss.loss_api import LossAPI
+from pyanomaly.core.optimizer.optimizer_api import OptimizerAPI
+from pyanomaly.core.scheduler.scheduler_api import SchedulerAPI
+from pyanomaly.core.hook.hooks_api import HookAPI
+from pyanomaly.datatools.augment_api import AugmentAPI
+from pyanomaly.datatools.datasets_api import DataAPI
+from pyanomaly.datatools.evaluate_api import EvaluateAPI
 
 def main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name):
     

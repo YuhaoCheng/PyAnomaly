@@ -1,4 +1,4 @@
-from .build.abstract import LossBuilder
+from .abstract.abstract_loss_builder import LossBuilder
 
 class LossAPI(LossBuilder):
     def __init__(self, cfg, logger):

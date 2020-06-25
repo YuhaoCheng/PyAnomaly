@@ -1,4 +1,4 @@
-from .build.abstract import ModelBuilder
+from .abstract.abstract_model_builder import ModelBuilder
 from collections import OrderedDict
 import torch
 

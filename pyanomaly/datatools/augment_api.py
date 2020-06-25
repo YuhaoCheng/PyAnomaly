@@ -1,6 +1,7 @@
 import torch
 import torchvision.transforms as T
-from .augment.augment import AugmentBuilder
+from .augment.augment_builder import AugmentBuilder
+
 class AugmentAPI(AugmentBuilder):
     def __init__(self,cfg, logger):
         super(AugmentAPI, self).__init__(cfg, logger)
