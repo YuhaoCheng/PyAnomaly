@@ -21,16 +21,22 @@ The requirement packages are as follows, and if users have some problems in inst
 - torchvison
 - `torchsnooper`
   - This package is in [Link](https://github.com/zasdfgbnm/TorchSnooper). This is a package  that help users to print the tensors'  shape during the debug process
+- `tsnecuda`
+- `scikit-image`
+- `mmcv`
+- `imgaug`
+- `opencv`
 
 #### Install PyAnomaly
 
+#### Method1
 ```shell
 cd ROOT/PATH
 git clone https://github.com/YuhaoCheng/PyAnomaly.git
 cd PyAnomaly
 ```
 
-#### Dataset Preparing
+##### Dataset Preparing
 1. Make the `data` folder in `PyAnomaly`:
 
    ```shell
@@ -68,3 +74,7 @@ cd PyAnomaly
 
    - Please put the annotations in the path which is written in the configuration file.
    - Please check the data path in the configuration file.
+
+#### Method2
+Using the docker, please refer to [DOCKER](./docker.md)
+

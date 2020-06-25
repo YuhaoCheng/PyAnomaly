@@ -22,22 +22,22 @@ nvidia-docker build -t pyanomaly:test .
 nvidia-docker run -t -i pyanomaly:test /bin/bash
 ```
 
-- The `data` folder and `output` folder should be the location in the host
+- The `data` folder  and `pretrained_model`should be the location in the host
 
-- We clone the `PyAnomaly` in `pyanomaly_repo` in docker, so the `data` should be `.../pyanomaly_repo/data` and the `output` should be `.../pyanomaly_repo/output`
+- We clone the `PyAnomaly` in `pyanomaly_docker` in docker, so the `data` should be `.../pyanomaly_docker/data` 
 
 - Users can use this to start the docker and mount the volumes:
 
   ```shell
   DATA_PATH=/path/to/dataset
-  OUTPUT_PATH=/path/to/output
-  nvidia-docker run -t -i -v $DATA_PATH:/home/appuser/pyanomaly_repo/data -v $OUTPUT_PATH:/home/appuser/pyanomaly_repo/output pyanomaly:test /bin/bash
+  PRETRAIN_MODEL_PATH=/path/to/pretrained/model
+  nvidia-docker run -t -i -v $DATA_PATH:/home/appuser/pyanomaly_docker/data -v $PRETRAIN_MODEL_PATH:/home/appuser/pyanomaly_docker/pretrained_model pyanomaly:test /bin/bash
   ```
 
 ##### Use in docker 
 
 ```
-conda activate pyanomaly
+bash ./script/train.sh -p /home/appuser/pyanomaly_docker
 ```
 
 
