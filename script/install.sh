@@ -1,5 +1,5 @@
 #!/bin/bash
-cd ../lib/networks/auxiliary/flownet2/correlation_package
+cd ../pyanomaly/networks/auxiliary/flownet2/correlation_package
 rm -rf *_cuda.egg-info build dist __pycache__
 python3 setup.py install --user
 

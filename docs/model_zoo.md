@@ -13,6 +13,8 @@
 |   AMC[13]   | [95.0]()(96.2) | [83.5]() (86.9) | - |
 | AnoPred[14] | [93.9]()(96.4) | [86.7]() (85.1) | [69.9]() (72.8) |
 
+Note: We found that different GPU type may inference the results. 
+
 ### Details
 
 #### Optical Flow

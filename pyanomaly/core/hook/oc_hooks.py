@@ -17,7 +17,10 @@ from .abstract.abstract_hook import HookBase
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import LinearSVC
 from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.externals import joblib
+try:
+    from sklearn.externals import joblib
+except:
+    import joblib
 
 HOOKS=['ClusterHook', 'OCEvaluateHook']
 
