@@ -298,7 +298,9 @@ class LiteFlowNet(torch.nn.Module):
 
     # end
 
-    def forward(self, tenFirst, tenSecond):
+    def forward(self, x):
+        tenFirst = x[:,:, 0, :, :]
+        tenSecond = x[:, :, 1, :, :]
         tenFirst[:, 0, :, :] = tenFirst[:, 0, :, :] - 0.411618
         tenFirst[:, 1, :, :] = tenFirst[:, 1, :, :] - 0.434631
         tenFirst[:, 2, :, :] = tenFirst[:, 2, :, :] - 0.454253
@@ -325,7 +327,6 @@ class LiteFlowNet(torch.nn.Module):
             tenFlow = self.netSubpixel[intLevel](tenFirst[intLevel], tenSecond[intLevel], tenFeaturesFirst[intLevel], tenFeaturesSecond[intLevel], tenFlow)
             tenFlow = self.netRegularization[intLevel](tenFirst[intLevel], tenSecond[intLevel], tenFeaturesFirst[intLevel], tenFeaturesSecond[intLevel], tenFlow)
         # end
-
         return tenFlow * 20.0
     # end
 # end

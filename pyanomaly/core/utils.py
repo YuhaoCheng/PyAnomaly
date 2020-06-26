@@ -254,6 +254,7 @@ def flow_batch_estimate(flow_model, tensor_batch, output_format='xym', optical_s
 
     # # import ipdb; ipdb.set_trace()
     input_flowmodel = torch.stack([tensorPreprocessedFirst, tensorPreprocessedSecond], dim=2)
+    # import ipdb; ipdb.set_trace()
     output_flowmodel = flow_model(input_flowmodel)
     
     optical_flow_uv = torch.nn.functional.interpolate(input=output_flowmodel,size=(intHeight_o, intWidth_o), mode='bilinear', align_corners=False)
