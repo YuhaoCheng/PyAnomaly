@@ -19,15 +19,15 @@ DATASET:
   read_format: 'opencv'
   channel_num: 3
   channel_name: 'rgb'
-  train_path: './data/Shanghai/training/frames'
+  train_path: './data/shanghai/training/frames'
   train_clip_length: 2
   train_frame_step: 1
   train_clip_step: 1
-  test_path: './data/Shanghai/testing/frames'
+  test_path: './data/shanghai/testing/frames'
   test_clip_length: 2
   test_frame_step: 1
   test_clip_step: 1
-  gt_path: './data/Shanghai/testing/test_frame_mask'
+  gt_path: './data/shanghai/testing/test_frame_mask'
   number_of_class: 1
   score_normalize: true
   score_type: 'abnormal'

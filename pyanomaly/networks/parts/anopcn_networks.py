@@ -36,16 +36,13 @@ def get_model_anopcn(cfg):
         temp = namedtuple('Args', ['fp16', 'rgb_max'])
         args = temp(False, rgb_max)
         flow_model = FlowNet2(args)
+        flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path)['state_dict'])
     elif cfg.MODEL.flownet == 'liteflownet':
         from pyanomaly.networks.auxiliary.liteflownet.models import LiteFlowNet
         flow_model = LiteFlowNet()
+        flow_model.load_state_dict({strKey.replace('module', 'net'): weight for strKey, weight in torch.load(cfg.MODEL.flow_model_path).items()})
     else:
         raise Exception('Not support optical flow methods')
-    
-    try:
-        flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path)['state_dict'])
-    except:
-        flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path))
 
     generator_model = AnoPcn(cfg)
     # discriminator_model = AMCDiscriminiator(c_in=6, filters=64)
