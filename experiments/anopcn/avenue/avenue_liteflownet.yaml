@@ -115,6 +115,8 @@ MODEL:
     val: ['anopcn.AnoPCNEvaluateHook']
   flownet: 'liteflownet'
   # hooks: ['base.VisScoreHook']
+  flow_model_path: './pretrained_model/liteflownet/network-sintel.pytorch'
+  discriminator_channels: [128,256,512,512]
 TRAIN:
   batch_size: 32
   start_step: 0

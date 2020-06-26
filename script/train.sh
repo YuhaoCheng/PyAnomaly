@@ -90,5 +90,5 @@ cd $project_path
 CUDA_VISIBLE_DEVICES=$GPUS python main.py --project_path $project_path --cfg_folder $cfg_folder --cfg_name $config --verbose $verbose  \
                                                 SYSTEM.multigpus $MULTIGPUS \
                                                 SYSTEM.num_gpus $NUM_GPUS \
-                                                MODEL.flow_model_path $project_path'/pretrained_model/FlowNet2_checkpoint.pth.tar' \
-                                                MODEL.discriminator_channels [128,256,512,512]
+                                                # MODEL.flow_model_path $project_path'/pretrained_model/FlowNet2_checkpoint.pth.tar' \
+                                                # MODEL.discriminator_channels [128,256,512,512]
