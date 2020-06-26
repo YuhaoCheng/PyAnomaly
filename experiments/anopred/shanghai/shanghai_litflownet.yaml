@@ -109,6 +109,7 @@ MODEL:
   hooks:
     train: ['anopred.AnoPredEvaluateHook', 'base.VisScoreHook']
     val: ['anopred.AnoPredEvaluateHook']
+  flownet: 'liteflownet'
   flow_model_path: ''
   discriminator_channels: []
   pretrain_model: ''

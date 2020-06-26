@@ -141,9 +141,10 @@ config.MODEL.hooks.val = []  # determine the hooks use in the training
 config.MODEL.flownet = 'flownet2' # the flownet type 'flownet2' | 'liteflownet'
 config.MODEL.flow_model_path = ''
 config.MODEL.discriminator_channels = []
-config.MODEL.pretrain_model = ''
+config.MODEL.detector = 'detectron2'
 config.MODEL.detector_config = ''
 config.MODEL.detector_model_path = ''
+config.MODEL.pretrain_model = ''
 
 # configure the resume
 config.RESUME = CN()

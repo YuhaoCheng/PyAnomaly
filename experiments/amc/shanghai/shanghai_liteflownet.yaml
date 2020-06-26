@@ -113,6 +113,7 @@ MODEL:
   hooks:
     train: ['amc.AMCEvaluateHook', 'base.VisScoreHook']
     val: ['amc.AMCEvaluateHook']
+  flownet: 'liteflownet'
   flow_model_path: ''
   discriminator_channels: []
   pretrain_model: ''

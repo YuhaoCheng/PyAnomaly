@@ -113,6 +113,7 @@ MODEL:
   hooks:
     train: ['anopcn.AnoPCNEvaluateHook', 'base.VisScoreHook']
     val: ['anopcn.AnoPCNEvaluateHook']
+  flownet: 'liteflownet'
   # hooks: ['base.VisScoreHook']
 TRAIN:
   batch_size: 32
