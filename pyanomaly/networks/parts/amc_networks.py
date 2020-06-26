@@ -120,7 +120,10 @@ def get_model_amc(cfg):
     else:
         raise Exception('Not support optical flow methods')
     
-    flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path)['state_dict'])
+    try:
+        flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path)['state_dict'])
+    except:
+        flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path))
     
     generator_model = AMCGenerator(c_in=3, opticalflow_channel_num=2, image_channel_num=cfg.DATASET.channel_num, dropout_prob=0.7)
     discriminator_model = AMCDiscriminiator(c_in=5, filters=64)

@@ -27,6 +27,20 @@ The requirement packages are as follows, and if users have some problems in inst
 - `imgaug`
 - `opencv`
 
+#### Pretrain Models
+
+##### Optical Flow
+
+This package will use Flownet2 and Liteflownet, so please follow the instructions on their Github to get the models and users should change the  location of these models in configuration.
+
+- [Flownet2](https://github.com/NVIDIA/flownet2-pytorch)
+- [LiteFlowNet](https://github.com/sniklaus/pytorch-liteflownet)
+
+##### Detection
+
+This project will use Detector, and we choose [Detectron2](https://github.com/facebookresearch/detectron2). So please download the models and change the location in configuration. 
+
+
 #### Install PyAnomaly
 
 #### Method1

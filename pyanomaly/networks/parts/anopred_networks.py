@@ -53,7 +53,10 @@ def get_model_ano_pred(cfg):
     else:
         raise Exception('Not support optical flow methods')
     
-    flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path)['state_dict'])
+    try:
+        flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path)['state_dict'])
+    except:
+        flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path))
     
 
     generator_model = GeneratorUnet(12,3) # 4*3 =12
