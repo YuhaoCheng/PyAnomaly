@@ -30,11 +30,13 @@ class AbstractVideoAnomalyDataset(AbstractImageDataset):
             self.normal_mean = self.cfg.ARGUMENT.train.normal.mean
             self.normal_std = self.cfg.ARGUMENT.train.normal.std
             self.aug_params = self.cfg.ARGUMENT.train
+            self.flag = 'Train'
         else:
             self.normal = self.cfg.ARGUMENT.val.normal.use
             self.normal_mean = self.cfg.ARGUMENT.val.normal.mean
             self.normal_std = self.cfg.ARGUMENT.val.normal.std
             self.aug_params = self.cfg.ARGUMENT.val
+            self.flag = 'Val'
         # set up the keys of the dataset
         self.setup()
         self.custom_setup()
@@ -59,17 +61,23 @@ class AbstractVideoAnomalyDataset(AbstractImageDataset):
                 self.videos[video_name]['cursor'] = 0
                 self.total_clips += (len(self.videos[video_name]['frames']) - self.clip_length)
             self.videos_keys = self.videos.keys()
-            print(f'\033[1;34m The clips are:{self.total_clips} \033[0m')
+            print(f'\033[1;34m The clip number of {self.cfg.DATASET.name}#{self.flag}is:{self.total_clips} \033[0m')
             # self.cursor = 0
         else:
+            self.total_clips_onevideo = 0
             # the dir is the path of one video
             video_name = os.path.split(self.dir)[-1]
-            self.videos['name'] = video_name
-            self.videos['path'] = self.dir
-            self.videos['frames'] =glob.glob(os.path.join(self.dir,f'*.{self.cfg.DATASET.image_format}'))
-            self.videos['frames'].sort()
-            self.pics_len=len(self.videos['frames'])
-
+            self.videos[video_name] = OrderedDict()
+            self.videos[video_name]['name'] = video_name
+            self.videos[video_name]['path'] = self.dir
+            self.videos[video_name]['frames'] =glob.glob(os.path.join(self.dir,f'*.{self.cfg.DATASET.image_format}'))
+            self.videos[video_name]['frames'].sort()
+            self.videos[video_name]['length'] = len(self.videos[video_name]['frames'])
+            self.videos[video_name]['cursor'] = 0
+            self.total_clips_onevideo += (len(self.videos[video_name]['frames']) - self.clip_length)
+            self.pics_len=len(self.videos[video_name]['frames'])
+            self.videos_keys = self.videos.keys()
+            print(f'\033[1;34m The clip number of one video {video_name}#{self.flag} is:{self.total_clips_onevideo} of {self.cfg.DATASET.name}\033[0m')
     def __getitem__(self, indice):
         # item, meta_data = self._get_frames(indice)
         item = self._get_frames(indice)

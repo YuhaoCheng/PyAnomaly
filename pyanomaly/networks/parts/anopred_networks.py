@@ -1,12 +1,8 @@
-# import sys
-# sys.path.append('../../')
 import torch
 import torch.nn as nn
 from collections import OrderedDict
 import torchsnooper
-# from lib.networks.parts.unet.unet_parts import *
 from pyanomaly.networks.parts.base.commonness import DoubleConv, Down, Up, OutConv, PixelDiscriminator, BasicConv2d
-from pyanomaly.networks.auxiliary.flownet2.models import FlowNet2
 
 class GeneratorUnet(nn.Module):
     def __init__(self, c_in, c_out, bilinear=False):
@@ -63,7 +59,6 @@ def get_model_ano_pred(cfg):
     generator_model = GeneratorUnet(12,3) # 4*3 =12
     discriminator_model = PixelDiscriminator(3, cfg.MODEL.discriminator_channels, use_norm=False)
     model_dict = OrderedDict()
-    # model_dict = {'Generator':generator_model,'Discriminator':discriminator_model, 'FlowNet':flow_model}
     model_dict['Generator'] = generator_model
     model_dict['Discriminator'] = discriminator_model
     model_dict['FlowNet'] = flow_model

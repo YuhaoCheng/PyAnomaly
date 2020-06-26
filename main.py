@@ -18,7 +18,7 @@ from pyanomaly.datatools.augment_api import AugmentAPI
 from pyanomaly.datatools.datasets_api import DataAPI
 from pyanomaly.datatools.evaluate_api import EvaluateAPI
 
-def main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name):
+def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name):
     
     # the system setting
     system_setup(args, cfg, logger)
@@ -123,7 +123,7 @@ def inference(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name
     test_dataset_dict, test_dataset_keys = da(flag='test', aug=val_augment)
     test_dataset_dict_w, test_dataset_keys_w = da(flag='train_w', aug=val_augment)
 
-    # Add the Summary writer 
+    # Add the Summary writer
     writer_dict = get_tensorboard(tensorboard_log_dir, time_stamp, cfg.MODEL.name, log_file_name)
 
     # build hook
@@ -156,15 +156,21 @@ if __name__ == '__main__':
     # Get the config yaml file and upate 
     cfg_path = root_path /'experiments'/ args.cfg_folder / args.cfg_name
     cfg = update_config(cfg_path, args.opts)
-    # get the logger
-    logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name = create_logger(root_path, cfg, args.cfg_name, phase='train', verbose=args.verbose)
-    logger.info(f'^_^==> Use the following tensorboard:{tensorboard_log_dir}')
-    logger.info(f'@_@==> Use the following config in path: {cfg_path}')
-    logger.info(f'the configure name is {cfg_name}, the content is:\n{cfg}')
     
     # decide the spcific function: train or inference
     if not args.inference:
-        main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name)
+        # get the logger
+        logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name = create_logger(root_path, cfg, args.cfg_name, phase='train', verbose=args.verbose)
+        logger.info(f'^_^==> Use the following tensorboard:{tensorboard_log_dir}')
+        logger.info(f'@_@==> Use the following config in path: {cfg_path}')
+        logger.info(f'the configure name is {cfg_name}, the content is:\n{cfg}')
+        train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name)
         logger.info('Finish training the whole process!!!')
     elif args.inference:
+        # get the logger
+        logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name = create_logger(root_path, cfg, args.cfg_name, phase='inference', verbose=args.verbose)
+        logger.info(f'^_^==> Use the following tensorboard:{tensorboard_log_dir}')
+        logger.info(f'@_@==> Use the following config in path: {cfg_path}')
+        logger.info(f'the configure name is {cfg_name}, the content is:\n{cfg}')
         inference(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name)
+        logger.info('Finish inference the whole process!!!')

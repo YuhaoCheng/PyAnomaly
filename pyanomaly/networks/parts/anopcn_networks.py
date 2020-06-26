@@ -4,7 +4,7 @@ import torchsnooper
 from collections import OrderedDict, namedtuple
 from pyanomaly.networks.parts.pcn_parts.pcm import PCM
 from pyanomaly.networks.parts.pcn_parts.erm import ERM
-from pyanomaly.networks.auxiliary.flownet2.models import FlowNet2
+
 from pyanomaly.networks.parts.amc_networks import AMCDiscriminiator
 from pyanomaly.networks.parts.base.commonness import PixelDiscriminator
 

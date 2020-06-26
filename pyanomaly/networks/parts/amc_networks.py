@@ -129,11 +129,3 @@ def get_model_amc(cfg):
     model_dict['Discriminator'] = discriminator_model
     model_dict['FlowNet'] = flow_model
     return model_dict
-
-
-if __name__ == '__main__':
-    # model = GeneratorUnet(3,3)
-    model = AMCDiscriminiator(c_in=6, filters=64)
-    temp = torch.rand((8,6,128,192))
-    output = model(temp)
-    import ipdb; ipdb.set_trace()

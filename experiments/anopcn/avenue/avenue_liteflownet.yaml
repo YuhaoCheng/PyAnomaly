@@ -14,24 +14,24 @@ LOG:
   vis_dir: './output/vis'
   
 DATASET:
-  name: 'ped2'
+  name: 'avenue'
   seed: 2020
   read_format: 'opencv'
-  image_format: 'tif'
   channel_num: 3
   channel_name: 'rgb'
-  optical_format: 'Y'
-  train_path: './data/ped2_tif/training/frames'
-  train_clip_length: 5
+  train_path: './data/Avenue/training/frames'
+  train_clip_length: 2
+  train_frame_step: 1
   train_clip_step: 1
-  test_path: './data/ped2_tif/testing/frames'
-  test_clip_length: 5
+  test_path: './data/Avenue/testing/frames'
+  test_clip_length: 2
+  test_frame_step: 1
   test_clip_step: 1
-  gt_path: './data/ped2_tif'
+  gt_path: './data/Avenue'
   number_of_class: 1
-  score_normalize: false
+  score_normalize: true
   score_type: 'abnormal'
-  decidable_idx: 4
+  decidable_idx: 1
   smooth:
     guassian: true
     guassian_sigma: 10
@@ -43,8 +43,8 @@ ARGUMENT:
     use: true
     resize:
       use: true
-      height: 256
-      width: 256
+      height: 128
+      width: 192
     grayscale:
       use: false
     normal:
@@ -52,7 +52,7 @@ ARGUMENT:
       mean: [0.5, 0.5, 0.5]
       std: [0.5, 0.5, 0.5]
     fliplr:
-      use: false
+      use: true
       p: 0.5
     flipud:
       use: false
@@ -77,8 +77,8 @@ ARGUMENT:
     use: true
     resize:
       use: true
-      height: 256
-      width: 256
+      height: 128
+      width: 192
     grayscale:
       use: false
     normal:
@@ -86,7 +86,7 @@ ARGUMENT:
       mean: [0.5, 0.5, 0.5]
       std: [0.5, 0.5, 0.5]
     fliplr:
-      use: false
+      use: true
       p: 0.5
     flipud:
       use: false
@@ -113,41 +113,32 @@ MODEL:
   hooks:
     train: ['anopcn.AnoPCNEvaluateHook', 'base.VisScoreHook']
     val: ['anopcn.AnoPCNEvaluateHook']
-  flow_model_path: ''
-  discriminator_channels: []
-  pretrain_model: ''
-  detector_config: ''
-  detector_model_path: ''
-RESUME:
-  flag: false
-  checkpoint_path: ''
-FINETUNE:
-  flag: false
-  layer_list: []
+  # hooks: ['base.VisScoreHook']
 TRAIN:
-  batch_size: 4
+  batch_size: 32
   start_step: 0
-  max_steps: 25520
+  max_steps: 20000
   log_step: 5
-  vis_step: 638
-  mini_eval_step: 400
-  eval_step: 638
-  save_step: 638
+  vis_step: 1000
+  mini_eval_step: 500
+  eval_step: 2000
+  save_step: 5000
   epochs: 1
-  loss: ['gan_loss_mse','gradient_loss', 'intentsity_loss', 'opticalflow_loss']
-  loss_coefficients: [0.025,1,1,2]
+  loss: ['gan_loss','gradient_loss', 'intentsity_loss', 'opticalflow_loss']
+  loss_coefficients: [0.25,1,1,2]
   mode: 'adversarial'
-  adversarial:
+  general:
     optimizer:
-      include: ['Generator', 'Discriminator']
+      include: ['A', 'B', 'C']
       name: 'adam'
-      g_lr: 0.0001
-      d_lr: 0.00001
+      lr: 1e-3
+      momentum: 0.9
       weight_decay: 0.0001
-      output_name: ['optimizer_g', 'optimizer_d']
+      nesterov: false
+      output_name: ['optimizer_abc']
     scheduler:
-      use: false
-      name: 'WarmupCosLR' # 'stepLR'| 'cosLR' | 'WarmupCosLR' | 'WarmupMultiStepLR'
+      use: true
+      name: 'stepLR'
       step_size: 1000
       steps: [10000, 15000]
       gamma: 0.1
@@ -155,7 +146,26 @@ TRAIN:
       eta_min: 0
       warmup_factor: 0.001
       warmup_iters: 1000
-      warmup_method: 'linear' # 'linear' | 'constant'
+      warmup_method: 'linear'
+  adversarial:
+    optimizer:
+      include: ['Generator', 'Discriminator']
+      name: 'adam'
+      g_lr: 0.0002
+      d_lr: 0.00002
+      weight_decay: 0.0001
+      output_name: ['optimizer_g', 'optimizer_d']
+    scheduler:
+      use: true
+      name: 'WarmupCosLR'
+      step_size: 1000
+      steps: [10000, 15000]
+      gamma: 0.1
+      T_max: 300
+      eta_min: 0
+      warmup_factor: 0.001
+      warmup_iters: 1000
+      warmup_method: 'linear'
   split: ''
   model_output: './output/models'
   checkpoint_output: './output/checkpoint'

@@ -203,7 +203,7 @@ class OCEvaluateHook(HookBase):
                         vis_objects['oc_output_b'] = temp_b.detach()
                         vis_objects['oc_input_c'] = C_input.detach()
                         vis_objects['oc_output_c'] = temp_c.detach()
-                        tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize, mean=self.trainer.mean, std=self.trainer.std)
+                        tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
 
 
                     A_flatten_feature = A_feature.flatten(start_dim=1)

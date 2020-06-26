@@ -51,12 +51,13 @@ class AvenuePedShanghaiOneVideo(AbstractVideoAnomalyDataset):
         return self.pics_len
 
     def _get_frames(self, indice):
+        video_name = list(self.videos_keys)[0]
         start = (indice * self.clip_step) % self.pics_len
         if start + self.clip_length >= self.pics_len:
             end = self.pics_len - 1
         else:
             end = start + self.clip_length
-        video_clip, video_clip_original = self.video_loader.read(self.videos['frames'], start, end, clip_length=self.clip_length, step=self.frame_step)
+        video_clip, video_clip_original = self.video_loader.read(self.videos[video_name]['frames'], start, end, clip_length=self.clip_length, step=self.frame_step)
         return video_clip, video_clip_original
     
     def get_image(self,name):
@@ -107,7 +108,11 @@ def _get_train_w_dataset(cfg, aug):
     video_dirs.sort()
     for t_dir in video_dirs:
         _temp_test_folder = os.path.join(cfg.DATASET.train_path, t_dir)
-        dataset = AvenuePedShanghaiOneVideo(_temp_test_folder, clip_length=cfg.DATASET.train_clip_length, clip_step=cfg.DATASET.train_clip_step, frame_step=cfg.DATASET.train_frame_step,transforms=aug, cfg=cfg)
+        if cfg.DATASET.name == 'shanghai':
+            dataset = MiniAvenuePedShanghai(_temp_test_folder, clip_length=cfg.DATASET.test_clip_length, clip_step=cfg.DATASET.test_clip_step, frame_step=cfg.DATASET.test_frame_step, one_video=True, transforms=aug, cfg=cfg)
+            print(f'\033[1;31mUsing the MINI dataset of {cfg.DATASET.name} for calc the w \033[0m')
+        else:
+            dataset = AvenuePedShanghaiOneVideo(_temp_test_folder, clip_length=cfg.DATASET.train_clip_length, clip_step=cfg.DATASET.train_clip_step, frame_step=cfg.DATASET.train_frame_step,transforms=aug, cfg=cfg)
         dataset_list[t_dir] = dataset
     video_keys = list(dataset_list.keys())
     return (dataset_list, video_keys)
@@ -132,7 +137,7 @@ def get_avenue_ped_shanghai(cfg, flag, aug):
         t = AvenuePedShanghai(cfg.DATASET.train_path, clip_length=cfg.DATASET.train_clip_length, clip_step=cfg.DATASET.train_clip_step, frame_step=cfg.DATASET.train_frame_step,transforms=aug, cfg=cfg)
     elif flag == 'val':
         t = MiniAvenuePedShanghai(cfg.DATASET.test_path, clip_length=cfg.DATASET.test_clip_length, clip_step=cfg.DATASET.test_clip_step, frame_step=cfg.DATASET.test_frame_step, transforms=aug, cfg=cfg)
-        print(f'\033[1;31mUsing the MINI dataset of {cfg.DATASET.name} \033[0m')
+        print(f'\033[1;31mUsing the MINI dataset of {cfg.DATASET.name} for evaluation in the process of training\033[0m')
     elif flag == 'test':
         t = _get_test_dataset(cfg, aug)
     elif flag == 'train_w':
