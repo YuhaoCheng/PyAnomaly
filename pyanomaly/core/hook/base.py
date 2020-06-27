@@ -28,7 +28,7 @@ class VisScoreHook(HookBase):
             with open(self.trainer.pkl_path, 'rb') as reader:
                 results = pickle.load(reader)
             print(f'The results in {self.trainer.pkl_path}')
-            sigma = self.trainer.cfg.DATASET.smooth.guassian_sigma[0]
+            sigma = self.trainer.config.DATASET.smooth.guassian_sigma[0]
             psnrs = results['psnr']
             smooth_psnrs = results[f'psnr_smooth_{sigma}']
             scores = results['score']

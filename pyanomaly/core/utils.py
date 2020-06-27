@@ -403,7 +403,7 @@ def save_results(cfg, logger, verbose=None, config_name='None', current_step=0, 
                 new_psnr = smooth_value(psnr, sigma)
                 result_dict[f'psnr_smooth_{sigma}'] = new_psnr
         else:
-            result_dict['psnr_smooth'] = []
+            result_dict[f'psnr_smooth_{cfg.DATASET.smooth.guassian_sigma[0]}'] = []
         
         logger.info(f'Smooth the value with sigma:{cfg.DATASET.smooth.guassian_sigma}')
     # result_dict = {'dataset': self.trainer.config.DATASET.name, 'psnr': [], 'score': score_records, 'flow': [], 'names': [], 'diff_mask': [], 'num_videos':len(score_records)}

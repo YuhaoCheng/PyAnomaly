@@ -40,7 +40,7 @@ def load_pickle_results(loss_file, cfg):
             # psnr_records = results[f'psnr_smooth_{sigma}']
             score_records.append(results[f'score_smooth_{sigma}'])
             if len(results['psnr']) == 0:
-                psnr_records.append(results['psnr_smooth'])
+                psnr_records = [results[f'psnr_smooth_{cfg.DATASET.smooth.guassian_sigma[0]}']]
             else:
                 psnr_records.append(results[f'psnr_smooth_{sigma}'])
         # new_score = []
