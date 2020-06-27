@@ -17,21 +17,22 @@ DATASET:
   name: 'ped2'
   seed: 2020
   read_format: 'opencv'
+  image_format: 'tif'
   channel_num: 1
   channel_name: 'gray'
-  train_path: './data/ped2/training/frames'
+  train_path: './data/ped2_tif/training/frames'
   train_clip_length: 16
   train_frame_step: 1
   train_clip_step: 1
-  test_path: './data/ped2/testing/frames'
+  test_path: './data/ped2_tif/testing/frames'
   test_clip_length: 16
   test_frame_step: 1
   test_clip_step: 1
-  gt_path: './data/ped2'
+  gt_path: './data/ped2_tif'
   number_of_class: 1
-  score_normalize: true
-  score_type: 'abnormal'
-  decidable_idx: 1
+  score_normalize: false
+  score_type: 'normal'
+  decidable_idx: 0
   smooth:
     guassian: true
     guassian_sigma: 10

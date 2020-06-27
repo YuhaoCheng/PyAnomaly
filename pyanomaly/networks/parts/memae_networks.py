@@ -11,197 +11,41 @@ from collections import OrderedDict
 
 import torchsnooper
 
-# class MemoryUnit(nn.Module):
-#     def __init__(self, mem_dim, fea_dim, bias=True, shrink_thres=0.0005):
-#         super(MemoryUnit, self).__init__()
-#         self.mem_dim = mem_dim
-#         self.fea_dim = fea_dim
-#         self.weight = Parameter(torch.Tensor(self.mem_dim, self.fea_dim))  # M x C
-#         self.bias = bias
-#         self.shrink_thres= shrink_thres
-#         # self.hard_sparse_shrink_opt = nn.Hardshrink(lambd=shrink_thres)
-
-#         self.reset_parameters()
-
-#     def reset_parameters(self):
-#         stdv = 3. / math.sqrt(self.weight.size(1))
-#         # self.weight.data.uniform_(-stdv, stdv)
-#         nn.init.kaiming_uniform_(self.weight.data)
-#         if self.bias:
-#             self.bias_data = Parameter(torch.Tensor(self.mem_dim))
-#             self.bias_data = nn.init.kaiming_uniform(stdv)
-#         else:
-#             self.bias_data = None
-#         # import ipdb; ipdb.set_trace()
-
-#     def forward(self, input):
-#         # att_weight = F.linear(input, self.weight)  # Fea x Mem^T, (TxC) x (CxN) = TxN
-#         # import ipdb; ipdb.set_trace()
-#         att_weight = F.linear(input, self.weight, bias=self.bias_data)
-#         att_weight = torch.div(att_weight, (input.norm() * self.weight.norm()))
-#         att_weight = F.softmax(att_weight, dim=1)  # TxN
-#         # ReLU based shrinkage, hard shrinkage for positive value
-#         if(self.shrink_thres>0):
-#             att_weight = hard_shrink_relu(att_weight, lambd=self.shrink_thres)
-#             # att_weight = F.softshrink(att_weight, lambd=self.shrink_thres)
-#             # normalize???
-#             import ipdb; ipdb.set_trace()
-#             att_weight = F.normalize(att_weight, p=1, dim=1)
-#             # att_weight = F.softmax(att_weight, dim=1)
-#             # att_weight = self.hard_sparse_shrink_opt(att_weight)
-#         mem_trans = self.weight.permute(1, 0)  # Mem^T, NxC
-#         # import ipdb; ipdb.set_trace()
-#         output = F.linear(att_weight, mem_trans)  # AttWeight x Mem^T^T = AW x Mem, (TxN) x (NxC) = TxC
-#         return {'output': output, 'att': att_weight}  # output, att_weight
-
-#     def extra_repr(self):
-#         return 'mem_dim={}, fea_dim={}'.format(
-#             self.mem_dim, self.fea_dim is not None
-#         )
-
-
-# # NxCxHxW -> (NxHxW)xC -> addressing Mem, (NxHxW)xC -> NxCxHxW
-# class MemModule(nn.Module):
-#     def __init__(self, mem_dim, fea_dim, shrink_thres=0.0005, device='cuda'):
-#         super(MemModule, self).__init__()
-#         self.mem_dim = mem_dim
-#         self.fea_dim = fea_dim
-#         self.shrink_thres = shrink_thres
-#         self.linear = nn.Sequential(
-#             nn.Linear(65536, 2048),
-#             nn.ReLU(inplace=True),
-#             nn.Linear(2048, 1024),
-#             nn.ReLU(inplace=True),
-#             nn.Linear(1024, self.fea_dim)
-#         )
-#         # self.Linear1 = nn.Linear(65536, 2048)
-#         # self.Linear2 = nn.Linear(2048, 1024)
-#         # self.Linear3 = nn.Linear(1024, self.fea_dim)
-#         # self.upLinear1 = nn.Linear(self.fea_dim, 1024)
-#         # self.upLinear2 = nn.Linear(1024, 2048)
-#         # self.upLinear3 = nn.Linear(2048, 65536)
-#         self.upLinear = nn.Sequential(
-#             nn.Linear(self.fea_dim, 1024),
-#             nn.ReLU(inplace=True),
-#             nn.Linear(1024, 2048),
-#             nn.ReLU(inplace=True),
-#             nn.Linear(2048, 65536)
-#         )
-#         self.memory = MemoryUnit(self.mem_dim, self.fea_dim, self.shrink_thres)
-
-#     def forward(self, input):
-#         x = input.reshape(input.shape[0], -1)
-#         # x = self.Linear1(x)
-#         # x = self.Linear2(x)
-#         # x = self.Linear3(x)
-#         x = self.linear(x)
-#         y_and = self.memory(x)
-
-#         y = y_and['output']
-#         att = y_and['att']
-#         # y = self.upLinear1(y)
-#         # y = self.upLinear2(y)
-#         # y = self.upLinear3(y)
-#         y = self.upLinear(y)
-
-#         y = y.reshape(input.shape)
-
-#         return {'output': y, 'att': att}
-
-# # relu based hard shrinkage function, only works for positive values
-# def hard_shrink_relu(input, lambd=0, epsilon=1e-12):
-#     output = (F.relu(input-lambd) * input) / (torch.abs(input - lambd) + epsilon)
-#     return output
-
-# class AutoEncoderCov3DMem(nn.Module):
-#     def __init__(self, chnum_in, mem_dim, shrink_thres=0.0005):
-#         super(AutoEncoderCov3DMem, self).__init__()
-#         self.chnum_in = chnum_in
-#         # feature_num = 128
-#         # feature_num_2 = 96
-#         # feature_num_x2 = 256
-#         self.encoder = nn.Sequential(
-#             nn.Conv3d(self.chnum_in, 96, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1)),
-#             nn.BatchNorm3d(96),
-#             nn.ReLU(inplace=True),
-#             nn.Conv3d(96, 128, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1)),
-#             nn.BatchNorm3d(128),
-#             # nn.LeakyReLU(0.2, inplace=True),
-#             nn.ReLU(inplace=True),
-#             nn.Conv3d(128, 256, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1)),
-#             nn.BatchNorm3d(256),
-#             nn.ReLU(inplace=True),
-#             nn.Conv3d(256, 256, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1)),
-#             nn.BatchNorm3d(256),
-#             nn.ReLU(inplace=True),
-#         )
-#         self.mem_rep = MemModule(mem_dim=mem_dim, fea_dim=256, shrink_thres =shrink_thres)
-#         self.decoder = nn.Sequential(
-#             nn.ConvTranspose3d(256, 256, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1),
-#                                output_padding=(1, 1, 1)),
-#             nn.BatchNorm3d(256),
-#             nn.LeakyReLU(0.2, inplace=True),
-#             nn.ConvTranspose3d(256, 256, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1),
-#                                output_padding=(1, 1, 1)),
-#             nn.BatchNorm3d(256),
-#             nn.LeakyReLU(0.2, inplace=True),
-#             nn.ConvTranspose3d(256, 128, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1),
-#                                output_padding=(1, 1, 1)),
-#             nn.BatchNorm3d(128),
-#             nn.LeakyReLU(0.2, inplace=True),
-#             nn.ConvTranspose3d(128, self.chnum_in, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1),
-#                                output_padding=(1, 1, 1))
-#         )
-
-#         self._init_weights()
-
-#     def _init_weights(self):
-#         for m in self.modules():
-#             if isinstance(m, nn.Conv3d):
-#                 nn.init.kaiming_normal_(m.weight.data, mode='fan_out')
-#             if isinstance(m, nn.ConvTranspose3d):
-#                 nn.init.kaiming_normal_(m.weight.data, mode='fan_out')
-#     # @torchsnooper.snoop()
-#     def forward(self, x):
-#         f = self.encoder(x)
-#         # import ipdb; ipdb.set_trace()
-#         res_mem = self.mem_rep(f)
-#         f = res_mem['output']
-#         att = res_mem['att']
-#         output = self.decoder(f)
-#         print(f'max att:{att.max()}')
-#         # return {'output': output, 'att': att}
-#         # import ipdb; ipdb.set_trace()
-#         return output, att
 class MemoryUnit(nn.Module):
-    def __init__(self, mem_dim, fea_dim, shrink_thres=0.0025):
+    def __init__(self, mem_dim, fea_dim, hard_shrink=True, shrink_thres=0.0025):
         super(MemoryUnit, self).__init__()
         self.mem_dim = mem_dim
         self.fea_dim = fea_dim
+        self.hard_shrink = hard_shrink
         self.weight = Parameter(torch.Tensor(self.mem_dim, self.fea_dim))  # M x C
         self.bias = None
         self.shrink_thres= shrink_thres
         # self.hard_sparse_shrink_opt = nn.Hardshrink(lambd=shrink_thres)
 
-        self.reset_parameters()
+        self._init_weights()
 
-    def reset_parameters(self):
-        stdv = 1. / math.sqrt(self.weight.size(1))
-        self.weight.data.uniform_(-stdv, stdv)
-        if self.bias is not None:
-            self.bias.data.uniform_(-stdv, stdv)
+    def _init_weights(self):
+        nn.init.kaiming_uniform_(self.weight, mode='fan_in', nonlinearity='relu')
+    
+    def hard_shrink_relu(self, input, lambd=0, epsilon=1e-12):
+        output = (F.relu(input-lambd) * input) / (torch.abs(input - lambd) + epsilon)
+        return output
 
     def forward(self, input):
+        N, C, D, H, W = input.size()
         att_weight = F.linear(input, self.weight)  # Fea x Mem^T, (TxC) x (CxM) = TxM
         att_weight = F.softmax(att_weight, dim=1)  # TxM
         # ReLU based shrinkage, hard shrinkage for positive value
-        if(self.shrink_thres>0):
-            att_weight = hard_shrink_relu(att_weight, lambd=self.shrink_thres)
+        if self.hard_shrink:
+            att_weight = self.hard_shrink_relu(att_weight, lambd=self.shrink_thres)
             # att_weight = F.softshrink(att_weight, lambd=self.shrink_thres)
             # normalize???
             att_weight = F.normalize(att_weight, p=1, dim=1)
             # att_weight = F.softmax(att_weight, dim=1)
             # att_weight = self.hard_sparse_shrink_opt(att_weight)
+        else:
+            att_weight = F.ReLU(att_weight)
+
         mem_trans = self.weight.permute(1, 0)  # Mem^T, MxC
         output = F.linear(att_weight, mem_trans)  # AttWeight x Mem^T^T = AW x Mem, (TxM) x (MxC) = TxC
         return {'output': output, 'att': att_weight}  # output, att_weight
@@ -264,58 +108,101 @@ class MemModule(nn.Module):
         return {'output': y, 'att': att}
 
 # relu based hard shrinkage function, only works for positive values
-def hard_shrink_relu(input, lambd=0, epsilon=1e-12):
-    output = (F.relu(input-lambd) * input) / (torch.abs(input - lambd) + epsilon)
-    return output
+
+
+class MemoryModule3D(nn.Module):
+    def __init__(self, mem_dim, fea_dim, hard_shrink=True):
+        super(MemoryModule3D, self).__init__()
+        self.mem_dim = mem_dim
+        self.fea_dim = fea_dim
+        self.hard_shrink = hard_shrink
+        if hard_shrink:
+            self.shrink_thres = 1.0 / self.mem_dim
+        self.memory = Parameter(torch.Tensor(self.mem_dim, self.fea_dim))  # M x C
+        self.cos_similarity = nn.CosineSimilarity(dim=2, )
+
+        self._init_weights()
+    
+    def _init_weights(self):
+        nn.init.kaiming_uniform_(self.memory)
+    
+    def hard_shrink_relu(self, input, lambd=0, epsilon=1e-15):
+        output = (F.relu(input-lambd) * input) / (torch.abs(input - lambd) + epsilon)
+        return output
+    
+    def forward(self, z):
+        N, C, D, H, W = z.size() # C=256
+        z = z.reshape(N, C, -1)  # z is to be [N, C, D*H*W]
+        ex_mem = self.memory.unsqueeze(0).repeat(N, 1, 1) # the shape of memory is to be [N, M, C]
+        ex_mem = ex_mem.unsqueeze(-1).repeat(1, 1, 1, z.shape[-1])
+        ex_z = z.unsqueeze(1).repeat(1,self.mem_dim, 1, 1) # ex_z is to be [N, M, C, D*H*W]
+        w_logit = self.cos_similarity(ex_z, ex_mem)
+        w = F.softmax(w_logit, dim=1)
+        if self.hard_shrink:
+            w_hat = self.hard_shrink_relu(w, lambd=self.shrink_thres)
+        else:
+            w_hat = F.ReLU(w)
+        
+        # import ipdb; ipdb.set_trace()
+        w_hat = F.normalize(w_hat, p=1, dim=1)
+        z_hat = torch.matmul(w_hat.permute(0,2,1), self.memory)
+        z_output = z_hat.permute(0,2,1).reshape(N,C,D,H,W)
+        return z_output, w_hat
+        
+
 
 class AutoEncoderCov3DMem(nn.Module):
     def __init__(self, chnum_in, mem_dim, shrink_thres=0.0025):
         super(AutoEncoderCov3DMem, self).__init__()
         print('AutoEncoderCov3DMem')
         self.chnum_in = chnum_in
-        feature_num = 128
-        feature_num_2 = 96
-        feature_num_x2 = 256
+        self.mem_dim = mem_dim
+        channel_size = 32
         self.encoder = nn.Sequential(
-            nn.Conv3d(self.chnum_in, feature_num_2, (3, 3, 3), stride=(1, 2, 2), padding=(1, 1, 1)),
-            nn.BatchNorm3d(feature_num_2),
+            nn.Conv3d(self.chnum_in, channel_size*3, (3, 3, 3), stride=(1, 2, 2), padding=(1, 1, 1)),
+            nn.BatchNorm3d(channel_size*3),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv3d(feature_num_2, feature_num, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1)),
-            nn.BatchNorm3d(feature_num),
+            nn.Conv3d(channel_size*3, channel_size*4, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1)),
+            nn.BatchNorm3d(channel_size*4),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv3d(feature_num, feature_num_x2, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1)),
-            nn.BatchNorm3d(feature_num_x2),
+            nn.Conv3d(channel_size*4, channel_size*8, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1)),
+            nn.BatchNorm3d(channel_size*8),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Conv3d(feature_num_x2, feature_num_x2, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1)),
-            nn.BatchNorm3d(feature_num_x2),
+            nn.Conv3d(channel_size*8, channel_size*8, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1)),
+            nn.BatchNorm3d(channel_size*8),
             nn.LeakyReLU(0.2, inplace=True)
         )
-        self.mem_rep = MemModule(mem_dim=mem_dim, fea_dim=feature_num_x2, shrink_thres =shrink_thres)
+
+        self.mem_rep = MemoryModule3D(mem_dim=self.mem_dim, fea_dim=channel_size*8, hard_shrink=True)
+
         self.decoder = nn.Sequential(
-            nn.ConvTranspose3d(feature_num_x2, feature_num_x2, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1),
-                               output_padding=(1, 1, 1)),
-            nn.BatchNorm3d(feature_num_x2),
+            nn.ConvTranspose3d(channel_size*8, channel_size*8, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1), output_padding=(1, 1, 1)),
+            nn.BatchNorm3d(channel_size*8),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.ConvTranspose3d(feature_num_x2, feature_num, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1),
-                               output_padding=(1, 1, 1)),
-            nn.BatchNorm3d(feature_num),
+            nn.ConvTranspose3d(channel_size*8, channel_size*4, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1), output_padding=(1, 1, 1)),
+            nn.BatchNorm3d(channel_size*4),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.ConvTranspose3d(feature_num, feature_num_2, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1),
-                               output_padding=(1, 1, 1)),
-            nn.BatchNorm3d(feature_num_2),
+            nn.ConvTranspose3d(channel_size*4, channel_size*3, (3, 3, 3), stride=(2, 2, 2), padding=(1, 1, 1), output_padding=(1, 1, 1)),
+            nn.BatchNorm3d(channel_size*3),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.ConvTranspose3d(feature_num_2, self.chnum_in, (3, 3, 3), stride=(1, 2, 2), padding=(1, 1, 1),
-                               output_padding=(0, 1, 1))
+            nn.ConvTranspose3d(channel_size*3, self.chnum_in, (3, 3, 3), stride=(1, 2, 2), padding=(1, 1, 1), output_padding=(0, 1, 1))
         )
+
+        self._init_weights()
+    
+    def _init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv3d):
+                m.weight = nn.init.kaiming_normal_(m.weight, mode='fan_out')
+            if isinstance(m, nn.ConvTranspose3d):
+                m.weight = nn.init.kaiming_normal_(m.weight, mode='fan_out')
 
     def forward(self, x):
         f = self.encoder(x)
-        import ipdb; ipdb.set_trace()
-        res_mem = self.mem_rep(f)
-        f = res_mem['output']
-        att = res_mem['att']
-        output = self.decoder(f)
-        return {'output': output, 'att': att}
+        z_hat, w_hat = self.mem_rep(f)
+        output = self.decoder(z_hat)
+        # import ipdb; ipdb.set_trace()
+        return output, w_hat
 
 def get_model_memae(cfg):
     model_dict = OrderedDict()

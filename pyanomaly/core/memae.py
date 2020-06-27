@@ -136,7 +136,7 @@ class Trainer(DefaultTrainer):
         output_rec, att = self.MemAE(input_data)
         loss_rec = self.rec_loss(output_rec, input_data)
         loss_mem = self.mem_loss(att)
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         loss_memae_all = self.loss_lamada['rec_loss'] * loss_rec + self.loss_lamada['mem_loss'] * loss_mem 
         self.optim_MemAE.zero_grad()
         loss_memae_all.backward()

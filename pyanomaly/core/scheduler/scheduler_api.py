@@ -2,7 +2,7 @@ import torch
 from .schedulers import WarmupMultiStepLR, WarmupCosineLR
 from collections import OrderedDict
 class SchedulerAPI(object):
-    _SUPPORT = ['stepLR', 'cosLR', 'WarmupCosLR', 'WarmupMultiStepLR']
+    _SUPPORT = ['stepLR', 'cosLR', 'WarmupCosLR', 'WarmupMultiStepLR', 'MultiStepLR']
     def __init__(self, cfg, logger):
         self.cfg = cfg
         self.logger = logger
@@ -25,6 +25,10 @@ class SchedulerAPI(object):
             t_scheduelr = WarmupCosineLR(optimizer_param, self.params.T_max, warmup_factor=self.params.warmup_factor, warmup_iters=self.params.warmup_iters, warmup_method=self.params.warmup_method)
         elif self.type == SchedulerAPI._SUPPORT[3]:
             t_scheduelr = WarmupMultiStepLR(optimizer_param, self.params.steps, self.params.gamma, warmup_factor=self.params.warmup_factor, warmup_iters=self.params.warmup_iters, warmup_method=self.params.warmup_method)
+        elif self.type == SchedulerAPI._SUPPORT[4]:
+            t_scheduelr = torch.optim.lr_scheduler.MultiStepLR(optimizer_param, self.params.steps, gamma=self.params.gamma)
+        else:
+            raise Exception(f'Not Support Scheduler! The support schedulers are {SchedulerAPI._SUPPORT}')
         return t_scheduelr
     
     def __call__(self, optim_dict):

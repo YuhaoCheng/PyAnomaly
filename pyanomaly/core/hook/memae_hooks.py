@@ -110,6 +110,7 @@ class MemAEEvaluateHook(HookBase):
                     smin = min(scores)
                     # normal_scores = np.array([(1.0 - np.divide(s-smin, smax)) for s in scores])
                     normal_scores = (1.0 - torch.div(scores-smin, smax)).detach().cpu().numpy()
+                    normal_scores = np.clip(normal_scores, 0, None)
                     score_records.append(normal_scores)
                     print(f'finish test video set {video_name}')
                     break

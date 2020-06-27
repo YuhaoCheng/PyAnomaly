@@ -232,15 +232,8 @@ class OCEvaluateHook(HookBase):
                     print(f'finish test video set {video_name}')
                     break
         
-        # import ipdb; ipdb.set_trace()
-        # result_dict = {'dataset': self.trainer.config.DATASET.name, 'psnr': [], 'score': score_records, 'flow': [], 'names': [], 'diff_mask': [], 'num_videos':len(score_records)}
-        # result_path = os.path.join(self.trainer.config.TEST.result_output, f'{self.trainer.verbose}_cfg#{self.trainer.config_name}#step{current_step}@{self.trainer.kwargs["time_stamp"]}_results.pkl')
-        # with open(result_path, 'wb') as writer:
-        #     pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
-        self.pkl_path = save_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records)
-        # import ipdb; ipdb.set_trace()
-        # results = eval_api.evaluate('compute_auc_score', result_path, self.trainer.logger, self.trainer.config)
-        results = self.trainer.evaluate_function(self.pkl_path, self.trainer.logger, self.trainer.config)
+        self.trainer.pkl_path = save_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records)
+        results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config)
         self.trainer.logger.info(results)
         tb_writer.add_text('AUC of ROC curve', f'AUC is {results.auc:.5f}',global_steps)
         return results.auc

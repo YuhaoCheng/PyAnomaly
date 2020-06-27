@@ -17,15 +17,19 @@ DATASET:
   name: 'ped2'
   seed: 2020
   read_format: 'opencv'
-  train_path: './data/ped2/training/frames'
+  image_format: 'tif'
+  channel_num: 3
+  channel_name: 'rgb'
+  optical_format: 'Y'
+  train_path: './data/ped2_tif/training/frames'
   train_clip_length: 5
   train_clip_step: 1
-  test_path: './data/ped2/testing/frames'
+  test_path: './data/ped2_tif/testing/frames'
   test_clip_length: 5
   test_clip_step: 1
   gt_path: './data/ped2'
   number_of_class: 1
-  score_normalize: true
+  score_normalize: false
   score_type: 'normal'
   decidable_idx: 4
   smooth:
@@ -121,14 +125,14 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
-  batch_size: 8
+  batch_size: 4
   start_step: 0
-  max_steps: 12800
+  max_steps: 26796
   log_step: 10
-  vis_step: 320
-  mini_eval_step: 300
-  eval_step: 320
-  save_step: 320
+  vis_step: 638
+  mini_eval_step: 500
+  eval_step: 638
+  save_step: 638
   epochs: 1
   loss: ['gan_loss_mse','gradient_loss', 'intentsity_loss', 'opticalflow_loss']
   loss_coefficients: [0.025,1,1,2]
@@ -147,10 +151,10 @@ TRAIN:
       step_size: 1000
       steps: [10000, 15000]
       gamma: 0.1
-      T_max: 3200
+      T_max: 6380
       eta_min: 0
       warmup_factor: 0.01
-      warmup_iters: 320
+      warmup_iters: 1276
       warmup_method: 'linear' # 'linear' | 'constant'
   split: ''
   model_output: './output/models'

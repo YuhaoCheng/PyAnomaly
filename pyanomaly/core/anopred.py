@@ -64,7 +64,6 @@ class Trainer(DefaultTrainer):
             self.D = model['Discriminator'].cuda()
             self.F = model['FlowNet'].cuda() # lite flownet
         
-        self.F.eval()
         
         if kwargs['pretrain']:
             self.load_pretrain()
@@ -139,6 +138,7 @@ class Trainer(DefaultTrainer):
         start = time.time()
         self.G.train()
         self.D.train()
+        self.F.eval()
         self.set_requires_grad(self.F, False)
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
