@@ -28,21 +28,31 @@ def load_pickle_results(loss_file, cfg):
         results = pickle.load(reader)
 
     dataset = results['dataset']
-    psnr_records = results['psnr']
-    score_records = results['score']
+    # psnr_records = results['psnr']
+    # score_records = results['score']
+    score_records = list()
+    psnr_records = list()
     num_videos = results['num_videos']
     # import ipdb; ipdb.set_trace()
     if cfg.DATASET.smooth.guassian:
-        score_records = results['score_smooth']
-        psnr_records = results['psnr_smooth']
+        for sigma in cfg.DATASET.smooth.guassian_sigma:
+            # score_records = results[f'score_smooth_{sigma}']
+            # psnr_records = results[f'psnr_smooth_{sigma}']
+            score_records.append(results[f'score_smooth_{sigma}'])
+            if len(results['psnr']) == 0:
+                psnr_records.append(results['psnr_smooth'])
+            else:
+                psnr_records.append(results[f'psnr_smooth_{sigma}'])
         # new_score = []
         # for index, item in enumerate(score):
         #     temp = gaussian_filter1d(score[index], cfg.DATASET.smooth.guassian_sigma)
         #     new_score.append(temp)
         # print(f'Smooth the score with sigma:{cfg.DATASET.smooth.guassian_sigma}')
     else:
-        score_records = results['score']
-        psnr_records = results['psnr']
+        # score_records = results['score']
+        # psnr_records = results['psnr']
+        score_records.append(results['score'])
+        psnr_records.append(results['psnr'])
     # score = np.array(new_score)
     assert dataset == cfg.DATASET.name, f'The dataset are not match, Result:{dataset}, cfg:{cfg.DATASET.name}'
 

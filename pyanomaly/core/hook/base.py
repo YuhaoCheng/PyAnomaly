@@ -28,11 +28,11 @@ class VisScoreHook(HookBase):
             with open(self.trainer.pkl_path, 'rb') as reader:
                 results = pickle.load(reader)
             print(f'The results in {self.trainer.pkl_path}')
-            
+            sigma = self.trainer.cfg.DATASET.smooth.guassian_sigma[0]
             psnrs = results['psnr']
-            smooth_psnrs = results['psnr_smooth']
+            smooth_psnrs = results[f'psnr_smooth_{sigma}']
             scores = results['score']
-            smooth_scores = results['score_smooth']
+            smooth_scores = results[f'score_smooth_{sigma}']
             gt_loader = GroundTruthLoader(self.trainer.config)
             gt = gt_loader()
             if psnrs == []:
@@ -66,11 +66,11 @@ class VisScoreHook(HookBase):
                 ax3.set_xlabel('frames')
                 ax4 = fig.add_subplot(2,3,4)
                 ax4.plot([i for i in range(len(smooth_scores[video_id]))], smooth_scores[video_id])
-                ax4.set_ylabel(f'Guassian Smooth score{self.trainer.config.DATASET.smooth.guassian_sigma}')
+                ax4.set_ylabel(f'Guassian Smooth score{sigma}')
                 ax4.set_xlabel('frames')
                 ax5 = fig.add_subplot(2,3,5)
                 ax5.plot([i for i in range(len(smooth_psnrs[video_id]))], smooth_psnrs[video_id])
-                ax5.set_ylabel(f'Guassian Smooth PSNR{self.trainer.config.DATASET.smooth.guassian_sigma}')
+                ax5.set_ylabel(f'Guassian Smooth PSNR{sigma}')
                 writer.add_figure(f'verbose_{self.trainer.verbose}_{self.trainer.config_name}_{self.trainer.kwargs["time_stamp"]}_vis{video_id}', fig, global_steps)
             
         

@@ -6,9 +6,6 @@ from collections import OrderedDict
 from torch.utils.data import DataLoader
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from .abstract.abstract_hook import HookBase
-# from lib.datatools.evaluate import eval_api
-# from lib.datatools.evaluate.amc_utils import calc_anomaly_score_one_frame
-# from lib.datatools.evaluate.utils import simple_diff, find_max_patch, amc_score, calc_w
 from pyanomaly.core.utils import save_results, tensorboard_vis_images
 HOOKS = ['AnoPCNEvaluateHook']
 
@@ -96,6 +93,7 @@ class AnoPCNEvaluateHook(HookBase):
                     smax = max(scores)
                     smin = min(scores)
                     normal_scores = np.array([np.divide(s-smin, smax-smin) for s in scores])
+                    normal_scores = np.clip(normal_scores, 0, None)
                     psnr_records.append(psnrs)
                     score_records.append(normal_scores)
                     print(f'finish test video set {video_name}')

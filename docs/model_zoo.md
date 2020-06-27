@@ -28,13 +28,13 @@ Note: We found that different GPU type may inference the results.
 
 - We use the pre-trained models in these methods, which can be download from their GitHub repo. 
 
-  | Method  | Optical Flow Method | Ped2                                                         | Avenue | Shanghai |
-  | ------- | ------------------- | ------------------------------------------------------------ | ------ | -------- |
-  | AMC     | FlowNet2            | [97.4](https://drive.google.com/file/d/1spUSv_o5RIHc3x2NXTCVAQvpOz7vXoZ6/view?usp=sharing) |        |          |
-  | AMC     | LiteFlowNet         |                                                              |        |          |
-  | AnoPred | FlowNet2            |                                                              |        |          |
-  | AnoPred | LiteFlowNet         |                                                              |        |          |
-  | AnoPCN  | FlowNet2            |                                                              |        |          |
-  | AnoPCN  | LiteFlowNet         |                                                              |        |          |
+  | Method  | Optical Flow Method |                             Ped2                             | Avenue | Shanghai |
+  | :-----: | :-----------------: | :----------------------------------------------------------: | :----: | :------: |
+  |   AMC   |      FlowNet2       | [97.4](https://drive.google.com/file/d/1spUSv_o5RIHc3x2NXTCVAQvpOz7vXoZ6/view?usp=sharing) |        |    -     |
+  |   AMC   |     LiteFlowNet     |                                                              |        |    -     |
+  | AnoPred |      FlowNet2       |                                                              |        |          |
+  | AnoPred |     LiteFlowNet     |                           [89.5]()                           |        |          |
+  | AnoPCN  |      FlowNet2       |                                                              |        |          |
+  | AnoPCN  |     LiteFlowNet     |                                                              |        |          |
 
   

@@ -84,7 +84,7 @@ class Trainer(DefaultTrainer):
         self.gan_loss = loss_function['gan_loss_mse']
         self.gd_loss = loss_function['gradient_loss']
         self.int_loss = loss_function['intentsity_loss']
-        self.op_loss = loss_function['opticalflow_loss']
+        self.op_loss = loss_function['opticalflow_loss_sqrt']
 
         # basic meter
         self.batch_time =  AverageMeter()
@@ -168,7 +168,7 @@ class Trainer(DefaultTrainer):
         loss_int = self.int_loss(output_frame_G, target)
         loss_gd = self.gd_loss(output_frame_G, target)
 
-        loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + self.loss_lamada['opticalflow_loss'] * loss_op + self.loss_lamada['gan_loss_mse'] * loss_g_adv
+        loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + self.loss_lamada['opticalflow_loss_sqrt'] * loss_op + self.loss_lamada['gan_loss_mse'] * loss_g_adv
         self.optim_G.zero_grad()
         loss_g_all.backward()
         self.optim_G.step()

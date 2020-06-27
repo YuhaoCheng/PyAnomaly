@@ -36,7 +36,7 @@ DATASET:
   decidable_idx: 1
   smooth:
     guassian: true
-    guassian_sigma: 30
+    guassian_sigma: 10
   mini_dataset:
     samples: 100
   evaluate_function_type: 'compute_auc_score'

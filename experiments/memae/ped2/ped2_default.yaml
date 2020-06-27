@@ -31,11 +31,11 @@ DATASET:
   gt_path: './data/ped2_tif'
   number_of_class: 1
   score_normalize: false
-  score_type: 'normal'
+  score_type: 'abnormal'
   decidable_idx: 0
   smooth:
     guassian: true
-    guassian_sigma: 10
+    guassian_sigma: [5,10,15,20]
   mini_dataset:
     samples: 100
   evaluate_function_type: 'compute_auc_score'
@@ -128,12 +128,12 @@ FINETUNE:
 TRAIN:
   batch_size: 4
   start_step: 0
-  max_steps: 20000
-  log_step: 5
-  vis_step: 1000
+  max_steps: 26796
+  log_step: 10
+  vis_step: 638
   mini_eval_step: 500
-  eval_step: 20
-  save_step: 5
+  eval_step: 638
+  save_step: 638
   epochs: 1
   loss: ['rec_loss', 'mem_loss']
   loss_coefficients: [1, 0.0002]
@@ -149,14 +149,14 @@ TRAIN:
       output_name: ['optimizer_memae']
     scheduler:
       use: true
-      name: 'stepLR'
+      name: 'WarmupCosLR'
       step_size: 1000
       steps: [10000, 15000]
       gamma: 0.1
-      T_max: 300
+      T_max: 6380
       eta_min: 0
       warmup_factor: 0.001
-      warmup_iters: 1000
+      warmup_iters: 1276
       warmup_method: 'linear'
   adversarial:
     optimizer:

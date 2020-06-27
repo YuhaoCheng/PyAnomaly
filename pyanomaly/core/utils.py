@@ -353,6 +353,15 @@ def get_batch_dets(det_model, batch_image):
         return bboxs
 
 def save_results(cfg, logger, verbose=None, config_name='None', current_step=0, time_stamp='time_step', **kwargs):
+    
+    # Smooth  function
+    def smooth_value(value, sigma):
+        new_value = []
+        for index, _ in enumerate(value):
+            temp = gaussian_filter1d(value[index], sigma)
+            new_value.append(temp)
+        return new_value
+    
     if not os.path.exists(cfg.TEST.result_output):
         os.mkdir(cfg.TEST.result_output)
 
@@ -376,19 +385,23 @@ def save_results(cfg, logger, verbose=None, config_name='None', current_step=0, 
         result_dict[key] = kwargs[key]
     if cfg.DATASET.smooth.guassian:
         score = kwargs['score']
-        new_score = []
-        for index, item in enumerate(score):
-            temp = gaussian_filter1d(score[index], cfg.DATASET.smooth.guassian_sigma)
-            new_score.append(temp)
-        result_dict['score_smooth'] = new_score
+        # new_score = []
+        # for index, item in enumerate(score):
+        #     temp = gaussian_filter1d(score[index], cfg.DATASET.smooth.guassian_sigma)
+        #     new_score.append(temp)
+        for sigma in cfg.DATASET.smooth.guassian_sigma:
+            new_score = smooth_value(score, sigma)
+            result_dict[f'score_smooth_{sigma}'] = new_score
 
         if 'psnr' in result_keys:
             psnr = kwargs['psnr']
-            new_psnr = []
-            for index, item in enumerate(psnr):
-                temp = gaussian_filter1d(psnr[index], cfg.DATASET.smooth.guassian_sigma)
-                new_psnr.append(temp)
-            result_dict['psnr_smooth'] = new_psnr
+            # new_psnr = []
+            # for index, item in enumerate(psnr):
+            #     temp = gaussian_filter1d(psnr[index], cfg.DATASET.smooth.guassian_sigma)
+            #     new_psnr.append(temp)
+            for sigma in cfg.DATASET.smooth.guassian_sigma:
+                new_psnr = smooth_value(psnr, sigma)
+                result_dict[f'psnr_smooth_{sigma}'] = new_psnr
         else:
             result_dict['psnr_smooth'] = []
         

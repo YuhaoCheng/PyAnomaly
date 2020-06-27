@@ -30,7 +30,7 @@ DATASET:
   gt_path: './data/ped2_tif'
   number_of_class: 1
   score_normalize: false
-  score_type: 'abnormal'
+  score_type: 'normal'
   decidable_idx: 4
   smooth:
     guassian: true
@@ -134,7 +134,7 @@ TRAIN:
   eval_step: 638
   save_step: 638
   epochs: 1
-  loss: ['gan_loss_mse','gradient_loss', 'intentsity_loss', 'opticalflow_loss']
+  loss: ['gan_loss_mse','gradient_loss', 'intentsity_loss', 'opticalflow_loss_sqrt']
   loss_coefficients: [0.025,1,1,2]
   mode: 'adversarial'
   adversarial:

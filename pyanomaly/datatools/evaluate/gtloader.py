@@ -3,13 +3,14 @@ import numpy as np
 import scipy.io as scio
 
 class RecordResult(object):
-    def __init__(self, fpr=None, tpr=None, thresholds=None, auc=-np.inf, dataset=None, loss_file=None):
+    def __init__(self, fpr=None, tpr=None, thresholds=None, auc=-np.inf, dataset=None, loss_file=None, sigma=0):
         self.fpr = fpr
         self.tpr = tpr
         self.thresholds = thresholds
         self.auc = auc
         self.dataset = dataset
         self.loss_file = loss_file
+        self.sigma = sigma
 
     def __lt__(self, other):
         return self.auc < other.auc
@@ -18,7 +19,7 @@ class RecordResult(object):
         return self.auc > other.auc
 
     def __str__(self):
-        return f'dataset = {self.dataset}, loss file = {self.loss_file}, auc = {self.auc:.5f}'
+        return f'dataset = {self.dataset}, loss file = {self.loss_file}, auc = {self.auc:.5f}, sigma={self.sigma}'
     
     def get_threshold(self):
         diff_list = list()

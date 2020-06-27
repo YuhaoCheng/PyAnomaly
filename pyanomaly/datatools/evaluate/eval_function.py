@@ -233,6 +233,23 @@ def compute_auc_score(loss_file, logger, cfg, score_type='normal'):
         abnormal --> pos_label=1
         in dataset, 0 means normal, 1 means abnormal
     '''
+    def get_results(score_record, sigma, pos_label):
+        scores = np.array([], dtype=np.float32)
+        labels = np.array([], dtype=np.int8)
+
+        # video normalization
+        for i in range(num_videos):
+            score_one_video = score_record[i]
+            score_one_video = np.clip(score_one_video, 0, None)
+            scores = np.concatenate((scores, score_one_video[DECIDABLE_IDX:]), axis=0)
+            labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:]), axis=0)
+        
+        fpr, tpr, thresholds = metrics.roc_curve(labels, scores, pos_label=pos_label)
+        auc = metrics.auc(fpr, tpr)
+        results = RecordResult(fpr, tpr, thresholds, auc, dataset, sub_loss_file, sigma)
+
+        return results
+        
     if score_type == 'normal':
         pos_label = 0
     elif score_type == 'abnormal':
@@ -252,32 +269,39 @@ def compute_auc_score(loss_file, logger, cfg, score_type='normal'):
         # the name of dataset, loss, and ground truth
         dataset, psnr_records, score_records, gt, num_videos = load_pickle_results(loss_file=sub_loss_file, cfg=cfg)
 
-        assert num_videos == len(score_records), 'The num of video is not equal'
+        assert num_videos == len(score_records[0]), 'The num of video is not equal'
 
-        scores = np.array([], dtype=np.float32)
-        labels = np.array([], dtype=np.int8)
+        # scores = np.array([], dtype=np.float32)
+        # labels = np.array([], dtype=np.int8)
         
-        # video normalization
-        for i in range(num_videos):
-            score_one_video = score_records[i]
-            score_one_video = np.clip(score_one_video, 0, None)
-            scores = np.concatenate((scores, score_one_video[DECIDABLE_IDX:]), axis=0)
-            labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:]), axis=0)
-        '''
-        Normalization is in the process of calculate the scores, instead of beforing getting the AUC
-        '''
-        # if cfg.DATASET.score_normalize:
-        #     smin = scores.min()
-        #     smax = scores.max()
-        #     scores = scores - smin  # scores = (scores - min) / (max - min)
-        #     scores = scores / (smax - smin)
-        fpr, tpr, thresholds = metrics.roc_curve(labels, scores, pos_label=pos_label)
-        auc = metrics.auc(fpr, tpr)
+        # # video normalization
+        # for i in range(num_videos):
+        #     score_one_video = score_records[i]
+        #     score_one_video = np.clip(score_one_video, 0, None)
+        #     scores = np.concatenate((scores, score_one_video[DECIDABLE_IDX:]), axis=0)
+        #     labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:]), axis=0)
+        # '''
+        # Normalization is in the process of calculate the scores, instead of beforing getting the AUC
+        # '''
+        # # if cfg.DATASET.score_normalize:
+        # #     smin = scores.min()
+        # #     smax = scores.max()
+        # #     scores = scores - smin  # scores = (scores - min) / (max - min)
+        # #     scores = scores / (smax - smin)
+        # fpr, tpr, thresholds = metrics.roc_curve(labels, scores, pos_label=pos_label)
+        # auc = metrics.auc(fpr, tpr)
 
-        results = RecordResult(fpr, tpr, thresholds, auc, dataset, sub_loss_file)
-
-        if optimal_results < results:
-            optimal_results = results
+        # results = RecordResult(fpr, tpr, thresholds, auc, dataset, sub_loss_file)
+        if cfg.DATASET.smooth.guassian:
+            for index, sigma in enumerate(cfg.DATASET.smooth.guassian_sigma):
+                score_record = score_records[index]
+                results = get_results(score_record, sigma, pos_label)
+                if optimal_results < results:
+                    optimal_results = results
+        else:
+            results = get_results(score_records[0], 0, pos_label)
+            if optimal_results < results:
+                optimal_results = results
 
         if os.path.isdir(loss_file):
             print(results)
