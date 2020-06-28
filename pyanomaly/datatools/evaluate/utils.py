@@ -81,7 +81,7 @@ def psnr_error(gen_frames, gt_frames, hat=False):
     gt_frames = gt_frames.detach().cpu()
     batch_num = gen_frames.shape[0]
     batch_errors = 0.0
-    for i in range(0, batch_num):
+    for i in range(batch_num):
         num_pixels = gen_frames[i].numel()
         # max_val_hat = gen_frames[i].max()
         if hat:
@@ -243,5 +243,6 @@ def reconstruction_loss(x_hat, x):
     rl = torch.sqrt(torch.pow((x_hat - x), 2))
     h_dim = len(rl.shape) - 2
     w_dim = len(rl.shape) - 1
-    rl = torch.mean(rl, (h_dim, w_dim))
+    # the number of rl is equal to the frame number
+    rl = torch.mean(rl, (h_dim, w_dim)).squeeze(0)
     return rl

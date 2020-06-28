@@ -64,30 +64,38 @@ class STAEEvaluateHook(HookBase):
             # need to improve
             dataset = self.trainer.test_dataset_dict[video_name]
             len_dataset = dataset.pics_len
-            # test_iters = len_dataset - frame_num + 1
-            test_iters = len_dataset // clip_step
+            test_iters = len_dataset - frame_num + 1
+            # test_iters = len_dataset // clip_step
             test_counter = 0
 
             data_loader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, num_workers=1)
+            
             vis_range = range(int(len_dataset*0.5), int(len_dataset*0.5 + 5))
-            # scores = np.empty(shape=(len_dataset,),dtype=np.float32)
-            scores = torch.zeros(len_dataset)
-            # scores = [0.0 for i in range(len_dataset)]
-            for clip_sn, test_input in enumerate(data_loader):
-                test_target = test_input.cuda()
+
+            psnrs = np.empty(shape=(len_dataset,),dtype=np.float32)
+            scores = np.empty(shape=(len_dataset,),dtype=np.float32)
+            for clip_sn, (data, _) in enumerate(data_loader):
+                test_input = data.cuda()
+                # test_target = data[:,:,16:,:,:].cuda()
                 time_len = test_input.shape[2]
-                output, pred = self.trainer.STAE(test_target)
-                clip_score = reconstruction_loss(output, test_target)
+                # import ipdb; ipdb.set_trace()
+                output, _ = self.trainer.STAE(test_input)
+                clip_score = reconstruction_loss(output, test_input)
+                clip_score = clip_score.tolist()
+
                 # score = np.array(score.tolist() * time_len)
-                if len_dataset < (test_counter+1) * time_len:
-                    # import ipdb; ipdb.set_trace()
-                    clip_score = clip_score[:,0:len_dataset-(test_counter)*time_len]
-                if len(clip_score.shape) >= 2:
-                    clip_score = clip_score.sum(dim=0)
-                try:
-                    scores[test_counter*time_len:(test_counter + 1)*time_len] = clip_score.squeeze(0)
-                except:
-                    import ipdb; ipdb.set_trace()
+                # if len_dataset < (test_counter+1) * time_len:
+                #     # import ipdb; ipdb.set_trace()
+                #     clip_score = clip_score[:,0:len_dataset-(test_counter)*time_len]
+                # if len(clip_score.shape) >= 2:
+                #     clip_score = clip_score.sum(dim=0)
+                
+                scores[test_iters:((frame_num -1) + test_iters)] = clip_score
+
+                # try:
+                #     scores[test_counter*time_len:(test_counter + 1)*time_len] = clip_score.squeeze(0)
+                # except:
+                #     import ipdb; ipdb.set_trace()
                 
                 # scores[test_counter+frame_num-1] = score
                 # import ipdb; ipdb.set_trace()
@@ -95,18 +103,17 @@ class STAEEvaluateHook(HookBase):
 
                 if sn == random_video_sn and (clip_sn in vis_range):
                     vis_objects = OrderedDict()
-                    vis_objects['stae_eval_clip'] = test_target.detach()
+                    vis_objects['stae_eval_clip'] = test_input.detach()
                     vis_objects['stae_eval_clip_hat'] = output.detach()
                     tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
                 
                 if test_counter >= test_iters:
                     # import ipdb; ipdb.set_trace()
-                    # import ipdb; ipdb.set_trace()
                     # scores[:frame_num-1]=(scores[frame_num-1],) # fix the bug: TypeError: can only assign an iterable
                     smax = max(scores)
                     smin = min(scores)
-                    # normal_scores = np.array([(1.0 - np.divide(s-smin, smax)) for s in scores])
-                    normal_scores = (1.0 - torch.div(scores-smin, smax)).detach().cpu().numpy()
+                    normal_scores = np.array([(1.0 - np.divide(s-smin, smax)) for s in scores])
+                    # normal_scores = (1.0 - torch.div(scores-smin, smax)).detach().cpu().numpy()
                     score_records.append(normal_scores)
                     print(f'finish test video set {video_name}')
                     break

@@ -77,7 +77,7 @@ class Trainer(DefaultTrainer):
         # self.rec_loss = loss_function['rec_loss']
         self.rec_loss = loss_function['rec_loss']
         # self.pred_loss = loss_function['pred_loss']
-        self.pred_loss = loss_function['pred_loss']
+        self.pred_loss = loss_function['weighted_pred_loss']
 
         # basic meter
         self.batch_time =  AverageMeter()
@@ -131,7 +131,7 @@ class Trainer(DefaultTrainer):
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
         
         # get the data
-        data  = next(self._train_loader_iter)  # the core for dataloader
+        data, _  = next(self._train_loader_iter)  # the core for dataloader
         self.data_time.update(time.time() - start)
 
         # get the reconstruction and prediction video clip
@@ -145,7 +145,7 @@ class Trainer(DefaultTrainer):
         loss_rec = self.rec_loss(output_rec, input_rec)
         loss_pred = self.pred_loss(output_pred, input_pred)
 
-        loss_stae_all = self.loss_lamada['rec_loss'] * loss_rec + self.loss_lamada['pred_loss'] * loss_pred 
+        loss_stae_all = self.loss_lamada['rec_loss'] * loss_rec + self.loss_lamada['weighted_pred_loss'] * loss_pred 
         self.optim_STAE.zero_grad()
         loss_stae_all.backward()
         self.optim_STAE.step()
@@ -187,22 +187,22 @@ class Trainer(DefaultTrainer):
         if current_step % self.config.TRAIN.mini_eval_step != 0:
             return
         temp_meter_rec = AverageMeter()
-        temp_meter_pred = AverageMeter()
+        # temp_meter_pred = AverageMeter()
         self.STAE.eval()
-        for data in self.val_dataloader:
+        for data, _ in self.val_dataloader:
             # get the reconstruction and prediction video clip
-            time_len = data.shape[2]
-            rec_time = time_len // 2
-            inupt_rec_mini = data[:, :, 0:rec_time, :, :].cuda() # 0 ~ t//2 frame 
-            input_pred_mini = data[:, :, rec_time:time_len, :, :].cuda() # t//2 ~ t frame 
-            
+            # time_len = data.shape[2]
+            # rec_time = time_len // 2
+            # inupt_rec_mini = data[:, :, 0:rec_time, :, :].cuda() # 0 ~ t//2 frame 
+            # input_pred_mini = data[:, :, rec_time:time_len, :, :].cuda() # t//2 ~ t frame 
+            input_mini = data.cuda()
             # Use the model, get the output
-            output_rec_mini, output_pred_mini = self.STAE(inupt_rec_mini)
-            rec_psnr_mini = psnr_error(output_rec_mini.detach(), inupt_rec_mini)
-            pred_psnr_mini = psnr_error(output_pred_mini.detach(), input_pred_mini)
+            output_rec_mini, output_pred_mini = self.STAE(input_mini)
+            rec_psnr_mini = psnr_error(output_rec_mini.detach(), input_mini)
+            # pred_psnr_mini = psnr_error(output_pred_mini.detach(), input_pred_mini)
             temp_meter_rec.update(rec_psnr_mini.detach())
-            temp_meter_pred.update(pred_psnr_mini.detach())
-        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the rec PSNR is {temp_meter_rec.avg:.3f}, the pred PSNR is {temp_meter_pred.avg:.3f}')
+            # temp_meter_pred.update(pred_psnr_mini.detach())
+        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the REC PSNR is {temp_meter_rec.avg:.3f}')
         # return temp_meter.avg
 
 

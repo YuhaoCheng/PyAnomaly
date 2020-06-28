@@ -17,21 +17,22 @@ DATASET:
   name: 'ped2'
   seed: 2020
   read_format: 'opencv'
+  image_format: 'tif'
   channel_num: 1
   channel_name: 'gray'
-  train_path: './data/ped2/training/frames'
+  train_path: './data/ped2_tif/training/frames'
   train_clip_length: 32
   train_frame_step: 1
-  train_clip_step: 32
-  test_path: './data/ped2/testing/frames'
-  test_clip_length: 32
+  train_clip_step: 1
+  test_path: './data/ped2_tif/testing/frames'
+  test_clip_length: 16
   test_frame_step: 1
-  test_clip_step: 32
-  gt_path: './data/ped2'
+  test_clip_step: 1
+  gt_path: './data/ped2_tif'
   number_of_class: 1
-  score_normalize: true
+  score_normalize: false
   score_type: 'normal'
-  decidable_idx: 1
+  decidable_idx: 16
   smooth:
     guassian: true
     guassian_sigma: [3,5,15,10,20,30]
@@ -129,12 +130,12 @@ TRAIN:
   start_step: 0
   max_steps: 6400
   log_step: 5
-  vis_step: 160
+  vis_step: 5
   mini_eval_step: 80
-  eval_step: 160
+  eval_step: 5
   save_step: 160
   epochs: 1
-  loss: ['rec_loss', 'pred_loss']
+  loss: ['rec_loss', 'weighted_pred_loss']
   loss_coefficients: [1,1]
   mode: 'general'
   general:

@@ -30,12 +30,12 @@ def conv2d_samepad(in_dim, in_ch, out_ch, ks, stride, dilation=1, bias=True):
                 nn.Conv2d(in_ch, out_ch, ks, stride, 0, dilation, bias=bias)]
 
 
-class FlowLoss(nn.Module):
+class L2Loss(nn.Module):
     def __init__(self):
-        super(FlowLoss, self).__init__()
+        super(L2Loss, self).__init__()
     
-    def forward(self, gen_flows, gt_flows):
-        x = torch.mean(torch.sqrt((gen_flows - gt_flows)**2))
+    def forward(self, gen, gt):
+        x = torch.mean(torch.sqrt((gen - gt)**2))
         return x
 
 class IntensityLoss(nn.Module):
@@ -186,6 +186,21 @@ class GANLoss(nn.Module):
                 loss = prediction.mean()
         return loss
 
+class WeightedPredLoss(nn.Module):
+    def __init__(self):
+        super(WeightedPredLoss, self).__init__()
+    
+    def forward(self, gen, gt):
+        error = 0
+        pred_len = gt.shape[2]
+        weight = [i * 1.0 for i in range(1, pred_len+1)]
+        weighted_error = [torch.mean(torch.sqrt((gen[:,:,i,:,:] - gt[:,:,i,:,:])**2) * weight[i]) for i in range(pred_len)]
+        for item in weighted_error:
+            error += item
+        error /= pred_len ** 2
+        # import ipdb; ipdb.set_trace()
+        return error
+
 
 
 LOSSDICT ={
@@ -194,7 +209,7 @@ LOSSDICT ={
     'g_adverserial_loss': Adversarial_Loss().cuda(),
     'd_adverserial_loss': Discriminate_Loss().cuda(),
     'opticalflow_loss': nn.L1Loss().cuda(),
-    'opticalflow_loss_sqrt': FlowLoss().cuda(),
+    'opticalflow_loss_sqrt': L2Loss().cuda(),
     'gradient_loss':GradientLoss().cuda(),
     'intentsity_loss': IntensityLoss().cuda(),
     'amc_d_adverserial_loss_1': AMCDiscriminateLoss1().cuda(),
@@ -205,8 +220,8 @@ LOSSDICT ={
     'A_loss': IntensityLoss().cuda(),
     'B_loss': IntensityLoss().cuda(),
     'C_loss': IntensityLoss().cuda(),
-    'rec_loss': nn.MSELoss().cuda(),
-    'pred_loss': nn.MSELoss().cuda()
+    'rec_loss': L2Loss().cuda(),
+    'weighted_pred_loss': WeightedPredLoss().cuda()
 }
 
 def get_basic_loss(loss_name, cfg):

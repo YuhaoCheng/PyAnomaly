@@ -116,17 +116,17 @@ MODEL:
   flow_model_path: './pretrained_model/FlowNet2_checkpoint.pth.tar'
   discriminator_channels: [128,256,512,512]
 TRAIN:
-  batch_size: 32
+  batch_size: 16
   start_step: 0
-  max_steps: 20000
-  log_step: 5
-  vis_step: 1000
-  mini_eval_step: 500
-  eval_step: 2000
-  save_step: 5000
+  max_steps: 38320
+  log_step: 10
+  vis_step: 958
+  mini_eval_step: 800
+  eval_step: 958
+  save_step: 958
   epochs: 1
-  loss: ['gan_loss','gradient_loss', 'intentsity_loss', 'opticalflow_loss']
-  loss_coefficients: [0.25,1,1,2]
+  loss: ['gan_loss_mse','gradient_loss', 'intentsity_loss', 'opticalflow_loss_sqrt']
+  loss_coefficients: [0.025,1,1,2]
   mode: 'adversarial'
   general:
     optimizer:
@@ -157,7 +157,7 @@ TRAIN:
       weight_decay: 0.0001
       output_name: ['optimizer_g', 'optimizer_d']
     scheduler:
-      use: true
+      use: false
       name: 'WarmupCosLR'
       step_size: 1000
       steps: [10000, 15000]
