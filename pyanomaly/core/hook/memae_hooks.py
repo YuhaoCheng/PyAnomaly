@@ -65,8 +65,8 @@ class MemAEEvaluateHook(HookBase):
             # need to improve
             dataset = self.trainer.test_dataset_dict[video_name]
             len_dataset = dataset.pics_len
-            # test_iters = len_dataset - frame_num + 1
-            test_iters = len_dataset // clip_step
+            test_iters = len_dataset - frame_num + 1
+            # test_iters = len_dataset // clip_step
             test_counter = 0
 
             data_loader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, num_workers=1)
@@ -74,23 +74,28 @@ class MemAEEvaluateHook(HookBase):
             # scores = np.empty(shape=(len_dataset,),dtype=np.float32)
             scores = torch.zeros(len_dataset)
             # scores = [0.0 for i in range(len_dataset)]
-            for clip_sn, (test_input,_) in enumerate(data_loader):
+            for clip_sn, (test_input, _) in enumerate(data_loader):
                 test_target = test_input.cuda()
                 time_len = test_input.shape[2]
                 output, _ = self.trainer.MemAE(test_target)
                 clip_score = reconstruction_loss(output, test_target)
                 
                 # score = np.array(score.tolist() * time_len)
-                if len_dataset < (test_counter+1) * time_len:
-                    # import ipdb; ipdb.set_trace()
-                    try:
-                        clip_score = clip_score[:,0:len_dataset-(test_counter)*time_len]
-                    except:
-                        import ipdb; ipdb.set_trace()
-                if len(clip_score.shape) >= 2:
-                    clip_score = clip_score.sum(dim=0)
+                # if len_dataset < (test_counter+1) * time_len:
+                #     # import ipdb; ipdb.set_trace()
+                #     try:
+                #         clip_score = clip_score[:,0:len_dataset-(test_counter)*time_len]
+                #     except:
+                #         import ipdb; ipdb.set_trace()
+                # if len(clip_score.shape) >= 2:
+                #     clip_score = clip_score.sum(dim=0)
                 try:
-                    scores[test_counter*time_len:(test_counter + 1)*time_len] = clip_score.squeeze(0)
+                    # scores[test_counter*time_len:(test_counter + 1)*time_len] = clip_score.squeeze(0)
+                    if (frame_num + test_counter) > len_dataset:
+                        temp = test_counter + frame_num - len_dataset
+                        scores[test_counter:len_dataset] = clip_score[temp:]
+                    else:
+                        scores[test_counter:(frame_num + test_counter)] = clip_score
                 except:
                     import ipdb; ipdb.set_trace()
                 # scores[test_counter+frame_num-1] = score
@@ -103,7 +108,7 @@ class MemAEEvaluateHook(HookBase):
                     vis_objects['memae_eval_clip_hat'] = output.detach()
                     tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
                 
-                if test_counter*time_len >= test_iters:
+                if test_counter >= test_iters:
                     # import ipdb; ipdb.set_trace()
                     # scores[:frame_num-1]=(scores[frame_num-1],) # fix the bug: TypeError: can only assign an iterable
                     smax = max(scores)

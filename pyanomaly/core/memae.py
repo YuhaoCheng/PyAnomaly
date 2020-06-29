@@ -88,9 +88,9 @@ class Trainer(DefaultTrainer):
         self.train_normalize = self.config.ARGUMENT.train.normal.use
         self.train_mean = self.config.ARGUMENT.train.normal.mean
         self.train_std = self.config.ARGUMENT.train.normal.std
-        self.train_normalize = self.config.ARGUMENT.train.normal.use
-        self.train_mean = self.config.ARGUMENT.train.normal.mean
-        self.train_std = self.config.ARGUMENT.train.normal.std
+        self.val_normalize = self.config.ARGUMENT.val.normal.use
+        self.val_mean = self.config.ARGUMENT.val.normal.mean
+        self.val_std = self.config.ARGUMENT.val.normal.std
         # self.total_steps = len(self.train_dataloader)
         self.result_path = ''
         self.log_step = self.config.TRAIN.log_step # how many the steps, we will show the information
@@ -225,9 +225,9 @@ class Inference(DefaultInference):
         self.verbose = kwargs['verbose']
         self.kwargs = kwargs
         self.config_name = kwargs['config_name']
-        self.normalize = self.config.ARGUMENT.val.normal.use
-        self.mean = self.config.ARGUMENT.val.normal.mean
-        self.std = self.config.ARGUMENT.val.normal.std
+        self.val_normalize = self.config.ARGUMENT.val.normal.use
+        self.val_mean = self.config.ARGUMENT.val.normal.mean
+        self.val_std = self.config.ARGUMENT.val.normal.std
         # self.mode = kwargs['mode']
 
         self.test_dataset_keys = kwargs['test_dataset_keys']

@@ -126,13 +126,15 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
-  batch_size: 4
+  # batch_size: 4
+  batch_size: 1
   start_step: 0
   max_steps: 26796
   log_step: 10
   vis_step: 638
   mini_eval_step: 500
-  eval_step: 638
+  # eval_step: 638
+  eval_step: 5
   save_step: 638
   epochs: 1
   loss: ['rec_loss', 'mem_loss']

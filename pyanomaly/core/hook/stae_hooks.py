@@ -84,27 +84,12 @@ class STAEEvaluateHook(HookBase):
                 clip_score = reconstruction_loss(output, test_input)
                 clip_score = clip_score.tolist()
 
-                # score = np.array(score.tolist() * time_len)
-                # if len_dataset < (test_counter+1) * time_len:
-                #     # import ipdb; ipdb.set_trace()
-                #     clip_score = clip_score[:,0:len_dataset-(test_counter)*time_len]
-                # if len(clip_score.shape) >= 2:
-                #     clip_score = clip_score.sum(dim=0)
-                try:
-                    if (frame_num + test_counter) > len_dataset:
-                        temp = test_counter + frame_num - len_dataset
-                        scores[test_counter:len_dataset] = clip_score[temp:]
-                    else:
-                        scores[test_counter:(frame_num + test_counter)] = clip_score
-                except:
-                    import ipdb; ipdb.set_trace()
-                # try:
-                #     scores[test_counter*time_len:(test_counter + 1)*time_len] = clip_score.squeeze(0)
-                # except:
-                #     import ipdb; ipdb.set_trace()
-                
-                # scores[test_counter+frame_num-1] = score
-                # import ipdb; ipdb.set_trace()
+                if (frame_num + test_counter) > len_dataset:
+                    temp = test_counter + frame_num - len_dataset
+                    scores[test_counter:len_dataset] = clip_score[temp:]
+                else:
+                    scores[test_counter:(frame_num + test_counter)] = clip_score
+
                 test_counter += 1
 
                 if sn == random_video_sn and (clip_sn in vis_range):
@@ -114,13 +99,11 @@ class STAEEvaluateHook(HookBase):
                     tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
                 
                 if test_counter >= test_iters:
-                    # import ipdb; ipdb.set_trace()
                     # scores[:frame_num-1]=(scores[frame_num-1],) # fix the bug: TypeError: can only assign an iterable
                     smax = max(scores)
                     smin = min(scores)
                     normal_scores = np.array([(1.0 - np.divide(s-smin, smax)) for s in scores])
-                    # normal_scores = (1.0 - torch.div(scores-smin, smax)).detach().cpu().numpy()
-                    # print(normal_scores)
+                    normal_scores = np.clip(normal_scores, 0, None)
                     score_records.append(normal_scores)
                     print(f'finish test video set {video_name}')
                     break
