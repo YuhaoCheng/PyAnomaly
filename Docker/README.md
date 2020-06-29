@@ -1,12 +1,14 @@
-### Docker 
+## Docker 
 
-#### Introduction
+### Introduction
 
 - In order to make it easy to use, we create the docker image file
 
 - `.condarc` is the channels of `conda`, we choose `tuna` source. Users can change it. 
 
-#### Usage
+### Usage
+
+#### Method1
 
 ##### Build the docker image
 
@@ -37,7 +39,37 @@ nvidia-docker run -t -i pyanomaly:test /bin/bash
 ##### Use in docker 
 
 ```
-bash ./script/train.sh -p /home/appuser/pyanomaly_docker
+bash ./script/train.sh -p /home/appuser/pyanomaly_docker -d DATASET_NAME -m MODEL_NAME
+```
+
+#### Method2
+
+We provide the quick start shell scripts in `script` folder, users can use these shell to start the docker quickly
+
+##### Build the docker image
+
+```shell
+$PATH = path/to/PyAnomaly
+cd docker
+nvidia-docker build -t pyanomaly:test .
+```
+
+##### Start the docker container
+
+```
+sh ./script/run_docker.sh
+```
+
+##### Execute the docker image
+
+```
+sh ./script/exec_docker.sh
+```
+
+#### Use in docker 
+
+```
+bash ./script/train.sh -p /home/appuser/pyanomaly_docker -d DATASET_NAME -m MODEL_NAME
 ```
 
 

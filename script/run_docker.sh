@@ -8,6 +8,7 @@ func() {
     echo "Description:"
     echo "DATA PATH, the path of the data."
     echo "MODE PATH, the path of pretrain models path."
+    echo "NAME, the name of the docker container"
     exit -1
 }
 
@@ -36,4 +37,4 @@ do
     esac
 done
 
-nvidia-docker run -d --name $name -v $data_path:/home/appuser/pyanomaly_docker/data -v $model_path:/home/appuser/pyanomaly_docker/pretrained_model pyanomaly:test /bin/bash
+nvidia-docker run -d -ti --name $name -v $data_path:/home/appuser/pyanomaly_docker/data -v $model_path:/home/appuser/pyanomaly_docker/pretrained_model pyanomaly:test /bin/bash
