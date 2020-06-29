@@ -17,6 +17,8 @@ DATASET:
   name: 'shanghai'
   seed: 2020
   read_format: 'opencv'
+  channel_num: 3
+  channel_name: 'rgb'
   train_path: './data/shanghai/training/frames'
   train_clip_length: 7
   train_clip_step: 3
@@ -45,10 +47,10 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: [0.5, 0.5, 0.5]
-      std: [0.5, 0.5, 0.5]
+      mean: []
+      std: []
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
       use: false
@@ -66,7 +68,7 @@ ARGUMENT:
       low: 0.03
     CropToFixedSize:
       use: false
-      hight: 256
+      height: 256
       width: 256
       position: 'center'
   val:
@@ -79,10 +81,10 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: [0.5, 0.5, 0.5]
-      std: [0.5, 0.5, 0.5]
+      mean: []
+      std: []
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
       use: false
@@ -100,14 +102,15 @@ ARGUMENT:
       low: 0.03
     CropToFixedSize:
       use: false
-      hight: 256
+      height: 256
       width: 256
       position: 'center'
 MODEL:
   name: 'ocae'
   type: 'ocae'
-  eval_hooks: ['ocae.OCEvaluateHook']
-  hooks: ['ocae.ClusterHook']
+  hooks:
+    train: ['oc.ClusterHook', 'oc.OCEvaluateHook', 'base.VisScoreHook']
+    val: ['oc.ClusterHook', 'oc.OCEvaluateHook']
   detector_config: 'COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml'
   detector_model_path: "./pretrained_model/faster_rcnn_X_101_FPN_model_final_68b088.pkl"
   flow_model_path: ''
@@ -120,14 +123,14 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
-  batch_size: 4
+  batch_size: 32
   start_step: 0
-  max_steps: 20000
-  log_step: 5
-  vis_step: 1000
-  mini_eval_step: 500
-  eval_step: 2000
-  save_step: 5000
+  max_steps: 88650
+  log_step: 10
+  vis_step: 8865
+  mini_eval_step: 5000
+  eval_step: 8865
+  save_step: 8865
   epochs: 1
   loss: ['A_loss', 'B_loss', 'C_loss']
   loss_coefficients: [1,2,1]
@@ -142,7 +145,7 @@ TRAIN:
       nesterov: false
       output_name: ['optimizer_abc']
     scheduler:
-      use: true
+      use: false
       name: 'stepLR'
       step_size: 1000
       steps: [10000, 15000]
@@ -152,25 +155,6 @@ TRAIN:
       warmup_factor: 0.001
       warmup_iters: 1000
       warmup_method: 'linear'
-  adversarial:
-    optimizer:
-      include: ['Generator', 'Discriminator']
-      name: 'adam'
-      g_lr: 0.0002
-      d_lr: 0.00002
-      weight_decay: 0.0001
-      output_name: ['optimizer_g', 'optimizer_d']
-    scheduler:
-      use: true
-      name: 'WarmupCosLR' # 'stepLR'| 'cosLR' | 'WarmupCosLR' | 'WarmupMultiStepLR'
-      step_size: 1000
-      steps: [10000, 15000]
-      gamma: 0.1
-      T_max: 300
-      eta_min: 0
-      warmup_factor: 0.001
-      warmup_iters: 1000
-      warmup_method: 'linear' # 'linear' | 'constant'
   split: ''
   model_output: './output/models'
   checkpoint_output: './output/checkpoint'

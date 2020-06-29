@@ -80,6 +80,7 @@ class STAEEvaluateHook(HookBase):
                 time_len = test_input.shape[2]
                 # import ipdb; ipdb.set_trace()
                 output, _ = self.trainer.STAE(test_input)
+                # import ipdb; ipdb.set_trace()
                 clip_score = reconstruction_loss(output, test_input)
                 clip_score = clip_score.tolist()
 
@@ -89,9 +90,14 @@ class STAEEvaluateHook(HookBase):
                 #     clip_score = clip_score[:,0:len_dataset-(test_counter)*time_len]
                 # if len(clip_score.shape) >= 2:
                 #     clip_score = clip_score.sum(dim=0)
-                
-                scores[test_iters:((frame_num -1) + test_iters)] = clip_score
-
+                try:
+                    if (frame_num + test_counter) > len_dataset:
+                        temp = test_counter + frame_num - len_dataset
+                        scores[test_counter:len_dataset] = clip_score[temp:]
+                    else:
+                        scores[test_counter:(frame_num + test_counter)] = clip_score
+                except:
+                    import ipdb; ipdb.set_trace()
                 # try:
                 #     scores[test_counter*time_len:(test_counter + 1)*time_len] = clip_score.squeeze(0)
                 # except:
@@ -114,6 +120,7 @@ class STAEEvaluateHook(HookBase):
                     smin = min(scores)
                     normal_scores = np.array([(1.0 - np.divide(s-smin, smax)) for s in scores])
                     # normal_scores = (1.0 - torch.div(scores-smin, smax)).detach().cpu().numpy()
+                    print(normal_scores)
                     score_records.append(normal_scores)
                     print(f'finish test video set {video_name}')
                     break

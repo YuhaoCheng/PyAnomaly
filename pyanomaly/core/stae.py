@@ -144,7 +144,8 @@ class Trainer(DefaultTrainer):
         output_rec,  output_pred = self.STAE(input_rec)
         loss_rec = self.rec_loss(output_rec, input_rec)
         loss_pred = self.pred_loss(output_pred, input_pred)
-
+        print(f'loss_rec:{loss_rec}')
+        print(f'loss_pred:{loss_pred}')
         loss_stae_all = self.loss_lamada['rec_loss'] * loss_rec + self.loss_lamada['weighted_pred_loss'] * loss_pred 
         self.optim_STAE.zero_grad()
         loss_stae_all.backward()

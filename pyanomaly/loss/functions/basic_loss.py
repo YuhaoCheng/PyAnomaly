@@ -190,15 +190,17 @@ class WeightedPredLoss(nn.Module):
     def __init__(self):
         super(WeightedPredLoss, self).__init__()
     
-    def forward(self, gen, gt):
+    def forward(self, x, target):
         error = 0
-        pred_len = gt.shape[2]
-        weight = [i * 1.0 for i in range(1, pred_len+1)]
-        weighted_error = [torch.mean(torch.sqrt((gen[:,:,i,:,:] - gt[:,:,i,:,:])**2) * weight[i]) for i in range(pred_len)]
+        pred_len = target.shape[2]
+        weight = [i * 1.0 for i in range(pred_len, 0, -1)]
+        weighted_error = [torch.mean(torch.pow(x[:,:,i,:,:] - target[:,:,i,:,:], 2)) * weight[i] for i in range(pred_len)]
         for item in weighted_error:
             error += item
-        error /= pred_len ** 2
+        # error /= pred_len ** 2
         # import ipdb; ipdb.set_trace()
+        
+        error /= pred_len ** 2
         return error
 
 
@@ -220,7 +222,7 @@ LOSSDICT ={
     'A_loss': IntensityLoss().cuda(),
     'B_loss': IntensityLoss().cuda(),
     'C_loss': IntensityLoss().cuda(),
-    'rec_loss': L2Loss().cuda(),
+    'rec_loss': nn.MSELoss(reduction='mean').cuda(),
     'weighted_pred_loss': WeightedPredLoss().cuda()
 }
 

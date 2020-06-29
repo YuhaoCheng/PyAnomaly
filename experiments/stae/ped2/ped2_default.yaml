@@ -50,8 +50,8 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: [0.5]
-      std: [0.5]
+      mean: []
+      std: []
     fliplr:
       use: true
       p: 0.5
@@ -84,8 +84,8 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: [0.5]
-      std: [0.5]
+      mean: []
+      std: []
     fliplr:
       use: true
       p: 0.5
@@ -130,9 +130,9 @@ TRAIN:
   start_step: 0
   max_steps: 6400
   log_step: 5
-  vis_step: 5
+  vis_step: 100
   mini_eval_step: 80
-  eval_step: 5
+  eval_step: 100
   save_step: 160
   epochs: 1
   loss: ['rec_loss', 'weighted_pred_loss']
