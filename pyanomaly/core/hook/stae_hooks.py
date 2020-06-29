@@ -120,7 +120,7 @@ class STAEEvaluateHook(HookBase):
                     smin = min(scores)
                     normal_scores = np.array([(1.0 - np.divide(s-smin, smax)) for s in scores])
                     # normal_scores = (1.0 - torch.div(scores-smin, smax)).detach().cpu().numpy()
-                    print(normal_scores)
+                    # print(normal_scores)
                     score_records.append(normal_scores)
                     print(f'finish test video set {video_name}')
                     break

@@ -144,8 +144,8 @@ class Trainer(DefaultTrainer):
         output_rec,  output_pred = self.STAE(input_rec)
         loss_rec = self.rec_loss(output_rec, input_rec)
         loss_pred = self.pred_loss(output_pred, input_pred)
-        print(f'loss_rec:{loss_rec}')
-        print(f'loss_pred:{loss_pred}')
+        # print(f'loss_rec:{loss_rec}')
+        # print(f'loss_pred:{loss_pred}')
         loss_stae_all = self.loss_lamada['rec_loss'] * loss_rec + self.loss_lamada['weighted_pred_loss'] * loss_pred 
         self.optim_STAE.zero_grad()
         loss_stae_all.backward()
@@ -208,7 +208,7 @@ class Trainer(DefaultTrainer):
 
 
 class Inference(DefaultInference):
-    NAME = ["MEMAE.INFERENCE"]
+    NAME = ["STAE.INFERENCE"]
     def __init__(self, *defaults,**kwargs):
         '''
          Args:
@@ -234,20 +234,20 @@ class Inference(DefaultInference):
         
         model = defaults[0]
         if kwargs['parallel']:
-            self.G = self.data_parallel(model['STAE']).load_state_dict(save_model['STAE'])
+            self.STAE = self.data_parallel(model['STAE']).load_state_dict(save_model['STAE'])
         else:
             # import ipdb; ipdb.set_trace()
-            self.G = model['STAE'].cuda()
-            self.D.load_state_dict(save_model['STAE'])
+            self.STAE = model['STAE'].cuda()
+            self.STAE.load_state_dict(save_model['STAE'])
         
         # self.load()
 
         self.verbose = kwargs['verbose']
         self.kwargs = kwargs
         self.config_name = kwargs['config_name']
-        self.normalize = self.config.ARGUMENT.val.normal.use
-        self.mean = self.config.ARGUMENT.val.normal.mean
-        self.std = self.config.ARGUMENT.val.normal.std
+        self.val_normalize = self.config.ARGUMENT.val.normal.use
+        self.val_mean = self.config.ARGUMENT.val.normal.mean
+        self.val_std = self.config.ARGUMENT.val.normal.std
         # self.mode = kwargs['mode']
 
         self.test_dataset_keys = kwargs['test_dataset_keys']
