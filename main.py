@@ -4,7 +4,7 @@ import importlib
 from pathlib import Path
 from collections import OrderedDict
 
-from pyanomaly.config.config import update_config
+from pyanomaly.config.defaults import update_config
 from pyanomaly.utils.cmd import parse_args
 from pyanomaly.utils.system import system_setup
 from pyanomaly.utils.utils import create_logger, get_tensorboard
