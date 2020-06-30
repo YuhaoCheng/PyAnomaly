@@ -22,7 +22,7 @@ class AnoPcn(nn.Module):
         re = self.erm(pe) # re = recontruction error
         result = torch.add(prediction, re)
         
-        return result
+        return prediction, result
 
 def get_model_anopcn(cfg):
     if cfg.ARGUMENT.train.normal.use:

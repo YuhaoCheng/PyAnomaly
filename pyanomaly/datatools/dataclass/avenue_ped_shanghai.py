@@ -40,7 +40,7 @@ class AvenuePedShanghaiOneVideo(AbstractVideoAnomalyDataset):
     '''
     _NAME = 'AvenuePedShanghaiOneVideo Dataset'
     def __init__(self, dataset_folder, clip_length, sampled_clip_length,frame_step, clip_step=1, transforms=None, is_training=True, one_video=True, cfg=None):
-        super(AvenuePedShanghaiOneVideo, self).__init__(dataset_folder, clip_length, sampled_clip_length=cfg.DATASET.train_sampled_clip_length, frame_step=frame_step,clip_step=clip_step, transforms=transforms, is_training=is_training, one_video=one_video, cfg=cfg)
+        super(AvenuePedShanghaiOneVideo, self).__init__(dataset_folder, clip_length, sampled_clip_length=sampled_clip_length, frame_step=frame_step,clip_step=clip_step, transforms=transforms, is_training=is_training, one_video=one_video, cfg=cfg)
 
     def custom_setup(self):
         self.image_loader = ImageLoader(read_format=self.cfg.DATASET.read_format, channel_num=self.cfg.DATASET.channel_num, channel_name=self.cfg.DATASET.channel_name)

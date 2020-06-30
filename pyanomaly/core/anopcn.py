@@ -89,8 +89,10 @@ class Trainer(DefaultTrainer):
         # basic meter
         self.batch_time =  AverageMeter()
         self.data_time = AverageMeter()
-        self.loss_meter_G = AverageMeter()
-        self.loss_meter_D = AverageMeter()
+        self.loss_predmeter_G = AverageMeter()
+        self.loss_predmeter_D = AverageMeter()
+        self.loss_refinemeter_G = AverageMeter()
+        self.loss_refinemeter_D = AverageMeter()
         # self.psnr = AverageMeter()
 
         # others
@@ -135,12 +137,27 @@ class Trainer(DefaultTrainer):
     def train(self,current_step):
         # Pytorch [N, C, D, H, W]
         # initialize
+        dynamic_steps = self.config.TRIAN.dynamic_steps
+        temp_step = current_step % max(dynamic_steps)
+
+        if temp_step in range(dynamic_steps[0], dynamic_steps[1]):
+            self.train_pcm(current_step)
+        else:
+            self.train_erm(current_step)
+    
+    def train_pcm(self, current_step):
+        # Pytorch [N, C, D, H, W]
+        # initialize
         start = time.time()
         self.G.train()
         self.D.train()
         self.F.eval()
         self.set_requires_grad(self.F, False)
-
+        if self.kwargs['parallel']:
+            self.set_requires_grad(self.G.module.erm, False)
+        else:
+            self.set_requires_grad(self.G.erm, False)
+        # self.G.change(True)
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
         
@@ -151,30 +168,30 @@ class Trainer(DefaultTrainer):
         # base on the D to get each frame
         target = data[:, :, -1, :, :].cuda() # t frame 
         pred_last = data[:, :, -2, :, :].cuda() # t-1 frame
-        # input_data = data[:, :, :-1, :, :].cuda() # 0 ~ t frame
-        input_data = data.cuda() # 0 ~ t frame
+        input_data = data[:, :, :-1, :, :].cuda() # 0 ~ t-1 frame
+        # input_data = data.cuda() # 0 ~ t frame
         
         # True Process =================Start===================
         #---------update optim_G ---------
         self.set_requires_grad(self.D, False)
-        output_frame_G = self.G(input_data, target)
+        output_predframe_G, output_refineframe_G = self.G(input_data, target)
         
-        predFlowEstim = torch.cat([pred_last, output_frame_G],1).cuda()
+        predFlowEstim = torch.cat([pred_last, output_predframe_G],1).cuda()
         gtFlowEstim = torch.cat([pred_last, target], 1).cuda()
         gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
         predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
         
-        loss_g_adv = self.gan_loss(self.D(output_frame_G), True)
+        loss_g_adv = self.gan_loss(self.D(output_predframe_G), True)
         loss_op = self.op_loss(predFlow, gtFlow)
-        loss_int = self.int_loss(output_frame_G, target)
-        loss_gd = self.gd_loss(output_frame_G, target)
+        loss_int = self.int_loss(output_predframe_G, target)
+        loss_gd = self.gd_loss(output_predframe_G, target)
 
         loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + self.loss_lamada['opticalflow_loss_sqrt'] * loss_op + self.loss_lamada['gan_loss_mse'] * loss_g_adv
         self.optim_G.zero_grad()
         loss_g_all.backward()
         self.optim_G.step()
         # record
-        self.loss_meter_G.update(loss_g_all.detach())
+        self.loss_predmeter_G.update(loss_g_all.detach())
         if self.config.TRAIN.adversarial.scheduler.use:
             self.lr_g.step()
         
@@ -182,7 +199,7 @@ class Trainer(DefaultTrainer):
         self.set_requires_grad(self.D, True)
         self.optim_D.zero_grad()
         temp_t = self.D(target)
-        temp_g = self.D(output_frame_G.detach())
+        temp_g = self.D(output_predframe_G.detach())
         loss_d_1 = self.gan_loss(temp_t, True)
         loss_d_2 = self.gan_loss(temp_g, False)
         loss_d = (loss_d_1 + loss_d_2) * 0.5
@@ -190,7 +207,103 @@ class Trainer(DefaultTrainer):
         self.optim_D.step()
         if self.config.TRAIN.adversarial.scheduler.use:
             self.lr_d.step()
-        self.loss_meter_D.update(loss_d.detach())
+        self.loss_predmeter_D.update(loss_d.detach())
+        # ======================End==================
+
+        self.batch_time.update(time.time() - start)
+
+        if (current_step % self.log_step == 0):
+            msg = 'Step: [{0}/{1}]\t' \
+                'Type: {model_type}\t' \
+                'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
+                'Speed: {speed:.1f} samples/s\t' \
+                'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' \
+                'Loss_pred_G: {losses_G.val:.5f} ({losses_G.avg:.5f})\t'   \
+                'Loss_pred_D:{losses_D.val:.5f}({losses_D.avg:.5f})'.format(current_step, self.max_steps, model_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses_G=self.loss_predmeter_G, losses_D=self.loss_predmeter_D)
+            self.logger.info(msg)
+        writer.add_scalar('Train_loss_G', self.loss_predmeter_G.val, global_steps)
+        writer.add_scalar('Train_loss_D', self.loss_predmeter_D.val, global_steps)
+
+        if (current_step % self.vis_step == 0):
+            vis_objects = OrderedDict()
+            vis_objects['train_target_flow'] =  gtFlow_vis.detach()
+            vis_objects['train_pred_flow'] = predFlow_vis.detach()
+            vis_objects['train_target_frame'] =  target.detach()
+            vis_objects['train_output_frame_G'] = output_predframe_G.detach()
+            tensorboard_vis_images(vis_objects, writer, global_steps, self.train_normalize, self.train_mean, self.train_std)
+        
+        global_steps += 1 
+        # reset start
+        start = time.time()
+        
+        self.saved_model = {'G':self.G, 'D':self.D}
+        self.saved_optimizer = {'optim_G': self.optim_G, 'optim_D': self.optim_D}
+        self.saved_loss = {'loss_G':self.loss_predmeter_G.val, 'loss_D':self.loss_predmeter_D.val}
+        self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
+
+    def train_erm(self, current_step):
+        # Pytorch [N, C, D, H, W]
+        # initialize
+        start = time.time()
+        self.G.train()
+        self.D.train()
+        self.F.eval()
+        self.set_requires_grad(self.F, False)
+        if self.kwargs['parallel']:
+            self.set_requires_grad(self.G.module.pcm, False)
+        else:
+            self.set_requires_grad(self.G.pcm, False)
+        
+        writer = self.kwargs['writer_dict']['writer']
+        global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
+        
+        # get the data
+        data, _ = next(self._train_loader_iter)  # the core for dataloader
+        self.data_time.update(time.time() - start)
+        
+        # base on the D to get each frame
+        target = data[:, :, -1, :, :].cuda() # t frame 
+        pred_last = data[:, :, -2, :, :].cuda() # t-1 frame
+        input_data = data[:, :, :-1, :, :].cuda() # 0 ~ t-1 frame
+        # input_data = data.cuda() # 0 ~ t frame
+        
+        # True Process =================Start===================
+        #---------update optim_G ---------
+        self.set_requires_grad(self.D, False)
+        output_predframe_G, output_refineframe_G = self.G(input_data, target)
+        
+        predFlowEstim = torch.cat([pred_last, output_refineframe_G],1).cuda()
+        gtFlowEstim = torch.cat([pred_last, target], 1).cuda()
+        gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
+        predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
+        
+        loss_g_adv = self.gan_loss(self.D(output_refineframe_G), True)
+        loss_op = self.op_loss(predFlow, gtFlow)
+        loss_int = self.int_loss(output_refineframe_G, target)
+        loss_gd = self.gd_loss(output_refineframe_G, target)
+
+        loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + self.loss_lamada['opticalflow_loss_sqrt'] * loss_op + self.loss_lamada['gan_loss_mse'] * loss_g_adv
+        self.optim_G.zero_grad()
+        loss_g_all.backward()
+        self.optim_G.step()
+        # record
+        self.loss_predmeter_G.update(loss_g_all.detach())
+        if self.config.TRAIN.adversarial.scheduler.use:
+            self.lr_g.step()
+        
+        #---------update optim_D ---------------
+        self.set_requires_grad(self.D, True)
+        self.optim_D.zero_grad()
+        temp_t = self.D(target)
+        temp_g = self.D(output_refineframe_G.detach())
+        loss_d_1 = self.gan_loss(temp_t, True)
+        loss_d_2 = self.gan_loss(temp_g, False)
+        loss_d = (loss_d_1 + loss_d_2) * 0.5
+        loss_d.backward()
+        self.optim_D.step()
+        if self.config.TRAIN.adversarial.scheduler.use:
+            self.lr_d.step()
+        self.loss_predmeter_D.update(loss_d.detach())
         # ======================End==================
 
         self.batch_time.update(time.time() - start)
@@ -201,17 +314,17 @@ class Trainer(DefaultTrainer):
                 'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
                 'Speed: {speed:.1f} samples/s\t' \
                 'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' \
-                'Loss_G: {losses_G.val:.5f} ({losses_G.avg:.5f})\t'   \
-                'Loss_D:{losses_D.val:.5f}({losses_D.avg:.5f})'.format(current_step, self.max_steps, cae_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses_G=self.loss_meter_G, losses_D=self.loss_meter_D)
+                'Loss_refine_G: {losses_G.val:.5f} ({losses_G.avg:.5f})\t'   \
+                'Loss_refine_D:{losses_D.val:.5f}({losses_D.avg:.5f})'.format(current_step, self.max_steps, cae_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses_G=self.loss_refinemeter_G, losses_D=self.loss_refinemeter_D)
             self.logger.info(msg)
-        writer.add_scalar('Train_loss_G', self.loss_meter_G.val, global_steps)
-        writer.add_scalar('Train_loss_D', self.loss_meter_D.val, global_steps)
+        writer.add_scalar('Train_loss_G', self.loss_refinemeter_G.val, global_steps)
+        writer.add_scalar('Train_loss_D', self.loss_refinemeter_D.val, global_steps)
         if (current_step % self.vis_step == 0):
             vis_objects = OrderedDict()
             vis_objects['train_target_flow'] =  gtFlow_vis.detach()
             vis_objects['train_pred_flow'] = predFlow_vis.detach()
             vis_objects['train_target_frame'] =  target.detach()
-            vis_objects['train_output_frame_G'] = output_frame_G.detach()
+            vis_objects['train_output_frame_G'] = output_refineframe_G.detach()
             tensorboard_vis_images(vis_objects, writer, global_steps, self.train_normalize, self.train_mean, self.train_std)
         global_steps += 1 
         # reset start
@@ -219,9 +332,9 @@ class Trainer(DefaultTrainer):
         
         self.saved_model = {'G':self.G, 'D':self.D}
         self.saved_optimizer = {'optim_G': self.optim_G, 'optim_D': self.optim_D}
-        self.saved_loss = {'loss_G':self.loss_meter_G.val, 'loss_D':self.loss_meter_D.val}
+        self.saved_loss = {'loss_G':self.loss_refinemeter_G.val, 'loss_D':self.loss_refinemeter_D.val}
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
-    
+
     def mini_eval(self, current_step):
         if current_step % self.config.TRAIN.mini_eval_step != 0:
             return
@@ -230,10 +343,10 @@ class Trainer(DefaultTrainer):
         self.D.eval()
         for data, _ in self.val_dataloader:
             # get the data
-            target_mini = data[:, :, -1, :, :].cuda()
-            input_data_mini = data.cuda()
-            output_frame_G_mini = self.G(input_data_mini, target_mini)
-            vaild_psnr = psnr_error(output_frame_G_mini.detach(), target_mini, hat=True)
+            target_mini = data[:, :, -1, :, :].cuda() # t frame
+            input_data_mini = data[:, :, :-1, :, :].cuda() # 0 ~ t-1 frame
+            output_predframe_G_mini, output_refineframe_G_mini = self.G(input_data_mini, target_mini)
+            vaild_psnr = psnr_error(output_refineframe_G_mini.detach(), target_mini, hat=True)
             temp_meter.update(vaild_psnr.detach())
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the PSNR is {temp_meter.avg:.3f}')
 

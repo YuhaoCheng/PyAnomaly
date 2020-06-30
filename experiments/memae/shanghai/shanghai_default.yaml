@@ -20,18 +20,21 @@ DATASET:
   channel_num: 3
   channel_name: 'rgb'
   train_path: './data/shanghai/training/frames'
-  train_clip_length: 2
+  train_clip_length: 16
+  train_sampled_clip_length: 16
   train_frame_step: 1
   train_clip_step: 1
   test_path: './data/shanghai/testing/frames'
-  test_clip_length: 2
+  test_clip_length: 16
+  test_sampled_clip_length: 16
   test_frame_step: 1
   test_clip_step: 1
   gt_path: './data/shanghai/testing/test_frame_mask'
   number_of_class: 1
-  score_normalize: true
-  score_type: 'abnormal'
+  score_normalize: false
+  score_type: 'normal'
   decidable_idx: 1
+  decidable_idx_back: 1
   smooth:
     guassian: true
     guassian_sigma: [3,5,15,10,20,30]

@@ -147,7 +147,7 @@ class VideoLoader(object):
         # Make the clip have the same length
         if len(clip_list) < clip_length:
             diff = clip_length - len(clip_list)
-            print(f'clip_len:{len(clip_list)}, diff:{diff}')
+            # print(f'clip_len:{len(clip_list)}, diff:{diff}')
             clip_list.extend([clip_list[-1]] * diff)
             clip_list_original.extend([clip_list_original[-1]] * diff)
 

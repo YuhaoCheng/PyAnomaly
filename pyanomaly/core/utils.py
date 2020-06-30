@@ -20,11 +20,15 @@ class AverageMeter(object):
     """
     Computes and store the average the current value
     """
-    def __init__(self):
+    def __init__(self, name='default'):
         self.val = 0  # current value 
         self.avg = 0  # avage value
         self.sum = 0  
-        self.count = 0 
+        self.count = 0
+        self.name = name
+    
+    def get_name(self):
+        return self.name
 
     def update(self, val, n=1):
         self.val = val

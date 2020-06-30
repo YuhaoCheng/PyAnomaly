@@ -22,10 +22,12 @@ DATASET:
   channel_name: 'gray'
   train_path: './data/ped2_tif/training/frames'
   train_clip_length: 32
+  train_sampled_clip_length: 32
   train_frame_step: 1
   train_clip_step: 1
   test_path: './data/ped2_tif/testing/frames'
   test_clip_length: 16
+  test_sampled_clip_length: 16
   test_frame_step: 1
   test_clip_step: 1
   gt_path: './data/ped2_tif'
@@ -33,6 +35,7 @@ DATASET:
   score_normalize: false
   score_type: 'normal'
   decidable_idx: 0
+  decidable_idx_back: 0
   smooth:
     guassian: true
     guassian_sigma: [3,5,15,10,20,30]
@@ -44,8 +47,8 @@ ARGUMENT:
     use: true
     resize:
       use: true
-      height: 128
-      width: 128
+      height: 256
+      width: 256
     grayscale:
       use: false
     normal:
@@ -78,8 +81,8 @@ ARGUMENT:
     use: true
     resize:
       use: true
-      height: 128
-      width: 128
+      height: 256
+      width: 256
     grayscale:
       use: false
     normal:

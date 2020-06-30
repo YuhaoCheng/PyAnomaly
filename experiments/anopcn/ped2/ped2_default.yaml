@@ -36,6 +36,7 @@ DATASET:
   score_normalize: false
   score_type: 'normal'
   decidable_idx: 4
+  decidable_idx_back: 0
   smooth:
     guassian: true
     guassian_sigma: [3,5,15,10,20,30]
