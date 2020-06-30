@@ -23,9 +23,13 @@ DATASET:
   optical_format: 'Y'
   train_path: './data/ped2_tif/training/frames'
   train_clip_length: 5
+  train_sampled_clip_length: 5
+  train_frame_step: 1
   train_clip_step: 1
   test_path: './data/ped2_tif/testing/frames'
   test_clip_length: 5
+  test_sampled_clip_length: 5
+  test_frame_step: 1
   test_clip_step: 1
   gt_path: './data/ped2_tif'
   number_of_class: 1
@@ -130,7 +134,7 @@ TRAIN:
   max_steps: 25520
   log_step: 5
   vis_step: 638
-  mini_eval_step: 400
+  mini_eval_step: 20
   eval_step: 638
   save_step: 638
   epochs: 1

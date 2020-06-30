@@ -8,7 +8,7 @@ from .image_dataset import AbstractImageDataset
 class AbstractVideoAnomalyDataset(AbstractImageDataset):
     _name = 'AbstractVideoAnomalyDataset'
     # def __init__(self, dataset_folder, clip_length, size=(256, 256), transforms=None, is_training=True, only_frame=True, extra=False, **kwargs):
-    def __init__(self, dataset_folder, clip_length, frame_step=1, clip_step=1,transforms=None, is_training=True, one_video=False, only_frame=True, extra=False, **kwargs):
+    def __init__(self, dataset_folder, clip_length, sampled_clip_length,frame_step=1, clip_step=1,transforms=None, is_training=True, one_video=False, only_frame=True, extra=False, **kwargs):
         '''
         size = (h, w)
         is_training: True-> only get the frames, False-> get the frame and annotations
@@ -17,6 +17,7 @@ class AbstractVideoAnomalyDataset(AbstractImageDataset):
         self.videos = OrderedDict()
         self.cfg = kwargs['cfg']
         self.clip_length = clip_length
+        self.sampled_clip_length = sampled_clip_length
         self.frame_step = frame_step
         self.clip_step = clip_step
         self.is_training = is_training

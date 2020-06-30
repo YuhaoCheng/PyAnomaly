@@ -150,16 +150,17 @@ class Trainer(DefaultTrainer):
         
         # base on the D to get each frame
         target = data[:, :, -1, :, :].cuda() # t frame 
-        input_data = data[:, :, :-1, :, :].cuda() # 0 ~ t frame
-        input_last = input_data[:, :, -1, :, :].cuda() # t-1 frame
+        pred_last = data[:, :, -2, :, :].cuda() # t-1 frame
+        # input_data = data[:, :, :-1, :, :].cuda() # 0 ~ t frame
+        input_data = data.cuda() # 0 ~ t frame
         
         # True Process =================Start===================
         #---------update optim_G ---------
         self.set_requires_grad(self.D, False)
         output_frame_G = self.G(input_data, target)
         
-        predFlowEstim = torch.cat([input_last, output_frame_G],1).cuda()
-        gtFlowEstim = torch.cat([input_last, target], 1).cuda()
+        predFlowEstim = torch.cat([pred_last, output_frame_G],1).cuda()
+        gtFlowEstim = torch.cat([pred_last, target], 1).cuda()
         gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
         predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
         
@@ -230,9 +231,9 @@ class Trainer(DefaultTrainer):
         for data, _ in self.val_dataloader:
             # get the data
             target_mini = data[:, :, -1, :, :].cuda()
-            input_data_mini = data[:, :, :-1, :, :].cuda()
+            input_data_mini = data.cuda()
             output_frame_G_mini = self.G(input_data_mini, target_mini)
-            vaild_psnr = psnr_error(output_frame_G_mini.detach(), target_mini)
+            vaild_psnr = psnr_error(output_frame_G_mini.detach(), target_mini, hat=True)
             temp_meter.update(vaild_psnr.detach())
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the PSNR is {temp_meter.avg:.3f}')
 

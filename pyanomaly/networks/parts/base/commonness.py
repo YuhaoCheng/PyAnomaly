@@ -93,38 +93,78 @@ class Deconv2d(nn.Module):
 
         return F.relu_(x)
 
-class Inception(nn.Module):
-    def __init__(self, c_in, c_out, max_filter_size=7):
-        super(Inception, self).__init__()
-        assert max_filter_size % 2 == 1 and max_filter_size < 8
-        self.n_branch = (max_filter_size + 1 ) // 2
-        assert c_out % self.n_branch == 0
-        nf_branch = c_out // self.n_branch
-        # 1x1 
-        self.branch1 = BasicConv2d(in_channels=c_in, out_channels=nf_branch, kernel_size=1)
-        # 3x3
-        self.branch2 = Inception3x3(in_channels=c_in, out_channels=nf_branch)
-        # 5x5
-        self.branch3 = Inception5x5(in_channels=c_in, out_channels=nf_branch)
-        # 7x7
-        self.branch4 = Inception7x7(in_channels=c_in, out_channels=nf_branch)
+'''
+parts of U-Net: DoubleConv, Down, Up, OutConv
+'''
+class DoubleConv(nn.Module):
+    """(convolution => [BN] => ReLU) * 2"""
+
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.double_conv = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True)
+        )
 
     def forward(self, x):
-        out1 = self.branch1(x)
-        if self.n_branch == 1:
-            return out1
-        out2 = self.branch2(x)
-        if self.n_branch == 2:
-            return torch.cat([out1, out2], dim=1)
-        out3 = self.branch3(x)
-        if self.n_branch == 3:
-            return torch.cat([out1, out2, out3], dim=1)
-        out4 = self.branch4(x)
-        if self.n_branch == 4:
-            return torch.cat([out1, out2, out3, out4], dim=1)
+        return self.double_conv(x)
 
-        # return x
-        
+
+class Down(nn.Module):
+    """Downscaling with maxpool then double conv"""
+
+    def __init__(self, in_channels, out_channels):
+        super().__init__()
+        self.maxpool_conv = nn.Sequential(
+            nn.MaxPool2d(2),
+            DoubleConv(in_channels, out_channels)
+        )
+
+    def forward(self, x):
+        return self.maxpool_conv(x)
+
+class Up(nn.Module):
+    """Upscaling then double conv"""
+
+    def __init__(self, in_channels, a, out_channels, bilinear=True):
+        super().__init__()
+
+        # if bilinear, use the normal convolutions to reduce the number of channels
+        if bilinear:
+            # self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+            self.up = nn.Sequential(nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True), nn.Conv2d(in_channels, in_channels//2,1))
+        else:
+            self.up = nn.ConvTranspose2d(a, a, kernel_size=2, stride=2)
+
+        self.conv = DoubleConv(in_channels, out_channels)
+
+    def forward(self, x1, x2):
+        x1 = self.up(x1)
+        # input is CHW
+        diffY = torch.tensor([x2.size()[2] - x1.size()[2]])
+        diffX = torch.tensor([x2.size()[3] - x1.size()[3]])
+
+        x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
+                        diffY // 2, diffY - diffY // 2])
+        # if you have padding issues, see
+        # https://github.com/HaiyongJiang/U-Net-Pytorch-Unstructured-Buggy/commit/0e854509c2cea854e247a9c615f175f76fbb2e3a
+        # https://github.com/xiaopeng-liao/Pytorch-UNet/commit/8ebac70e633bac59fc22bb5195e513d5832fb3bd
+        x = torch.cat([x2, x1], dim=1)
+        return self.conv(x)
+
+
+class OutConv(nn.Module):
+    def __init__(self, in_channels, out_channels):
+        super(OutConv, self).__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+
+    def forward(self, x):
+        return self.conv(x)
+
 
 class Inception3x3(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -179,6 +219,40 @@ class Inception7x7(nn.Module):
 
         return x
 
+
+class Inception(nn.Module):
+    def __init__(self, c_in, c_out, max_filter_size=7):
+        super(Inception, self).__init__()
+        assert max_filter_size % 2 == 1 and max_filter_size < 8
+        self.n_branch = (max_filter_size + 1 ) // 2
+        assert c_out % self.n_branch == 0
+        nf_branch = c_out // self.n_branch
+        # 1x1 
+        self.branch1 = BasicConv2d(in_channels=c_in, out_channels=nf_branch, kernel_size=1)
+        # 3x3
+        self.branch2 = Inception3x3(in_channels=c_in, out_channels=nf_branch)
+        # 5x5
+        self.branch3 = Inception5x5(in_channels=c_in, out_channels=nf_branch)
+        # 7x7
+        self.branch4 = Inception7x7(in_channels=c_in, out_channels=nf_branch)
+
+    def forward(self, x):
+        out1 = self.branch1(x)
+        if self.n_branch == 1:
+            return out1
+        out2 = self.branch2(x)
+        if self.n_branch == 2:
+            return torch.cat([out1, out2], dim=1)
+        out3 = self.branch3(x)
+        if self.n_branch == 3:
+            return torch.cat([out1, out2, out3], dim=1)
+        out4 = self.branch4(x)
+        if self.n_branch == 4:
+            return torch.cat([out1, out2, out3, out4], dim=1)
+
+        # return x
+        
+
 class PixelDiscriminator(nn.Module):
     """Defines a 1x1 PatchGAN discriminator (pixelGAN)"""
 
@@ -226,75 +300,50 @@ class PixelDiscriminator(nn.Module):
             output = self.net(input)
         return output
 
-'''
-parts of U-Net: DoubleConv, Down, Up, OutConv
-'''
-class DoubleConv(nn.Module):
-    """(convolution => [BN] => ReLU) * 2"""
-
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.double_conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True)
-        )
-
-    def forward(self, x):
-        return self.double_conv(x)
 
 
-class Down(nn.Module):
-    """Downscaling with maxpool then double conv"""
+class NLayerDiscriminator(nn.Module):
+    """Defines a PatchGAN discriminator"""
 
-    def __init__(self, in_channels, out_channels):
-        super().__init__()
-        self.maxpool_conv = nn.Sequential(
-            nn.MaxPool2d(2),
-            DoubleConv(in_channels, out_channels)
-        )
-
-    def forward(self, x):
-        return self.maxpool_conv(x)
-
-
-class Up(nn.Module):
-    """Upscaling then double conv"""
-
-    def __init__(self, in_channels, a, out_channels, bilinear=True):
-        super().__init__()
-
-        # if bilinear, use the normal convolutions to reduce the number of channels
-        if bilinear:
-            # self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-            self.up = nn.Sequential(nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True), nn.Conv2d(in_channels, in_channels//2,1))
+    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d):
+        """Construct a PatchGAN discriminator
+        Parameters:
+            input_nc (int)  -- the number of channels in input images
+            ndf (int)       -- the number of filters in the last conv layer
+            n_layers (int)  -- the number of conv layers in the discriminator
+            norm_layer      -- normalization layer
+        """
+        super(NLayerDiscriminator, self).__init__()
+        if type(norm_layer) == functools.partial:  # no need to use bias as BatchNorm2d has affine parameters
+            use_bias = norm_layer.func == nn.InstanceNorm2d
         else:
-            self.up = nn.ConvTranspose2d(a, a, kernel_size=2, stride=2)
+            use_bias = norm_layer == nn.InstanceNorm2d
 
-        self.conv = DoubleConv(in_channels, out_channels)
+        kw = 4
+        padw = 1
+        sequence = [nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]
+        nf_mult = 1
+        nf_mult_prev = 1
+        for n in range(1, n_layers):  # gradually increase the number of filters
+            nf_mult_prev = nf_mult
+            nf_mult = min(2 ** n, 8)
+            sequence += [
+                nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=kw, stride=2, padding=padw, bias=use_bias),
+                norm_layer(ndf * nf_mult),
+                nn.LeakyReLU(0.2, True)
+            ]
 
-    def forward(self, x1, x2):
-        x1 = self.up(x1)
-        # input is CHW
-        diffY = torch.tensor([x2.size()[2] - x1.size()[2]])
-        diffX = torch.tensor([x2.size()[3] - x1.size()[3]])
+        nf_mult_prev = nf_mult
+        nf_mult = min(2 ** n_layers, 8)
+        sequence += [
+            nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=kw, stride=1, padding=padw, bias=use_bias),
+            norm_layer(ndf * nf_mult),
+            nn.LeakyReLU(0.2, True)
+        ]
 
-        x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
-                        diffY // 2, diffY - diffY // 2])
-        # if you have padding issues, see
-        # https://github.com/HaiyongJiang/U-Net-Pytorch-Unstructured-Buggy/commit/0e854509c2cea854e247a9c615f175f76fbb2e3a
-        # https://github.com/xiaopeng-liao/Pytorch-UNet/commit/8ebac70e633bac59fc22bb5195e513d5832fb3bd
-        x = torch.cat([x2, x1], dim=1)
-        return self.conv(x)
+        sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]  # output 1 channel prediction map
+        self.model = nn.Sequential(*sequence)
 
-
-class OutConv(nn.Module):
-    def __init__(self, in_channels, out_channels):
-        super(OutConv, self).__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
-
-    def forward(self, x):
-        return self.conv(x)
+    def forward(self, input):
+        """Standard forward."""
+        return self.model(input)

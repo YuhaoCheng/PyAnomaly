@@ -35,7 +35,9 @@ class L2Loss(nn.Module):
         super(L2Loss, self).__init__()
     
     def forward(self, gen, gt):
-        x = torch.mean(torch.sqrt((gen - gt)**2))
+        x = torch.mean(torch.sqrt(((gen - gt)**2 + 0.0001)))
+        if torch.isnan(x):
+            import ipdb; ipdb.set_trace()
         return x
 
 class IntensityLoss(nn.Module):

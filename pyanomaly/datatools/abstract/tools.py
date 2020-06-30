@@ -147,9 +147,10 @@ class VideoLoader(object):
         # Make the clip have the same length
         if len(clip_list) < clip_length:
             diff = clip_length - len(clip_list)
+            print(f'clip_len:{len(clip_list)}, diff:{diff}')
             clip_list.extend([clip_list[-1]] * diff)
             clip_list_original.extend([clip_list_original[-1]] * diff)
-        
+
         clip_np = np.array(clip_list)  # the shape of the clip_np is [D,H,W,C]
         clip_original = self._normalize_original(torch.from_numpy(np.array(clip_list_original)))  # the shape of the clip_original is [C, D, H, W]
         assert clip_np.shape[0] == clip_length, f'The clip length is {clip_length}, the real one is {clip_np[0]}'

@@ -6,15 +6,14 @@ from pyanomaly.networks.parts.pcn_parts.pcm import PCM
 from pyanomaly.networks.parts.pcn_parts.erm import ERM
 
 from pyanomaly.networks.parts.amc_networks import AMCDiscriminiator
-from pyanomaly.networks.parts.base.commonness import PixelDiscriminator
+from pyanomaly.networks.parts.base.commonness import PixelDiscriminator, NLayerDiscriminator
 
 class AnoPcn(nn.Module):
     def __init__(self, cfg):
         super(AnoPcn, self).__init__()
         self.pcm = PCM()
-        self.erm = ERM()
-    def _init_weights(self):
-        pass
+        self.erm = ERM(3,3)
+    
     # @torchsnooper.snoop()
     def forward(self, x, target):
         # input是video_clip
@@ -46,7 +45,8 @@ def get_model_anopcn(cfg):
 
     generator_model = AnoPcn(cfg)
     # discriminator_model = AMCDiscriminiator(c_in=6, filters=64)
-    discriminator_model = PixelDiscriminator(3, cfg.MODEL.discriminator_channels, use_norm=False)
+    # discriminator_model = PixelDiscriminator(3, cfg.MODEL.discriminator_channels, use_norm=False)
+    discriminator_model = NLayerDiscriminator(3)
     
     model_dict = OrderedDict()
     model_dict['Generator'] = generator_model

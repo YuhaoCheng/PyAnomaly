@@ -23,10 +23,12 @@ DATASET:
   optical_format: 'Y'
   train_path: './data/ped2_tif/training/frames'
   train_clip_length: 2
+  train_sampled_clip_length: 2
   train_frame_step: 1
   train_clip_step: 1
   test_path: './data/ped2_tif/testing/frames'
   test_clip_length: 2
+  test_sampled_clip_length: 2
   test_frame_step: 1
   test_clip_step: 1
   gt_path: './data/ped2_tif'
@@ -34,6 +36,7 @@ DATASET:
   score_normalize: false
   score_type: 'abnormal'
   decidable_idx: 1
+  decidable_idx_back: 1
   smooth:
     guassian: true
     guassian_sigma: [3,5,15,10,20,30]
