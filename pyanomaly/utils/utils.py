@@ -5,7 +5,6 @@ import torch
 from pathlib import Path
 from collections import OrderedDict
 from torch.utils.tensorboard import SummaryWriter
-from pyanomaly.config.config import update_config
 
 def create_logger(root_path, cfg, cfg_name, phase='trian', verbose='None'):
     '''

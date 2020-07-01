@@ -34,7 +34,7 @@ DATASET:
   number_of_class: 1
   score_normalize: false
   score_type: 'normal'
-  decidable_idx: 0
+  decidable_idx: 16
   decidable_idx_back: 0
   smooth:
     guassian: true
@@ -53,13 +53,13 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: []
-      std: []
+      mean: [0.5]
+      std: [0.5]
     fliplr:
       use: true
       p: 0.5
     flipud:
-      use: false
+      use: true
       p: 0.5
     rote:
       use: false
@@ -87,8 +87,8 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: []
-      std: []
+      mean: [0.5]
+      std: [0.5]
     fliplr:
       use: false
       p: 0.5
