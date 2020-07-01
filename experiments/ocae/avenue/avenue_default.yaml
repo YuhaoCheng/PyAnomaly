@@ -25,7 +25,7 @@ DATASET:
   test_path: './data/avenue/testing/frames'
   test_clip_length: 7
   test_sampled_clip_length: 3
-  test_clip_step: 3
+  test_frame_step: 3
   test_clip_step: 1
   gt_path: './data/avenue'
   number_of_class: 1
