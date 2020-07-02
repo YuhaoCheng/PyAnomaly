@@ -136,8 +136,7 @@ TRAIN:
   log_step: 10
   vis_step: 638
   mini_eval_step: 500
-  # eval_step: 638
-  eval_step: 5
+  eval_step: 638
   save_step: 638
   epochs: 1
   loss: ['rec_loss', 'mem_loss']
