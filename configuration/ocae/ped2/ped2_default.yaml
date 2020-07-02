@@ -33,7 +33,7 @@ DATASET:
   number_of_class: 1
   score_normalize: true
   score_type: 'abnormal'
-  decidable_idx: 1
+  decidable_idx: 4
   decidable_idx_back: 1
   smooth:
     guassian: true
@@ -55,10 +55,10 @@ ARGUMENT:
       mean: []
       std: []
     fliplr:
-      use: false
+      use: true
       p: 0.5
     flipud:
-      use: false
+      use: true
       p: 0.5
     rote:
       use: false
@@ -128,14 +128,14 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
-  batch_size: 4
+  batch_size: 16
   start_step: 0
-  max_steps: 127600
-  log_step: 5
-  vis_step: 6380
-  mini_eval_step: 500
-  eval_step: 6380
-  save_step: 6380
+  max_steps: 6400
+  log_step: 20
+  vis_step: 160
+  mini_eval_step: 100
+  eval_step: 160
+  save_step: 160
   epochs: 1
   loss: ['A_loss', 'B_loss', 'C_loss']
   loss_coefficients: [1,2,1]
