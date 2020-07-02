@@ -129,8 +129,7 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
-  # batch_size: 4
-  batch_size: 1
+  batch_size: 4
   start_step: 0
   max_steps: 26796
   log_step: 10
