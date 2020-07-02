@@ -21,7 +21,7 @@ DATASET:
   channel_name: 'rgb'
   train_path: './data/shanghai/training/frames'
   train_clip_length: 7
-  train_trained_clip_length: 3
+  train_sampled_clip_length: 3
   train_frame_step: 3
   train_clip_step: 1
   test_path: './data/shanghai/testing/frames'
@@ -134,7 +134,7 @@ TRAIN:
   log_step: 10
   vis_step: 8865
   mini_eval_step: 5000
-  eval_step: 8
+  eval_step: 8865
   save_step: 8865
   epochs: 1
   loss: ['A_loss', 'B_loss', 'C_loss']

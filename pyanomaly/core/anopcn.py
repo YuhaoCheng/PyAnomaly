@@ -138,11 +138,11 @@ class Trainer(DefaultTrainer):
         # Pytorch [N, C, D, H, W]
         # initialize
         dynamic_steps = self.config.TRAIN.dynamic_steps
-        # temp_step = current_step % max(dynamic_steps)
+        temp_step = current_step % dynamic_steps[2]
 
-        if current_step in range(dynamic_steps[0], dynamic_steps[1]):
+        if temp_step in range(dynamic_steps[0], dynamic_steps[1]):
             self.train_pcm(current_step)
-        else:
+        elif temp_step in range(dynamic_steps[1], dynamic_steps[2]):
             self.train_erm(current_step)
     
     def train_pcm(self, current_step):
