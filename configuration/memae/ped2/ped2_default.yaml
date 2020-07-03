@@ -69,7 +69,7 @@ ARGUMENT:
       high: 100
       low: 80
     GaussianBlur:
-      use: false
+      use: true
       high: 0.3
       low: 0.03
     CropToFixedSize:
@@ -145,14 +145,14 @@ TRAIN:
     optimizer:
       include: ['MemAE']
       name: 'adam'
-      lr: 1e-4
+      lr: 1e-3
       momentum: 0.9
       weight_decay: 0.0001
       nesterov: false
       output_name: ['optimizer_memae']
     scheduler:
       use: true
-      name: 'WarmupCosLR'
+      name: 'MultiStepLR'
       step_size: 1000
       steps: [10000, 15000]
       gamma: 0.1
