@@ -3,12 +3,10 @@ import glob
 import os
 from collections import OrderedDict
 from .image_dataset import AbstractImageDataset
-# from .tools import np_load_frame
 
 class AbstractVideoAnomalyDataset(AbstractImageDataset):
     _name = 'AbstractVideoAnomalyDataset'
-    # def __init__(self, dataset_folder, clip_length, size=(256, 256), transforms=None, is_training=True, only_frame=True, extra=False, **kwargs):
-    def __init__(self, dataset_folder, clip_length, sampled_clip_length,frame_step=1, clip_step=1,transforms=None, is_training=True, one_video=False, only_frame=True, extra=False, **kwargs):
+    def __init__(self, dataset_folder, clip_length, sampled_clip_length, frame_step=1, clip_step=1,transforms=None, is_training=True, one_video=False, only_frame=True, mini=False, extra=False, **kwargs):
         '''
         size = (h, w)
         is_training: True-> only get the frames, False-> get the frame and annotations
@@ -22,6 +20,7 @@ class AbstractVideoAnomalyDataset(AbstractImageDataset):
         self.clip_step = clip_step
         self.is_training = is_training
         self.one_video = one_video
+        self.mini = mini
         self.only_frame = only_frame
         self.extra = extra
         self.kwargs = kwargs
@@ -38,6 +37,7 @@ class AbstractVideoAnomalyDataset(AbstractImageDataset):
             self.normal_std = self.cfg.ARGUMENT.val.normal.std
             self.aug_params = self.cfg.ARGUMENT.val
             self.flag = 'Val'
+        
         # set up the keys of the dataset
         self.setup()
         self.custom_setup()
@@ -76,7 +76,7 @@ class AbstractVideoAnomalyDataset(AbstractImageDataset):
             self.videos[video_name]['length'] = len(self.videos[video_name]['frames'])
             self.videos[video_name]['cursor'] = 0
             self.total_clips_onevideo += (len(self.videos[video_name]['frames']) - self.clip_length)
-            self.pics_len=len(self.videos[video_name]['frames'])
+            self.pics_len = len(self.videos[video_name]['frames'])
             self.videos_keys = self.videos.keys()
             print(f'\033[1;34m The clip number of one video {video_name}#{self.flag} is:{self.total_clips_onevideo} of {self.cfg.DATASET.name}\033[0m')
     def __getitem__(self, indice):
@@ -110,5 +110,13 @@ class AbstractVideoAnomalyDataset(AbstractImageDataset):
         pass
 
     def __len__(self):
-        return self.videos.__len__() # the number of the videos
+        if self.one_video and self.mini:
+            return self.cfg.DATASET.mini_dataset.samples
+        
+        if self.one_video:
+            return self.pics_len
+        elif self.mini:
+            return self.cfg.DATASET.mini_dataset.samples
+        else:
+            return self.videos.__len__() # the number of the videos
 

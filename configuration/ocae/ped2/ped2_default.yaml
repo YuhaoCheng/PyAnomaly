@@ -3,8 +3,8 @@ SYSTEM:
   num_gpus: 2
   gpus: [0,1]
   cudnn:
-    benchmark: false
-    deterministic: true
+    benchmark: true
+    deterministic: false
     enable: true
   distributed:
     use: false
@@ -17,25 +17,24 @@ DATASET:
   name: 'ped2'
   seed: 2020
   read_format: 'opencv'
-  image_format: 'tif'
-  channel_num: 1
-  channel_name: 'gray'
-  train_path: './data/ped2_tif/training/frames'
-  train_clip_length: 16
-  train_sampled_clip_length: 16
-  train_frame_step: 1
+  channel_num: 3
+  channel_name: 'rgb'
+  train_path: './data/ped2/training/frames'
+  train_clip_length: 7
+  train_sampled_clip_length: 3
+  train_frame_step: 3
   train_clip_step: 1
-  test_path: './data/ped2_tif/testing/frames'
-  test_clip_length: 16
-  test_sampled_clip_length: 16
-  test_frame_step: 1
+  test_path: './data/ped2/testing/frames'
+  test_clip_length: 7
+  test_sampled_clip_length: 3
+  test_frame_step: 3
   test_clip_step: 1
-  gt_path: './data/ped2_tif'
+  gt_path: './data/ped2'
   number_of_class: 1
-  score_normalize: false
-  score_type: 'normal'
-  decidable_idx: 0
-  decidable_idx_back: 0
+  score_normalize: true
+  score_type: 'abnormal'
+  decidable_idx: 4
+  decidable_idx_back: 1
   smooth:
     guassian: true
     guassian_sigma: [3,5,15,10,20,30]
@@ -56,10 +55,10 @@ ARGUMENT:
       mean: []
       std: []
     fliplr:
-      use: false
+      use: true
       p: 0.5
     flipud:
-      use: false
+      use: true
       p: 0.5
     rote:
       use: false
@@ -112,16 +111,16 @@ ARGUMENT:
       width: 256
       position: 'center'
 MODEL:
-  name: 'memae'
-  type: 'memae'
+  name: 'ocae'
+  type: 'ocae'
   hooks:
-    train: ['memae.MemAEEvaluateHook', 'base.VisScoreHook']
-    val: ['memae.MemAEEvaluateHook']
+    train: ['oc.ClusterHook', 'oc.OCEvaluateHook', 'base.VisScoreHook']
+    val: ['oc.ClusterHook', 'oc.OCEvaluateHook']
+  detector_config: 'COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml'
+  detector_model_path: "./pretrained_model/faster_rcnn_X_101_FPN_model_final_68b088.pkl"
   flow_model_path: ''
   discriminator_channels: []
-  pretrain_model: './pretrained_model/MemAE_Conv3DSpar_UCSD_P2_256_MemDim2000_EntW0.0002_ShrThres0.0025_Non.pt'
-  detector_config: ''
-  detector_model_path: ''
+  pretrain_model: ''
 RESUME:
   flag: false
   checkpoint_path: ''
@@ -129,53 +128,32 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
-  # batch_size: 4
-  batch_size: 1
+  batch_size: 16
   start_step: 0
-  max_steps: 26796
-  log_step: 10
-  vis_step: 638
-  mini_eval_step: 500
-  # eval_step: 638
-  eval_step: 5
-  save_step: 638
+  max_steps: 6400
+  log_step: 20
+  vis_step: 160
+  mini_eval_step: 100
+  eval_step: 160
+  save_step: 160
   epochs: 1
-  loss: ['rec_loss', 'mem_loss']
-  loss_coefficients: [1, 0.0002]
+  loss: ['A_loss', 'B_loss', 'C_loss']
+  loss_coefficients: [1,2,1]
   mode: 'general'
   general:
     optimizer:
-      include: ['MemAE']
+      include: ['A', 'B', 'C']
       name: 'adam'
-      lr: 1e-4
+      lr: 1e-3
       momentum: 0.9
       weight_decay: 0.0001
       nesterov: false
-      output_name: ['optimizer_memae']
+      output_name: ['optimizer_abc']
     scheduler:
       use: true
-      name: 'WarmupCosLR'
+      name: 'MultiStepLR'
       step_size: 1000
-      steps: [10000, 15000]
-      gamma: 0.1
-      T_max: 6380
-      eta_min: 0
-      warmup_factor: 0.001
-      warmup_iters: 1276
-      warmup_method: 'linear'
-  adversarial:
-    optimizer:
-      include: ['Generator', 'Discriminator']
-      name: 'adam'
-      g_lr: 0.0002
-      d_lr: 0.00002
-      weight_decay: 0.0001
-      output_name: ['optimizer_g', 'optimizer_d']
-    scheduler:
-      use: true
-      name: 'WarmupCosLR'
-      step_size: 1000
-      steps: [10000, 15000]
+      steps: [63800]
       gamma: 0.1
       T_max: 300
       eta_min: 0

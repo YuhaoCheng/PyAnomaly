@@ -14,27 +14,25 @@ LOG:
   vis_dir: './output/vis'
   
 DATASET:
-  name: 'ped2'
+  name: 'avenue'
   seed: 2020
   read_format: 'opencv'
-  channel_num: 3
-  channel_name: 'rgb'
-  train_path: './data/ped2/training/frames'
+  train_path: './data/avenue/training/frames'
   train_clip_length: 7
   train_sampled_clip_length: 3
   train_frame_step: 3
   train_clip_step: 1
-  test_path: './data/ped2/testing/frames'
+  test_path: './data/avenue/testing/frames'
   test_clip_length: 7
   test_sampled_clip_length: 3
   test_frame_step: 3
   test_clip_step: 1
-  gt_path: './data/ped2'
+  gt_path: './data/avenue'
   number_of_class: 1
   score_normalize: true
   score_type: 'abnormal'
-  decidable_idx: 1
-  decidable_idx_back: 1
+  decidable_idx: 4
+  decidable_idx_back: 0
   smooth:
     guassian: true
     guassian_sigma: [3,5,15,10,20,30]
@@ -55,10 +53,10 @@ ARGUMENT:
       mean: []
       std: []
     fliplr:
-      use: false
+      use: true
       p: 0.5
     flipud:
-      use: false
+      use: true
       p: 0.5
     rote:
       use: false
@@ -128,14 +126,14 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
-  batch_size: 4
+  batch_size: 16
   start_step: 0
-  max_steps: 127600
+  max_steps: 38320
   log_step: 5
-  vis_step: 6380
-  mini_eval_step: 500
-  eval_step: 6380
-  save_step: 6380
+  vis_step: 958
+  mini_eval_step: 600
+  eval_step: 958
+  save_step: 958
   epochs: 1
   loss: ['A_loss', 'B_loss', 'C_loss']
   loss_coefficients: [1,2,1]

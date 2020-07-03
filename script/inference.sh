@@ -4,7 +4,7 @@ project_path='/export/home/chengyh/PyAnomaly'
 model="amc"
 dataset="ped2"
 verbose='default'
-config="ped2_default.yaml"
+config=""
 inference_model='./final_model/avenue_amc_cfg@amc_avenue#2020-03-02-22-05#0.835^amc#amc.pth'
 GPUS="0"
 MULTIGPUS=False
@@ -76,6 +76,14 @@ then
     echo 'Use multi gpus, the num of gpus:'$NUM_GPUS
 else
     echo 'Use single gpus, the device id is:'$GPUS
+fi
+
+if test -n "$config" # $config is not null, it is true 
+then
+    echo "the config file is:" $config
+else
+    config=$dataset'_default.yaml'
+    echo "Using the default config:"$config
 fi
 
 cfg_folder=$model'/'$dataset # e.g amc/avenue

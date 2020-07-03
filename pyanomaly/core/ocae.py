@@ -139,6 +139,7 @@ class Trainer(DefaultTrainer):
         self.B.train()
         self.C.train()
         self.Detector.eval()
+        self.set_requires_grad(self.Detector, False)
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
 

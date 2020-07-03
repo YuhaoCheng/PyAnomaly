@@ -137,12 +137,12 @@ class Trainer(DefaultTrainer):
     def train(self,current_step):
         # Pytorch [N, C, D, H, W]
         # initialize
-        dynamic_steps = self.config.TRIAN.dynamic_steps
-        temp_step = current_step % max(dynamic_steps)
+        dynamic_steps = self.config.TRAIN.dynamic_steps
+        temp_step = current_step % dynamic_steps[2]
 
         if temp_step in range(dynamic_steps[0], dynamic_steps[1]):
             self.train_pcm(current_step)
-        else:
+        elif temp_step in range(dynamic_steps[1], dynamic_steps[2]):
             self.train_erm(current_step)
     
     def train_pcm(self, current_step):
@@ -155,8 +155,10 @@ class Trainer(DefaultTrainer):
         self.set_requires_grad(self.F, False)
         if self.kwargs['parallel']:
             self.set_requires_grad(self.G.module.erm, False)
+            self.set_requires_grad(self.G.module.pcm, True)
         else:
             self.set_requires_grad(self.G.erm, False)
+            self.set_requires_grad(self.G.pcm, True)
         # self.G.change(True)
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
@@ -249,10 +251,13 @@ class Trainer(DefaultTrainer):
         self.D.train()
         self.F.eval()
         self.set_requires_grad(self.F, False)
+
         if self.kwargs['parallel']:
             self.set_requires_grad(self.G.module.pcm, False)
+            self.set_requires_grad(self.G.module.erm, True)
         else:
             self.set_requires_grad(self.G.pcm, False)
+            self.set_requires_grad(self.G.erm, True)
         
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
@@ -287,7 +292,7 @@ class Trainer(DefaultTrainer):
         loss_g_all.backward()
         self.optim_G.step()
         # record
-        self.loss_predmeter_G.update(loss_g_all.detach())
+        self.loss_refinemeter_G.update(loss_g_all.detach())
         if self.config.TRAIN.adversarial.scheduler.use:
             self.lr_g.step()
         
@@ -303,7 +308,7 @@ class Trainer(DefaultTrainer):
         self.optim_D.step()
         if self.config.TRAIN.adversarial.scheduler.use:
             self.lr_d.step()
-        self.loss_predmeter_D.update(loss_d.detach())
+        self.loss_refinemeter_D.update(loss_d.detach())
         # ======================End==================
 
         self.batch_time.update(time.time() - start)

@@ -154,7 +154,7 @@ if __name__ == '__main__':
     root_path = Path(args.project_path)
     
     # Get the config yaml file and upate 
-    cfg_path = root_path /'experiments'/ args.cfg_folder / args.cfg_name
+    cfg_path = root_path /'configuration'/ args.cfg_folder / args.cfg_name
     cfg = update_config(cfg_path, args.opts)
     
     # decide the spcific function: train or inference

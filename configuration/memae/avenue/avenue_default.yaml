@@ -14,26 +14,24 @@ LOG:
   vis_dir: './output/vis'
   
 DATASET:
-  name: 'ped2'
+  name: 'avenue'
   seed: 2020
   read_format: 'opencv'
-  image_format: 'tif'
-  channel_num: 3
-  channel_name: 'rgb'
-  optical_format: 'Y'
-  train_path: './data/ped2_tif/training/frames'
-  train_clip_length: 5
-  train_sampled_clip_length: 5
+  channel_num: 1
+  channel_name: 'gray'
+  train_path: './data/Avenue/training/frames'
+  train_clip_length: 16
+  train_sampled_clip_length: 16
   train_frame_step: 1
   train_clip_step: 1
-  test_path: './data/ped2_tif/testing/frames'
-  test_clip_length: 5
-  test_sampled_clip_length: 5
+  test_path: './data/Avenue/testing/frames'
+  test_clip_length: 16
+  test_sampled_clip_length: 16
   test_frame_step: 1
   test_clip_step: 1
-  gt_path: './data/ped2_tif'
+  gt_path: './data/Avenue'
   number_of_class: 1
-  score_normalize: false
+  score_normalize: true
   score_type: 'normal'
   decidable_idx: 4
   decidable_idx_back: 0
@@ -54,13 +52,13 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: [0.5, 0.5, 0.5]
-      std: [0.5, 0.5, 0.5]
+      mean: [0.5]
+      std: [0.5]
     fliplr:
-      use: false
+      use: true
       p: 0.5
     flipud:
-      use: false
+      use: true
       p: 0.5
     rote:
       use: false
@@ -88,8 +86,8 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: [0.5, 0.5, 0.5]
-      std: [0.5, 0.5, 0.5]
+      mean: [0.5]
+      std: [0.5]
     fliplr:
       use: false
       p: 0.5
@@ -113,13 +111,13 @@ ARGUMENT:
       width: 256
       position: 'center'
 MODEL:
-  name: 'anopcn'
-  type: 'anopcn'
+  name: 'memae'
+  type: 'memae'
   hooks:
-    train: ['anopcn.AnoPCNEvaluateHook', 'base.VisScoreHook']
-    val: ['anopcn.AnoPCNEvaluateHook']
-  flow_model_path: './pretrained_model/FlowNet2_checkpoint.pth.tar'
-  discriminator_channels: [128,256,512,512]
+    train: ['memae.MemAEEvaluateHook', 'base.VisScoreHook']
+    val: ['memae.MemAEEvaluateHook']
+  flow_model_path: ''
+  discriminator_channels: []
   pretrain_model: ''
   detector_config: ''
   detector_model_path: ''
@@ -132,35 +130,36 @@ FINETUNE:
 TRAIN:
   batch_size: 4
   start_step: 0
-  max_steps: 25520
-  log_step: 5
-  vis_step: 638
-  mini_eval_step: 20
-  eval_step: 638
-  save_step: 638
+  max_steps: 160944
+  log_step: 50
+  vis_step: 3832
+  mini_eval_step: 3000
+  eval_step: 3832
+  save_step: 3832
   epochs: 1
-  loss: ['gan_loss_mse','gradient_loss', 'intentsity_loss', 'opticalflow_loss_sqrt']
-  loss_coefficients: [0.025,1,1,2]
-  mode: 'adversarial'
-  adversarial:
+  loss: ['rec_loss', 'mem_loss']
+  loss_coefficients: [1,0.0002]
+  mode: 'general'
+  general:
     optimizer:
-      include: ['Generator', 'Discriminator']
+      include: ['MemAE']
       name: 'adam'
-      g_lr: 0.0001
-      d_lr: 0.00001
+      lr: 1e-4
+      momentum: 0.9
       weight_decay: 0.0001
-      output_name: ['optimizer_g', 'optimizer_d']
+      nesterov: false
+      output_name: ['optimizer_memae']
     scheduler:
-      use: false
-      name: 'WarmupCosLR' # 'stepLR'| 'cosLR' | 'WarmupCosLR' | 'WarmupMultiStepLR'
+      use: true
+      name: 'WarmupCosLR'
       step_size: 1000
       steps: [10000, 15000]
       gamma: 0.1
-      T_max: 300
+      T_max: 38320
       eta_min: 0
-      warmup_factor: 0.001
-      warmup_iters: 1000
-      warmup_method: 'linear' # 'linear' | 'constant'
+      warmup_factor: 0.01
+      warmup_iters: 7664
+      warmup_method: 'linear'
   split: ''
   model_output: './output/models'
   checkpoint_output: './output/checkpoint'
