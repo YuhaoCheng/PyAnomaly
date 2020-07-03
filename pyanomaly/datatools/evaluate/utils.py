@@ -225,11 +225,11 @@ def oc_score(raw_data):
     object_score = np.empty(shape=(raw_data.shape[0],),dtype=np.float32)
     for index, dummy_objects in enumerate(raw_data):
         # temp = np.max(-dummy_objects)
-        temp = np.max(dummy_objects)
+        temp = -np.max(dummy_objects)
         object_score[index] = temp
     
     frame_score = np.max(object_score)
-
+    # import ipdb; ipdb.set_trace()
     return frame_score
 
 
