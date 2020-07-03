@@ -12,7 +12,7 @@ func() {
     exit -1
 }
 
-while getopts "dp:mp:h" opt
+while getopts "dp:mp:n:h" opt
 do
     case $opt in 
     dp) 
