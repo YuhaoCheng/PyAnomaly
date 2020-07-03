@@ -138,25 +138,26 @@ TRAIN:
   loss: ['A_loss', 'B_loss', 'C_loss']
   loss_coefficients: [1,2,1]
   mode: 'general'
-  adversarial:
+  general:
     optimizer:
-      include: ['Generator', 'Discriminator']
+      include: ['A', 'B', 'C']
       name: 'adam'
-      g_lr: 0.0002
-      d_lr: 0.00002
+      lr: 1e-3
+      momentum: 0.9
       weight_decay: 0.0001
-      output_name: ['optimizer_g', 'optimizer_d']
+      nesterov: false
+      output_name: ['optimizer_abc']
     scheduler:
       use: true
-      name: 'WarmupCosLR' # 'stepLR'| 'cosLR' | 'WarmupCosLR' | 'WarmupMultiStepLR'
+      name: 'MultiStepLR'
       step_size: 1000
-      steps: [10000, 15000]
+      steps: [63800]
       gamma: 0.1
       T_max: 300
       eta_min: 0
       warmup_factor: 0.001
       warmup_iters: 1000
-      warmup_method: 'linear' # 'linear' | 'constant'
+      warmup_method: 'linear'
   split: ''
   model_output: './output/models'
   checkpoint_output: './output/checkpoint'
