@@ -12,14 +12,14 @@ HOOKS = ['AnoPCNEvaluateHook']
 class AnoPCNEvaluateHook(HookBase):
     def after_step(self, current_step):
         acc = 0.0
-        if current_step % self.trainer.eval_step == 0 and current_step != 0:
+        if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
             with torch.no_grad():
                 acc = self.evaluate(current_step)
                 if acc > self.trainer.accuarcy:
                     self.trainer.accuarcy = acc
                     # save the model & checkpoint
                     self.trainer.save(current_step, best=True)
-                elif current_step % self.trainer.save_step == 0 and current_step != 0:
+                elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
                     # save the checkpoint
                     self.trainer.save(current_step)
                     self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
@@ -29,9 +29,9 @@ class AnoPCNEvaluateHook(HookBase):
             pass
     
     def inference(self):
-        self.trainer.set_requires_grad(self.trainer.F, False)
-        self.trainer.set_requires_grad(self.trainer.G, False)
-        self.trainer.set_requires_grad(self.trainer.D, False)
+        # self.trainer.set_requires_grad(self.trainer.F, False)
+        # self.trainer.set_requires_grad(self.trainer.G, False)
+        # self.trainer.set_requires_grad(self.trainer.D, False)
         acc = self.evaluate(0)
         self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
     
@@ -43,6 +43,9 @@ class AnoPCNEvaluateHook(HookBase):
         '''
         self.trainer.G.eval()
         self.trainer.D.eval()
+        self.trainer.set_requires_grad(self.trainer.F, False)
+        self.trainer.set_requires_grad(self.trainer.G, False)
+        self.trainer.set_requires_grad(self.trainer.D, False)
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
 
@@ -81,12 +84,16 @@ class AnoPCNEvaluateHook(HookBase):
                 scores[test_counter+frame_num-1]=test_psnr
                 
                 if sn == random_video_sn and (frame_sn in vis_range):
-                    vis_objects = OrderedDict()
-                    vis_objects['anopcn_eval_frame'] = test_target.detach()
-                    vis_objects['anopcn_eval_frame_hat'] = g_output.detach()
-                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
+                    vis_objects = OrderedDict({
+                        'anopcn_eval_frame': test_target.detach(),
+                        'anopcn_eval_frame_hat': g_output.detach()
+                    })
+                    # vis_objects['anopcn_eval_frame'] = test_target.detach()
+                    # vis_objects['anopcn_eval_frame_hat'] = g_output.detach()
+                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize.param['val'])
                 test_counter += 1
                 total+=1
+
                 if test_counter >= test_iters:
                     psnrs[:frame_num-1]=psnrs[frame_num-1]
                     scores[:frame_num-1]=(scores[frame_num-1],)

@@ -32,7 +32,7 @@ DATASET:
   gt_path: './data/Avenue'
   number_of_class: 1
   score_normalize: false
-  score_type: 'abnormal'
+  score_type: 'normal'
   decidable_idx: 4
   decidable_idx_back: 0
   smooth:

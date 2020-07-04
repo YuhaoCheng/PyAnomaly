@@ -3,6 +3,8 @@ import torch.nn as nn
 import torch
 import torchsnooper
 from collections import OrderedDict
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import LinearSVC
 
 class CAE(nn.Module):
     def __init__(self):
@@ -64,6 +66,8 @@ def get_model_ocae(cfg):
     DetectionCheckpointer(det_model).load(cfg.MODEL.detector_model_path)
     det_model.train(False)
     model_dict['Detector'] = det_model
+
+    model_dict['OVR'] = OneVsRestClassifier(LinearSVC(random_state = 0), n_jobs=16)
 
     return model_dict
 

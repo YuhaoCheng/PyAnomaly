@@ -16,9 +16,8 @@ import torchvision.transforms as T
 import torchvision.transforms.functional as tf
 from torch.utils.data import DataLoader
 
-from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images
+from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images, make_info_message, ParamSet
 from pyanomaly.datatools.evaluate.utils import psnr_error
-# from lib.utils.flow_utils import flow2img
 from pyanomaly.core.engine.default_engine import DefaultTrainer, DefaultInference
 
 
@@ -87,12 +86,12 @@ class Trainer(DefaultTrainer):
         self.op_loss = loss_function['opticalflow_loss_sqrt']
 
         # basic meter
-        self.batch_time =  AverageMeter()
-        self.data_time = AverageMeter()
-        self.loss_predmeter_G = AverageMeter()
-        self.loss_predmeter_D = AverageMeter()
-        self.loss_refinemeter_G = AverageMeter()
-        self.loss_refinemeter_D = AverageMeter()
+        self.batch_time =  AverageMeter(name='batch_time')
+        self.data_time = AverageMeter(name='data_time')
+        self.loss_predmeter_G = AverageMeter(name='loss_predmeter_G')
+        self.loss_predmeter_D = AverageMeter(name='loss_predmeter_D')
+        self.loss_refinemeter_G = AverageMeter(name='loss_refinemeter_G')
+        self.loss_refinemeter_D = AverageMeter(name='loss_refinemeter_D')
         # self.psnr = AverageMeter()
 
         # others
@@ -100,20 +99,17 @@ class Trainer(DefaultTrainer):
         self.accuarcy = 0.0  # to store the accuracy varies from epoch to epoch
         self.config_name = kwargs['config_name']
         self.kwargs = kwargs
-        self.train_normalize = self.config.ARGUMENT.train.normal.use
-        self.train_mean = self.config.ARGUMENT.train.normal.mean
-        self.train_std = self.config.ARGUMENT.train.normal.std
-
-        self.val_normalize = self.config.ARGUMENT.val.normal.use
-        self.val_mean = self.config.ARGUMENT.val.normal.mean
-        self.val_std = self.config.ARGUMENT.val.normal.std
-        # self.total_steps = len(self.train_dataloader)
         self.result_path = ''
-        self.log_step = self.config.TRAIN.log_step # how many the steps, we will show the information
-        self.vis_step = self.config.TRAIN.vis_step # how many the steps, we will vis 
-        self.eval_step = self.config.TRAIN.eval_step 
-        self.save_step = self.config.TRAIN.save_step # save the model whatever the acc of the model
-        self.max_steps = self.config.TRAIN.max_steps
+        
+        self.normalize = ParamSet(name='normalize', 
+                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
+                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
+
+        self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
+                              max=self.config.TRAIN.max_steps, mini_eval=self.config.TRAIN.mini_eval_step, dynamic_steps=self.config.TRAIN.dynamic_steps)
+        
+        self.optical = ParamSet(name='optical', size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format)
+        # import ipdb; ipdb.set_trace()
         # self.testing_data_folder = self.config.DATASET.test_path
         self.test_dataset_keys = kwargs['test_dataset_keys']
         self.test_dataset_dict = kwargs['test_dataset_dict']
@@ -137,9 +133,12 @@ class Trainer(DefaultTrainer):
     def train(self,current_step):
         # Pytorch [N, C, D, H, W]
         # initialize
-        dynamic_steps = self.config.TRAIN.dynamic_steps
-        temp_step = current_step % dynamic_steps[2]
+        self.set_requires_grad(self.trainer.F, False)
+        self.set_requires_grad(self.trainer.G, True)
+        self.set_requires_grad(self.trainer.D, True)
 
+        dynamic_steps = self.steps.param['dynamic_steps']
+        temp_step = current_step % dynamic_steps[2]
         if temp_step in range(dynamic_steps[0], dynamic_steps[1]):
             self.train_pcm(current_step)
         elif temp_step in range(dynamic_steps[1], dynamic_steps[2]):
@@ -152,13 +151,13 @@ class Trainer(DefaultTrainer):
         self.G.train()
         self.D.train()
         self.F.eval()
-        self.set_requires_grad(self.F, False)
+        # self.set_requires_grad(self.F, False)
         if self.kwargs['parallel']:
-            self.set_requires_grad(self.G.module.erm, False)
             self.set_requires_grad(self.G.module.pcm, True)
+            self.set_requires_grad(self.G.module.erm, False)
         else:
-            self.set_requires_grad(self.G.erm, False)
             self.set_requires_grad(self.G.pcm, True)
+            self.set_requires_grad(self.G.erm, False)
         # self.G.change(True)
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
@@ -176,12 +175,14 @@ class Trainer(DefaultTrainer):
         # True Process =================Start===================
         #---------update optim_G ---------
         self.set_requires_grad(self.D, False)
-        output_predframe_G, output_refineframe_G = self.G(input_data, target)
+        output_predframe_G, _ = self.G(input_data, target)
         
         predFlowEstim = torch.cat([pred_last, output_predframe_G],1).cuda()
         gtFlowEstim = torch.cat([pred_last, target], 1).cuda()
-        gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
-        predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
+        gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim, self.normalize.param['train'], 
+                                                 output_format=self.config.DATASET.optical_format, optical_size=self.config.DATASET.optical_size)
+        predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim, self.normalize.param['train'], 
+                                                 output_format=self.config.DATASET.optical_format, optical_size=self.config.DATASET.optical_size)
         
         loss_g_adv = self.gan_loss(self.D(output_predframe_G), True)
         loss_op = self.op_loss(predFlow, gtFlow)
@@ -214,25 +215,22 @@ class Trainer(DefaultTrainer):
 
         self.batch_time.update(time.time() - start)
 
-        if (current_step % self.log_step == 0):
-            msg = 'Step: [{0}/{1}]\t' \
-                'Type: {model_type}\t' \
-                'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
-                'Speed: {speed:.1f} samples/s\t' \
-                'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' \
-                'Loss_pred_G: {losses_G.val:.5f} ({losses_G.avg:.5f})\t'   \
-                'Loss_pred_D:{losses_D.val:.5f}({losses_D.avg:.5f})'.format(current_step, self.max_steps, model_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses_G=self.loss_predmeter_G, losses_D=self.loss_predmeter_D)
+        if (current_step % self.steps.param['log'] == 0):
+            msg = make_info_message(current_step, self.steps.param['max'], self.kwargs['model_type'], self.batch_time, 
+                                    self.config.TRAIN.batch_size, self.data_time, [self.loss_predmeter_G, self.loss_predmeter_D])
             self.logger.info(msg)
+        
         writer.add_scalar('Train_loss_G', self.loss_predmeter_G.val, global_steps)
         writer.add_scalar('Train_loss_D', self.loss_predmeter_D.val, global_steps)
 
-        if (current_step % self.vis_step == 0):
-            vis_objects = OrderedDict()
-            vis_objects['train_target_flow'] =  gtFlow_vis.detach()
-            vis_objects['train_pred_flow'] = predFlow_vis.detach()
-            vis_objects['train_target_frame'] =  target.detach()
-            vis_objects['train_output_frame_G'] = output_predframe_G.detach()
-            tensorboard_vis_images(vis_objects, writer, global_steps, self.train_normalize, self.train_mean, self.train_std)
+        if (current_step % self.steps.param['vis'] == 0):
+            vis_objects = OrderedDict({
+                'train_target_flow': gtFlow_vis.detach(),
+                'train_pred_flow': predFlow_vis.detach(),
+                'train_target_frame': target.detach(),
+                'train_output_predframe_G': output_predframe_G.detach()
+            })
+            tensorboard_vis_images(vis_objects, writer, global_steps, self.normalize.param['train'])
         
         global_steps += 1 
         # reset start
@@ -250,14 +248,14 @@ class Trainer(DefaultTrainer):
         self.G.train()
         self.D.train()
         self.F.eval()
-        self.set_requires_grad(self.F, False)
+        # self.set_requires_grad(self.F, False)
 
         if self.kwargs['parallel']:
-            self.set_requires_grad(self.G.module.pcm, False)
             self.set_requires_grad(self.G.module.erm, True)
+            self.set_requires_grad(self.G.module.pcm, False)
         else:
-            self.set_requires_grad(self.G.pcm, False)
             self.set_requires_grad(self.G.erm, True)
+            self.set_requires_grad(self.G.pcm, False)
         
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
@@ -275,12 +273,15 @@ class Trainer(DefaultTrainer):
         # True Process =================Start===================
         #---------update optim_G ---------
         self.set_requires_grad(self.D, False)
-        output_predframe_G, output_refineframe_G = self.G(input_data, target)
+        _, output_refineframe_G = self.G(input_data, target)
         
         predFlowEstim = torch.cat([pred_last, output_refineframe_G],1).cuda()
         gtFlowEstim = torch.cat([pred_last, target], 1).cuda()
-        gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
-        predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
+
+        gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim, self.normalize.param['train'], 
+                                                 output_format=self.config.DATASET.optical_format, optical_size=self.config.DATASET.optical_size)
+        predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim, self.normalize.param['train'], 
+                                                     output_format=self.config.DATASET.optical_format, optical_size=self.config.DATASET.optical_size)
         
         loss_g_adv = self.gan_loss(self.D(output_refineframe_G), True)
         loss_op = self.op_loss(predFlow, gtFlow)
@@ -306,6 +307,7 @@ class Trainer(DefaultTrainer):
         loss_d = (loss_d_1 + loss_d_2) * 0.5
         loss_d.backward()
         self.optim_D.step()
+
         if self.config.TRAIN.adversarial.scheduler.use:
             self.lr_d.step()
         self.loss_refinemeter_D.update(loss_d.detach())
@@ -313,24 +315,23 @@ class Trainer(DefaultTrainer):
 
         self.batch_time.update(time.time() - start)
 
-        if (current_step % self.log_step == 0):
-            msg = 'Step: [{0}/{1}]\t' \
-                'Type: {cae_type}\t' \
-                'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
-                'Speed: {speed:.1f} samples/s\t' \
-                'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' \
-                'Loss_refine_G: {losses_G.val:.5f} ({losses_G.avg:.5f})\t'   \
-                'Loss_refine_D:{losses_D.val:.5f}({losses_D.avg:.5f})'.format(current_step, self.max_steps, cae_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses_G=self.loss_refinemeter_G, losses_D=self.loss_refinemeter_D)
+        if (current_step % self.steps.param['log'] == 0):
+            msg = make_info_message(current_step, self.max_steps, self.kwargs['model_type'], self.batch_time, 
+                                    self.config.TRAIN.batch_sizes, self.data_time, [self.loss_refinemeter_G, self.loss_refinemeter_D])
             self.logger.info(msg)
+        
         writer.add_scalar('Train_loss_G', self.loss_refinemeter_G.val, global_steps)
         writer.add_scalar('Train_loss_D', self.loss_refinemeter_D.val, global_steps)
-        if (current_step % self.vis_step == 0):
-            vis_objects = OrderedDict()
-            vis_objects['train_target_flow'] =  gtFlow_vis.detach()
-            vis_objects['train_pred_flow'] = predFlow_vis.detach()
-            vis_objects['train_target_frame'] =  target.detach()
-            vis_objects['train_output_frame_G'] = output_refineframe_G.detach()
-            tensorboard_vis_images(vis_objects, writer, global_steps, self.train_normalize, self.train_mean, self.train_std)
+        
+        if (current_step % self.steps.param['vis'] == 0):
+            vis_objects = OrderedDict({
+                'train_target_flow': gtFlow_vis.detach(),
+                'train_pred_flow': predFlow_vis.detach(),
+                'train_target_frame': target.detach(),
+                'train_output_refineframe_G': output_refineframe_G.detach()
+            })
+            tensorboard_vis_images(vis_objects, writer, global_steps, self.normalize.param['train'])
+        
         global_steps += 1 
         # reset start
         start = time.time()
@@ -340,17 +341,22 @@ class Trainer(DefaultTrainer):
         self.saved_loss = {'loss_G':self.loss_refinemeter_G.val, 'loss_D':self.loss_refinemeter_D.val}
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
 
+
     def mini_eval(self, current_step):
-        if current_step % self.config.TRAIN.mini_eval_step != 0:
+        if current_step % self.steps.param['mini_eval'] != 0:
             return
-        temp_meter = AverageMeter()
+        temp_meter = AverageMeter(name='temp')
         self.G.eval()
         self.D.eval()
+        self.set_requires_grad(self.F, False)
+        self.set_requires_grad(self.D, False)
+        self.set_requires_grad(self.G, False)
+
         for data, _ in self.val_dataloader:
             # get the data
             target_mini = data[:, :, -1, :, :].cuda() # t frame
             input_data_mini = data[:, :, :-1, :, :].cuda() # 0 ~ t-1 frame
-            output_predframe_G_mini, output_refineframe_G_mini = self.G(input_data_mini, target_mini)
+            _, output_refineframe_G_mini = self.G(input_data_mini, target_mini)
             vaild_psnr = psnr_error(output_refineframe_G_mini.detach(), target_mini, hat=True)
             temp_meter.update(vaild_psnr.detach())
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the PSNR is {temp_meter.avg:.3f}')

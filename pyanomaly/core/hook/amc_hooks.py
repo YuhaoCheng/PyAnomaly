@@ -16,14 +16,14 @@ HOOKS = ['AMCEvaluateHook']
 class AMCEvaluateHook(HookBase):
     def after_step(self, current_step):
         acc = 0.0
-        if current_step % self.trainer.eval_step == 0 and current_step != 0:
+        if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
             with torch.no_grad():
                 acc = self.evaluate(current_step)
                 if acc > self.trainer.accuarcy:
                     self.trainer.accuarcy = acc
                     # save the model & checkpoint
                     self.trainer.save(current_step, best=True)
-                elif current_step % self.trainer.save_step == 0 and current_step != 0:
+                elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
                     # save the checkpoint
                     self.trainer.save(current_step)
                     self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
@@ -71,7 +71,8 @@ class AMCEvaluateHook(HookBase):
                 target_test = data[:, :, 1, :, :].cuda()
                 output_flow_G, output_frame_G = self.trainer.G(input_data_test)
                 gtFlowEstim = torch.cat([input_data_test, target_test], 1)
-                gtFlow_vis, gtFlow = flow_batch_estimate(self.trainer.F, gtFlowEstim, output_format=self.trainer.config.DATASET.optical_format, optical_size=self.trainer.config.DATASET.optical_size, normalize=self.trainer.config.ARGUMENT.val.normal.use, mean=self.trainer.config.ARGUMENT.val.normal.mean, std=self.trainer.config.ARGUMENT.val.normal.mean)
+                gtFlow_vis, gtFlow = flow_batch_estimate(self.trainer.F, gtFlowEstim, self.trainer.normalize.param['val'], 
+                                                         output_format=self.trainer.config.DATASET.optical_format, optical_size=self.trainer.config.DATASET.optical_size)
                 diff_appe, diff_flow = simple_diff(target_test, output_frame_G, gtFlow, output_flow_G)
                 patch_score_appe, patch_score_flow, _, _ = find_max_patch(diff_appe, diff_flow)
                 scores[test_counter+frame_num-1] = [patch_score_appe, patch_score_flow]
@@ -109,7 +110,8 @@ class AMCEvaluateHook(HookBase):
 
                 g_output_flow, g_output_frame = self.trainer.G(test_input)
                 gt_flow_esti_tensor = torch.cat([test_input, test_target], 1)
-                flow_gt_vis,flow_gt = flow_batch_estimate(self.trainer.F, gt_flow_esti_tensor, output_format=self.trainer.config.DATASET.optical_format, optical_size=self.trainer.config.DATASET.optical_size, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
+                flow_gt_vis, flow_gt = flow_batch_estimate(self.trainer.F, gt_flow_esti_tensor, self.trainer.param['val'], 
+                                                          output_format=self.trainer.config.DATASET.optical_format, optical_size=self.trainer.config.DATASET.optical_size)
                 test_psnr = psnr_error(g_output_frame, test_target)
                 score, _, _ = amc_score(test_target, g_output_frame, flow_gt, g_output_flow, wf, wi)
                 test_psnr = test_psnr.tolist()
@@ -119,12 +121,15 @@ class AMCEvaluateHook(HookBase):
                 test_counter += 1
 
                 if sn == random_video_sn and (frame_sn in vis_range):
-                    vis_objects = OrderedDict()
-                    vis_objects['amc_eval_frame'] = test_target.detach()
-                    vis_objects['amc_eval_frame_hat'] = g_output_frame.detach()
-                    vis_objects['amc_eval_flow'] = flow_gt_vis.detach()
-                    vis_objects['amc_eval_flow_hat'] = vis_optical_flow(g_output_flow.detach(), output_format=self.trainer.config.DATASET.optical_format, output_size=(g_output_flow.shape[-2], g_output_flow.shape[-1]), normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
-                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
+                    temp = vis_optical_flow(g_output_flow.detach(), output_format=self.trainer.config.DATASET.optical_format, output_size=(g_output_flow.shape[-2], g_output_flow.shape[-1]), 
+                                            normalize=self.trainer.normalize.param['val'])
+                    vis_objects = OrderedDict({
+                        'amc_eval_frame': test_target.detach(),
+                        'amc_eval_frame_hat': g_output_frame.detach(),
+                        'amc_eval_flow': flow_gt_vis.detach(),
+                        'amc_eval_flow_hat': temp 
+                    })
+                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize.param['val'])
                 
                 if test_counter >= test_iters:
                     psnrs[:frame_num-1]=psnrs[frame_num-1]

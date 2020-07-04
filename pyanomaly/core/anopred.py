@@ -17,7 +17,7 @@ import torchvision.transforms.functional as tf
 from torch.utils.data import DataLoader
 torch.autograd.set_detect_anomaly(True)
 
-from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images
+from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images, make_info_message, ParamSet
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from pyanomaly.core.engine.default_engine import DefaultTrainer, DefaultInference
 
@@ -56,9 +56,6 @@ class Trainer(DefaultTrainer):
             self.G = self.data_parallel(model['Generator'])
             self.D = self.data_parallel(model['Discriminator'])
             self.F = self.data_parallel(model['FlowNet'])
-            # self.G = model['Generator'].to(torch.device('cuda:0'))
-            # self.D = model['Discriminator'].to(torch.device('cuda:1'))
-            # self.F = model['FlowNet'].cuda()
         else:
             self.G = model['Generator'].cuda()
             self.D = model['Discriminator'].cuda()
@@ -87,30 +84,26 @@ class Trainer(DefaultTrainer):
         self.op_loss = loss_function['opticalflow_loss']
 
         # basic meter
-        self.batch_time =  AverageMeter()
-        self.data_time = AverageMeter()
-        self.loss_meter_G = AverageMeter()
-        self.loss_meter_D = AverageMeter()
+        self.batch_time =  AverageMeter(name='batch_time')
+        self.data_time = AverageMeter(name='data_time')
+        self.loss_meter_G = AverageMeter(name='loss_G')
+        self.loss_meter_D = AverageMeter(name='loss_D')
         # self.psnr = AverageMeter()
 
         # others
         self.verbose = kwargs['verbose']
         self.accuarcy = 0.0  # to store the accuracy varies from epoch to epoch
         self.config_name = kwargs['config_name']
-        self.kwargs = kwargs
-        self.train_normalize = self.config.ARGUMENT.train.normal.use
-        self.train_mean = self.config.ARGUMENT.train.normal.mean
-        self.train_std = self.config.ARGUMENT.train.normal.std
-        self.val_normalize = self.config.ARGUMENT.val.normal.use
-        self.val_mean = self.config.ARGUMENT.val.normal.mean
-        self.val_std = self.config.ARGUMENT.val.normal.std
-        # self.total_steps = len(self.train_dataloader)
         self.result_path = ''
-        self.log_step = self.config.TRAIN.log_step # how many the steps, we will show the information
-        self.vis_step = self.config.TRAIN.vis_step # how many the steps, we will vis
-        self.eval_step = self.config.TRAIN.eval_step 
-        self.save_step = self.config.TRAIN.save_step # save the model whatever the acc of the model
-        self.max_steps = self.config.TRAIN.max_steps
+        self.kwargs = kwargs
+
+        self.normalize = ParamSet(name='normalize', 
+                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
+                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
+        self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
+                              max=self.config.TRAIN.max_steps, mini_eval=self.config.TRAIN.mini_eval_step, dynamic_steps=self.config.TRAIN.dynamic_steps)
+        self.optical = ParamSet(name='optical', size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format)
+
         # self.testing_data_folder = self.config.DATASET.test_path
         self.test_dataset_keys = kwargs['test_dataset_keys']
         self.test_dataset_dict = kwargs['test_dataset_dict']
@@ -162,8 +155,8 @@ class Trainer(DefaultTrainer):
         # import ipdb; ipdb.set_trace()
         predFlowEstim = torch.cat([input_last, output_pred_G],1)
         gtFlowEstim = torch.cat([input_last, target], 1)
-        gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
-        predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
+        gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim, self.normalize.param['train'], output_format=self.config.DATASET.optical_format, optical_size=self.config.DATASET.optical_size)
+        predFlow_vis, predFlow = flow_batch_estimate(self.F, predFlowEstim, self.normalize.param['train'], output_format=self.config.DATASET.optical_format, optical_size=self.config.DATASET.optical_size)
 
         # loss_g_adv = self.g_adv_loss(self.D(G_output))
         loss_g_adv = self.gan_loss(self.D(output_pred_G), True)
@@ -199,26 +192,23 @@ class Trainer(DefaultTrainer):
 
         self.batch_time.update(time.time() - start)
 
-        if (current_step % self.log_step == 0):
-            msg = 'Step: [{0}/{1}]\t' \
-                'Type: {cae_type}\t' \
-                'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
-                'Speed: {speed:.1f} samples/s\t' \
-                'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' \
-                'Loss_G: {losses_G.val:.5f} ({losses_G.avg:.5f})\t'   \
-                'Loss_D:{losses_D.val:.5f}({losses_D.avg:.5f})'.format(current_step, self.max_steps, cae_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses_G=self.loss_meter_G, losses_D=self.loss_meter_D)
+        if (current_step % self.steps.param['log'] == 0):
+            msg = make_info_message(current_step, self.steps.param['max'], self.kwargs['model_type'], self.batch_time, 
+                                    self.config.TRAIN.batch_size, self.data_time, [self.loss_meter_G, self.loss_meter_D])
             self.logger.info(msg)
+        
         writer.add_scalar('Train_loss_G', self.loss_meter_G.val, global_steps)
         writer.add_scalar('Train_loss_D', self.loss_meter_D.val, global_steps)
         
-        if (current_step % self.vis_step == 0):
-            vis_objects = OrderedDict()
-            vis_objects['train_target'] =  target.detach()
-            vis_objects['train_output_pred_G'] = output_pred_G.detach()
-            vis_objects['train_gtFlow'] = gtFlow_vis.detach()
-            vis_objects['train_predFlow'] = predFlow_vis.detach()
-            # import ipdb; ipdb.set_trace()
-            tensorboard_vis_images(vis_objects, writer, global_steps, self.train_normalize, self.train_mean, self.train_std)
+        if (current_step % self.steps.param['vis'] == 0):
+            vis_objects = OrderedDict({
+                'train_target': target.detach(),
+                'train_output_pred_G': output_pred_G.detach(),
+                'train_gtFlow': gtFlow_vis.detach(),
+                'train_predFlow': predFlow_vis.detach()
+            })
+            tensorboard_vis_images(vis_objects, writer, global_steps, self.normalize.param['train'])
+        
         global_steps += 1 
         # reset start
         start = time.time()
@@ -244,13 +234,13 @@ class Trainer(DefaultTrainer):
             # squeeze the D dimension to C dimension, shape comes to [N, C, H, W]
             input_data_mini = input_data.reshape(input_data.shape[0], -1, input_data.shape[-2], input_data.shape[-1]).cuda()
             output_pred_G = self.G(input_data_mini)
-            gtFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, target_mini], 1))
-            predFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, output_pred_G], 1))
+            gtFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, target_mini], 1), self.normalize.param['train'])
+            predFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, output_pred_G], 1), self.normalize.param['train'])
             frame_psnr_mini = psnr_error(output_pred_G.detach(), target_mini, hat=True)
             flow_psnr_mini = psnr_error(predFlow, gtFlow)
             temp_meter_frame.update(frame_psnr_mini.detach())
             temp_meter_flow.update(flow_psnr_mini.detach())
-        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the frame PSNR is {temp_meter_frame.avg:.2f}, the flow PSNR is {temp_meter_flow.avg:.2f}')
+        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the frame PSNR is {temp_meter_frame.avg:.2f}, the flow PSNR is {temp_meter_flow.avg:.2f}')
 
     
 
@@ -297,11 +287,11 @@ class Inference(DefaultInference):
         self.verbose = kwargs['verbose']
         self.kwargs = kwargs
         self.config_name = kwargs['config_name']
-        self.val_normalize = self.config.ARGUMENT.val.normal.use
-        self.val_mean = self.config.ARGUMENT.val.normal.mean
-        self.val_std = self.config.ARGUMENT.val.normal.std
-        # self.mode = kwargs['mode']
-
+        
+        self.normalize = ParamSet(name='normalize', 
+                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
+                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
+        
         self.test_dataset_keys = kwargs['test_dataset_keys']
         self.test_dataset_dict = kwargs['test_dataset_dict']
 

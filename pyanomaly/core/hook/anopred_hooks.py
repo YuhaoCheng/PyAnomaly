@@ -15,14 +15,14 @@ HOOKS = ['AnoPredEvaluateHook']
 class AnoPredEvaluateHook(HookBase):
     def after_step(self, current_step):
         acc = 0.0
-        if current_step % self.trainer.eval_step == 0 and current_step != 0:
+        if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
             with torch.no_grad():
                 acc = self.evaluate(current_step)
                 if acc > self.trainer.accuarcy:
                     self.trainer.accuarcy = acc
                     # save the model & checkpoint
                     self.trainer.save(current_step, best=True)
-                elif current_step % self.trainer.save_step == 0 and current_step != 0:
+                elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
                     # save the checkpoint
                     self.trainer.save(current_step)
                     self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
@@ -83,10 +83,11 @@ class AnoPredEvaluateHook(HookBase):
                 test_counter += 1
                 # total+=1
                 if sn == random_video_sn and (frame_sn in vis_range):
-                    vis_objects = OrderedDict()
-                    vis_objects['anopred_eval_frame'] = test_target.detach()
-                    vis_objects['anopred_eval_frame_hat'] = g_output.detach()
-                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
+                    vis_objects = OrderedDict({
+                        'anopred_eval_frame': test_target.detach(),
+                        'anopred_eval_frame_hat': g_output.detach()
+                    })
+                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize.param['val'])
                 
                 if test_counter >= test_iters:
                     psnrs[:frame_num-1]=psnrs[frame_num-1]
@@ -105,10 +106,6 @@ class AnoPredEvaluateHook(HookBase):
         self.trainer.logger.info(results)
         tb_writer.add_text('anopcn: AUC of ROC curve', f'auc is {results.auc}',global_steps)
         return results.auc
-
-    def add_images(self, frame, frame_hat, writer, global_steps):
-        writer.add_images('ano_pred_frame', frame.detach(), global_steps)
-        writer.add_images('ano_pred_frame_hat', frame_hat.detach(), global_steps)
         
 def get_anopred_hooks(name):
     if name in HOOKS:

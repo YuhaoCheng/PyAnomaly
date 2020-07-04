@@ -17,9 +17,13 @@ import torchvision.transforms as T
 import torchvision.transforms.functional as tf
 
 from pyanomaly.core.engine.default_engine import DefaultTrainer, DefaultInference
-from pyanomaly.core.utils import AverageMeter, multi_obj_grid_crop, frame_gradient, get_batch_dets, tensorboard_vis_images
+from pyanomaly.core.utils import AverageMeter, multi_obj_grid_crop, frame_gradient, get_batch_dets, tensorboard_vis_images, ParamSet, make_info_message
 from pyanomaly.datatools.evaluate.utils import psnr_error
 
+try:
+    from sklearn.externals import joblib
+except:
+    import joblib
 
 class Trainer(DefaultTrainer):
     NAME = ["OCAE.TRAIN"]
@@ -62,6 +66,8 @@ class Trainer(DefaultTrainer):
             self.C = model['C'].cuda()
             self.Detector = model['Detector'].cuda()
         
+        self.ovr_model = model['OVR']
+        
         if kwargs['pretrain']:
             self.load_pretrain()
 
@@ -84,10 +90,7 @@ class Trainer(DefaultTrainer):
         # basic meter
         self.batch_time =  AverageMeter()
         self.data_time = AverageMeter()
-        self.loss_meter_A = AverageMeter()
-        self.loss_meter_B = AverageMeter()
-        self.loss_meter_C = AverageMeter()
-        self.loss_meter_ABC = AverageMeter()
+        self.loss_meter_ABC = AverageMeter(name='loss_ABC')
         self.psnr = AverageMeter()
 
         # others
@@ -95,19 +98,16 @@ class Trainer(DefaultTrainer):
         self.accuarcy = 0.0  # to store the accuracy varies from epoch to epoch
         self.config_name = kwargs['config_name']
         self.kwargs = kwargs
-        self.train_normalize = self.config.ARGUMENT.train.normal.use
-        self.train_mean = self.config.ARGUMENT.train.normal.mean
-        self.train_std = self.config.ARGUMENT.train.normal.std
-        self.val_normalize = self.config.ARGUMENT.train.normal.use
-        self.val_mean = self.config.ARGUMENT.train.normal.mean
-        self.val_std = self.config.ARGUMENT.train.normal.std
+        self.ovr_model_path = os.path.join(self.config.TRAIN.model_output, f'ocae_cfg@{self.config_name}#{self.verbose}.npy')
+
+        self.normalize = ParamSet(name='normalize', 
+                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
+                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
         # self.total_steps = len(self.train_dataloader)
         self.result_path = ''
-        self.log_step = self.config.TRAIN.log_step # how many the steps, we will show the information
-        self.eval_step = self.config.TRAIN.eval_step
-        self.vis_step = self.config.TRAIN.vis_step # how many the steps, we will vis
-        self.save_step = self.config.TRAIN.save_step # save the model whatever the acc of the model
-        self.max_steps = self.config.TRAIN.max_steps
+        self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
+                              max=self.config.TRAIN.max_steps, mini_eval=self.config.TRAIN.mini_eval_step, dynamic_steps=self.config.TRAIN.dynamic_steps)
+
         # self.testing_data_folder = self.config.DATASET.test_path
         self.test_dataset_keys = kwargs['test_dataset_keys']
         self.test_dataset_dict = kwargs['test_dataset_dict']
@@ -139,6 +139,9 @@ class Trainer(DefaultTrainer):
         self.B.train()
         self.C.train()
         self.Detector.eval()
+        self.set_requires_grad(self.A, True)
+        self.set_requires_grad(self.B, True)
+        self.set_requires_grad(self.C, True)
         self.set_requires_grad(self.Detector, False)
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
@@ -192,25 +195,27 @@ class Trainer(DefaultTrainer):
 
         self.batch_time.update(time.time() - start)
 
-        if (current_step % self.log_step == 0):
-            msg = 'Step: [{0}/{1}]\t' \
-                'Type: {cae_type}\t' \
-                'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
-                'Speed: {speed:.1f} samples/s\t' \
-                'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' \
-                'Loss_ABC: {losses_ABC.val:.5f} ({losses_ABC.avg:.5f})\t'.format(current_step, self.max_steps, cae_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses_ABC=self.loss_meter_ABC)
+        if (current_step % self.steps.param['log'] == 0):
+            msg = make_info_message(current_step, self.steps.param['max'], self.kwargs['model_type'], self.batch_time, self.config.TRAIN.batch_size, self.data_time, [self.loss_meter_ABC])
             self.logger.info(msg)
         writer.add_scalar('Train_loss_ABC', self.loss_meter_ABC.val, global_steps)
 
-        if (current_step % self.vis_step == 0):
-            vis_objects = OrderedDict()
-            vis_objects['train_input_objectGradient_A'] =  input_objectGradient_A.detach()
-            vis_objects['train_input_currentObject_B'] =  input_currentObject_B.detach()
-            vis_objects['train_input_objectGradient_C'] = input_objectGradient_C.detach()
-            vis_objects['train_output_recGradient_A'] =  output_recGradient_A.detach()
-            vis_objects['train_output_recObject_B'] =  output_recObject_B.detach()
-            vis_objects['train_output_recGradient_C'] = output_recGradient_C.detach()
-            tensorboard_vis_images(vis_objects, writer, global_steps, self.train_normalize, self.train_mean, self.train_std)
+        if (current_step % self.steps.param['vis'] == 0):
+            vis_objects = OrderedDict({
+                'train_input_objectGradient_A': input_objectGradient_A.detach(),
+                'train_input_currentObject_B': input_currentObject_B.detach(),
+                'train_input_objectGradient_C': input_objectGradient_C.detach(),
+                'train_output_recGradient_A': output_recGradient_A.detach(),
+                'train_output_recObject_B': output_recObject_B.detach(),
+                'train_output_recGradient_C': output_recGradient_C.detach()
+            })
+            # vis_objects['train_input_objectGradient_A'] =  input_objectGradient_A.detach()
+            # vis_objects['train_input_currentObject_B'] =  input_currentObject_B.detach()
+            # vis_objects['train_input_objectGradient_C'] = input_objectGradient_C.detach()
+            # vis_objects['train_output_recGradient_A'] =  output_recGradient_A.detach()
+            # vis_objects['train_output_recObject_B'] =  output_recObject_B.detach()
+            # vis_objects['train_output_recGradient_C'] = output_recGradient_C.detach()
+            tensorboard_vis_images(vis_objects, writer, global_steps, self.normalize.param['train'])
         global_steps += 1 
         # reset start
         start = time.time()
@@ -221,15 +226,21 @@ class Trainer(DefaultTrainer):
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
     def mini_eval(self, current_step):
-        if current_step % self.config.TRAIN.mini_eval_step != 0:
+        if current_step % self.steps.param['mini_eval'] != 0:
             return
         temp_meter_A = AverageMeter()
         temp_meter_B = AverageMeter()
         temp_meter_C = AverageMeter()
+        
         self.A.eval()
         self.B.eval()
         self.C.eval()
         self.Detector.eval()
+        self.set_requires_grad(self.A, False)
+        self.set_requires_grad(self.B, False)
+        self.set_requires_grad(self.C, False)
+        self.set_requires_grad(self.Detector, False)
+
         for data, _ in self.val_dataloader:
             # base on the D to get each frame
             # in this method, D = 3 and not change
@@ -265,7 +276,7 @@ class Trainer(DefaultTrainer):
                 temp_meter_B.update(psnr_B.detach())
                 temp_meter_C.update(psnr_C.detach())
 
-        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the  A PSNR is {temp_meter_A.avg:.2f}, the B PSNR is {temp_meter_B.avg:.2f}, the C PSNR is {temp_meter_C.avg:.2f}')
+        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the  A PSNR is {temp_meter_A.avg:.2f}, the B PSNR is {temp_meter_B.avg:.2f}, the C PSNR is {temp_meter_C.avg:.2f}')
 
 
 class Inference(DefaultInference):
@@ -292,19 +303,22 @@ class Inference(DefaultInference):
         self.model_path = defaults[1]
 
         save_model = torch.load(self.model_path)
-        
+        self.ovr_model_path = os.path.join(self.config.TRAIN.model_output, f'ocae_cfg@{self.config_name}#{self.verbose}.npy')
+
         model = defaults[0]
         if kwargs['parallel']:
-            self.A = self.data_parallel(model['A'])
-            self.B = self.data_parallel(model['B'])
-            self.C = self.data_parallel(model['C'])
+            self.A = self.data_parallel(model['A'].load_state_dict(save_model['A']))
+            self.B = self.data_parallel(model['B'].load_state_dict(save_model['B']))
+            self.C = self.data_parallel(model['C'].load_state_dict(save_model['C']))
             self.Detector = self.data_parallel(model['Detector'])
         else:
-            self.A = model['A'].cuda()
-            self.B = model['B'].cuda()
-            self.C = model['C'].cuda()
+            self.A = model['A'].load_state_dict(save_model['A']).cuda()
+            self.B = model['B'].load_state_dict(save_model['B']).cuda()
+            self.C = model['C'].load_state_dict(save_model['C']).cuda()
             self.Detector = model['Detector'].cuda()
         
+        self.ovr_model = model['OVR']
+        self.ovr_model = joblib.load(self.ovr_model_path)
         # self.load()
 
         self.verbose = kwargs['verbose']

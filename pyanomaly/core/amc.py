@@ -16,7 +16,7 @@ import torchvision.transforms as T
 import torchvision.transforms.functional as tf
 from torch.utils.data import DataLoader
 
-from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images, vis_optical_flow
+from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images, vis_optical_flow, make_info_message, ParamSet
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from pyanomaly.utils.flow_utils import flow2img
 from pyanomaly.core.engine.default_engine import DefaultTrainer, DefaultInference
@@ -61,6 +61,8 @@ class Trainer(DefaultTrainer):
             self.D = model['Discriminator'].cuda()
             self.F = model['FlowNet'].cuda()
         
+        self.ovr_model = model['OVR']
+
         if kwargs['pretrain']:
             self.load_pretrain()
 
@@ -83,31 +85,26 @@ class Trainer(DefaultTrainer):
         self.op_loss = loss_function['opticalflow_loss']
 
         # basic meter
-        self.batch_time =  AverageMeter()
-        self.data_time = AverageMeter()
-        self.loss_meter_G = AverageMeter()
-        self.loss_meter_D = AverageMeter()
+        self.batch_time =  AverageMeter(name='batch_time')
+        self.data_time = AverageMeter(name='data_time')
+        self.loss_meter_G = AverageMeter(name='loss_G')
+        self.loss_meter_D = AverageMeter(name='loss_D')
         # self.psnr = AverageMeter()
 
         # others
         self.verbose = kwargs['verbose']
         self.accuarcy = 0.0  # to store the accuracy varies from epoch to epoch
         self.config_name = kwargs['config_name']
-        self.kwargs = kwargs
-        self.train_normalize = self.config.ARGUMENT.train.normal.use
-        self.train_mean = self.config.ARGUMENT.train.normal.mean
-        self.train_std = self.config.ARGUMENT.train.normal.std
-        self.val_normalize = self.config.ARGUMENT.train.normal.use
-        self.val_mean = self.config.ARGUMENT.train.normal.mean
-        self.val_std = self.config.ARGUMENT.train.normal.std
-        # self.total_steps = len(self.train_dataloader)
         self.result_path = ''
-        self.log_step = self.config.TRAIN.log_step # how many the steps, we will show the information
-        self.vis_step = self.config.TRAIN.vis_step # how many the steps, we will vis 
-        self.eval_step = self.config.TRAIN.eval_step 
-        self.save_step = self.config.TRAIN.save_step # save the model whatever the acc of the model
-        self.max_steps = self.config.TRAIN.max_steps
-        # self.testing_data_folder = self.config.DATASET.test_path
+        self.kwargs = kwargs
+
+        self.normalize = ParamSet(name='normalize', 
+                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
+                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
+        self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
+                              max=self.config.TRAIN.max_steps, mini_eval=self.config.TRAIN.mini_eval_step, dynamic_steps=self.config.TRAIN.dynamic_steps)
+        self.optical = ParamSet(name='optical', size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format)
+
         self.test_dataset_keys = kwargs['test_dataset_keys']
         self.test_dataset_dict = kwargs['test_dataset_dict']
 
@@ -156,7 +153,8 @@ class Trainer(DefaultTrainer):
         gt_flow_esti_tensor = torch.cat([input_data, target], 1)
         # gt_flow_esti_tensor = torch.cat([input_data_original, target_original], 1)
         # flow_gt, _ = flow_batch_estimate(self.F, gt_flow_esti_tensor, optical_size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.std)
-        flow_gt_vis, flow_gt  = flow_batch_estimate(self.F, gt_flow_esti_tensor, optical_size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.std)
+        flow_gt_vis, flow_gt  = flow_batch_estimate(self.F, gt_flow_esti_tensor, self.normalize.param['train'],
+                                                    optical_size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format)
         fake_g = self.D(torch.cat([target, output_flow_G], dim=1))
         loss_g_adv = self.gan_loss(fake_g, True)
         loss_op = self.op_loss(output_flow_G, flow_gt)
@@ -190,25 +188,23 @@ class Trainer(DefaultTrainer):
 
         self.batch_time.update(time.time() - start)
 
-        if (current_step % self.log_step == 0):
-            msg = 'Step: [{0}/{1}]\t' \
-                'Type: {cae_type}\t' \
-                'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
-                'Speed: {speed:.1f} samples/s\t' \
-                'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' \
-                'Loss_G: {losses_G.val:.5f} ({losses_G.avg:.3f})\t'   \
-                'Loss_D:{losses_D.val:.5f}({losses_D.avg:.3f})'.format(current_step, self.max_steps, cae_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses_G=self.loss_meter_G, losses_D=self.loss_meter_D)
+        if (current_step % self.steps.param['log'] == 0):
+            msg = make_info_message(current_step, self.steps.param['max'], self.kwargs['model_type'], self.batch_time, 
+                                    self.config.TRAIN.batch_size, self.data_time, [self.loss_meter_G, self.loss_meter_D])
             self.logger.info(msg)
+        
         writer.add_scalar('Train_loss_G', self.loss_meter_G.val, global_steps)
         writer.add_scalar('Train_loss_D', self.loss_meter_D.val, global_steps)
-        if (current_step % self.vis_step == 0):
-            vis_objects = OrderedDict()
-            vis_objects['train_target_flow'] =  flow_gt_vis.detach()
-            vis_objects['train_output_flow_G'] = vis_optical_flow(output_flow_G.detach(), output_format=self.config.DATASET.optical_format, output_size=(output_flow_G.shape[-2], output_flow_G.shape[-1]), normalize=self.config.ARGUMENT.train.normal.use, mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.std)
-            vis_objects['train_target_frame'] =  target.detach()
-            vis_objects['train_output_frame_G'] = output_frame_G.detach()
-            # import ipdb; ipdb.set_trace()
-            tensorboard_vis_images(vis_objects, writer, global_steps, self.train_normalize, self.train_mean, self.train_std)
+        if (current_step % self.steps.param['vis'] == 0):
+            temp = vis_optical_flow(output_flow_G.detach(), output_format=self.config.DATASET.optical_format, output_size=(output_flow_G.shape[-2], output_flow_G.shape[-1]), 
+                                    normalize=self.normalize.param['train'])
+            vis_objects = OrderedDict({
+                'train_target_flow': flow_gt_vis.detach(),
+                'train_output_flow_G': temp, 
+                'train_target_frame': target.detach(),
+                'train_output_frame_G': output_frame_G.detach(),
+            })
+            tensorboard_vis_images(vis_objects, writer, global_steps, self.normalize.param['train'])
         global_steps += 1 
         
         # reset start
@@ -220,7 +216,7 @@ class Trainer(DefaultTrainer):
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
     def mini_eval(self, current_step):
-        if current_step % self.config.TRAIN.mini_eval_step != 0:
+        if current_step % self.steps.param['mini_eval'] != 0:
             return
         temp_meter_frame = AverageMeter()
         temp_meter_flow = AverageMeter()
@@ -237,13 +233,14 @@ class Trainer(DefaultTrainer):
             # Use the model, get the output
             output_flow_G_mini, output_frame_G_mini = self.G(input_data_mini)
             input_gtFlowEstimTensor = torch.cat([input_data_mini, target_mini], 1)
-            gtFlow_vis, gtFlow = flow_batch_estimate(self.F, input_gtFlowEstimTensor, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, optical_size=self.config.DATASET.optical_size,mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.mean)
+            gtFlow_vis, gtFlow = flow_batch_estimate(self.F, input_gtFlowEstimTensor, self.trainer.normalize.param['val'],
+                                                    output_format=self.config.DATASET.optical_format, optical_size=self.config.DATASET.optical_size)
             
             frame_psnr_mini = psnr_error(output_frame_G_mini.detach(), target_mini)
             flow_psnr_mini = psnr_error(output_flow_G_mini.detach(), gtFlow)
             temp_meter_frame.update(frame_psnr_mini.detach())
             temp_meter_flow.update(flow_psnr_mini.detach())
-        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the frame PSNR is {temp_meter_frame.avg:.3f}, the flow PSNR is {temp_meter_flow.avg:.3f}')
+        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the frame PSNR is {temp_meter_frame.avg:.3f}, the flow PSNR is {temp_meter_flow.avg:.3f}')
         # return temp_meter.avg
 
 
@@ -284,17 +281,16 @@ class Inference(DefaultInference):
             self.D.load_state_dict(save_model['D'])
             self.F = model['FlowNet'].cuda()
         
-        # self.load()
         self.F.eval()
         self.set_requires_grad(self.F, False)
 
         self.verbose = kwargs['verbose']
         self.kwargs = kwargs
         self.config_name = kwargs['config_name']
-        self.val_normalize = self.config.ARGUMENT.val.normal.use
-        self.val_mean = self.config.ARGUMENT.val.normal.mean
-        self.val_std = self.config.ARGUMENT.val.normal.std
-        # self.mode = kwargs['mode']
+
+        self.normalize = ParamSet(name='normalize', 
+                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
+                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
 
         self.test_dataset_keys = kwargs['test_dataset_keys']
         self.test_dataset_dict = kwargs['test_dataset_dict']

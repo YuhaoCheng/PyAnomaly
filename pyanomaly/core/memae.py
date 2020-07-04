@@ -16,7 +16,7 @@ import torchvision.transforms as T
 import torchvision.transforms.functional as tf
 from torch.utils.data import DataLoader
 
-from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images
+from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images, make_info_message, ParamSet
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from pyanomaly.utils.flow_utils import flow2img
 from pyanomaly.core.engine.default_engine import DefaultTrainer, DefaultInference
@@ -85,19 +85,14 @@ class Trainer(DefaultTrainer):
         self.accuarcy = 0.0  # to store the accuracy varies from epoch to epoch
         self.config_name = kwargs['config_name']
         self.kwargs = kwargs
-        self.train_normalize = self.config.ARGUMENT.train.normal.use
-        self.train_mean = self.config.ARGUMENT.train.normal.mean
-        self.train_std = self.config.ARGUMENT.train.normal.std
-        self.val_normalize = self.config.ARGUMENT.val.normal.use
-        self.val_mean = self.config.ARGUMENT.val.normal.mean
-        self.val_std = self.config.ARGUMENT.val.normal.std
-        # self.total_steps = len(self.train_dataloader)
         self.result_path = ''
-        self.log_step = self.config.TRAIN.log_step # how many the steps, we will show the information
-        self.vis_step = self.config.TRAIN.vis_step # how many the steps, we will show the information
-        self.eval_step = self.config.TRAIN.eval_step 
-        self.save_step = self.config.TRAIN.save_step # save the model whatever the acc of the model
-        self.max_steps = self.config.TRAIN.max_steps
+
+        self.normalize = ParamSet(name='normalize', 
+                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
+                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
+        self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
+                              max=self.config.TRAIN.max_steps, mini_eval=self.config.TRAIN.mini_eval_step, dynamic_steps=self.config.TRAIN.dynamic_steps)
+        self.optical = ParamSet(name='optical', size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format)
 
 
         self.evaluate_function = kwargs['evaluate_function']
