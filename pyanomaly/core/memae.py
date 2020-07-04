@@ -78,7 +78,7 @@ class Trainer(DefaultTrainer):
         # basic meter
         self.batch_time =  AverageMeter()
         self.data_time = AverageMeter()
-        self.loss_meter_MemAE = AverageMeter()
+        self.loss_meter_MemAE = AverageMeter(name='loss_memae')
 
         # others
         self.verbose = kwargs['verbose']
@@ -144,20 +144,18 @@ class Trainer(DefaultTrainer):
 
         self.batch_time.update(time.time() - start)
 
-        if (current_step % self.log_step == 0):
-            msg = 'Step: [{0}/{1}]\t' \
-                'Type: {cae_type}\t' \
-                'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
-                'Speed: {speed:.1f} samples/s\t' \
-                'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' \
-                'Loss: {losses.val:.5f} ({losses.avg:.5f})'.format(current_step, self.max_steps, cae_type=self.kwargs['model_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses=self.loss_meter_MemAE)
+        if (current_step % self.steps.param['log'] == 0):
+            msg = make_info_message(current_step, self.steps.param['max'], self.kwargs['model_type'], self.batch_time, 
+                                    self.config.TRAIN.batch_size, self.data_time, [self.loss_meter_MemAE])
             self.logger.info(msg)
         writer.add_scalar('Train_loss_MemAE', self.loss_meter_MemAE.val, global_steps)
-        if (current_step % self.vis_step == 0):
-            vis_objects = OrderedDict()
-            vis_objects['train_output_rec_memeae'] = output_rec.detach()
-            vis_objects['train_input'] =  input_data.detach()
-            tensorboard_vis_images(vis_objects, writer, global_steps, self.train_normalize, self.train_mean, self.train_std)
+
+        if (current_step % self.steps.param['vis'] == 0):
+            vis_objects = OrderedDict({
+                'train_output_rec_memeae': output_rec.detach(),
+                'train_input':  input_data.detach()
+            })
+            tensorboard_vis_images(vis_objects, writer, global_steps, self.normalize.param['train'])
         global_steps += 1 
         
         # reset start
@@ -169,7 +167,7 @@ class Trainer(DefaultTrainer):
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
     def mini_eval(self, current_step):
-        if current_step % self.config.TRAIN.mini_eval_step != 0:
+        if current_step % self.steps.param['mini_eval']!= 0:
             return
         temp_meter_frame = AverageMeter()
         self.MemAE.eval()
@@ -179,7 +177,7 @@ class Trainer(DefaultTrainer):
             output_rec, _ = self.MemAE(input_data_mini)
             frame_psnr_mini = psnr_error(output_rec.detach(), input_data_mini)
             temp_meter_frame.update(frame_psnr_mini.detach())
-        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the frame PSNR is {temp_meter_frame.avg:.3f}')
+        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the frame PSNR is {temp_meter_frame.avg:.3f}')
         # return temp_meter.avg
 
 
@@ -215,14 +213,14 @@ class Inference(DefaultInference):
             self.G = model['MemAE'].cuda()
             self.G.load_state_dict(save_model['MemAE'])
         
-        # self.load()
-
+        self.normalize = ParamSet(name='normalize', 
+                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
+                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
+    
         self.verbose = kwargs['verbose']
         self.kwargs = kwargs
         self.config_name = kwargs['config_name']
-        self.val_normalize = self.config.ARGUMENT.val.normal.use
-        self.val_mean = self.config.ARGUMENT.val.normal.mean
-        self.val_std = self.config.ARGUMENT.val.normal.std
+        
         # self.mode = kwargs['mode']
 
         self.test_dataset_keys = kwargs['test_dataset_keys']

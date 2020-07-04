@@ -20,14 +20,14 @@ HOOKS = ['STAEEvaluateHook']
 class STAEEvaluateHook(HookBase):
     def after_step(self, current_step):
         acc = 0.0
-        if current_step % self.trainer.eval_step == 0 and current_step != 0:
+        if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
             with torch.no_grad():
                 acc = self.evaluate(current_step)
                 if acc > self.trainer.accuarcy:
                     self.trainer.accuarcy = acc
                     # save the model & checkpoint
                     self.trainer.save(current_step, best=True)
-                elif current_step % self.trainer.save_step == 0 and current_step != 0:
+                elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
                     # save the checkpoint
                     self.trainer.save(current_step)
                     self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
@@ -93,10 +93,11 @@ class STAEEvaluateHook(HookBase):
                 test_counter += 1
 
                 if sn == random_video_sn and (clip_sn in vis_range):
-                    vis_objects = OrderedDict()
-                    vis_objects['stae_eval_clip'] = test_input.detach()
-                    vis_objects['stae_eval_clip_hat'] = output.detach()
-                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
+                    vis_objects = OrderedDict({
+                        'stae_eval_clip': test_input.detach(),
+                        'stae_eval_clip_hat': output.detach()
+                    })
+                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize.param['val'])
                 
                 if test_counter >= test_iters:
                     # scores[:frame_num-1]=(scores[frame_num-1],) # fix the bug: TypeError: can only assign an iterable

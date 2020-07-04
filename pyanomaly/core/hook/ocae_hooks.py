@@ -222,7 +222,7 @@ class OCEvaluateHook(HookBase):
                         feature_record_object.append(temp)
                 
                 predict_input = np.array(feature_record_object)
-                self.trainer.ovr_model = joblib.load(self.ovr_model_path)
+                self.trainer.ovr_model = joblib.load(self.trainer.ovr_model_path)
                 g_i = self.trainer.ovr_model.decision_function(predict_input) # the svm score of each object in one frame
                 frame_score = oc_score(g_i)
 
