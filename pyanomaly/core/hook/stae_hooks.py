@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from tsnecuda import TSNE
 from scipy.ndimage import gaussian_filter1d
 
-from .abstract.abstract_hook import HookBase
+from .abstract.abstract_hook import EvaluateHook
 from pyanomaly.datatools.evaluate.utils import reconstruction_loss
 from pyanomaly.datatools.evaluate.gtloader import GroundTruthLoader
 # from lib.datatools.evaluate import eval_api
@@ -17,30 +17,29 @@ from pyanomaly.core.utils import tsne_vis, tensorboard_vis_images, save_results
 
 HOOKS = ['STAEEvaluateHook']
 
-class STAEEvaluateHook(HookBase):
-    def after_step(self, current_step):
-        acc = 0.0
-        if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
-            with torch.no_grad():
-                acc = self.evaluate(current_step)
-                if acc > self.trainer.accuarcy:
-                    self.trainer.accuarcy = acc
-                    # save the model & checkpoint
-                    self.trainer.save(current_step, best=True)
-                elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
-                    # save the checkpoint
-                    self.trainer.save(current_step)
-                    self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
-                else:
-                    pass
-        else:
-            pass
+class STAEEvaluateHook(EvaluateHook):
+    # def after_step(self, current_step):
+    #     acc = 0.0
+    #     if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
+    #         with torch.no_grad():
+    #             acc = self.evaluate(current_step)
+    #             if acc > self.trainer.accuarcy:
+    #                 self.trainer.accuarcy = acc
+    #                 # save the model & checkpoint
+    #                 self.trainer.save(current_step, best=True)
+    #             elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
+    #                 # save the checkpoint
+    #                 self.trainer.save(current_step)
+    #                 self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
+    #             else:
+    #                 pass
+    #     else:
+    #         pass
     
-    def inference(self):
-        # import ipdb; ipdb.set_trace()
-        self.trainer.set_requires_grad(self.trainer.STAE, False)
-        acc = self.evaluate(0)
-        self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
+    # def inference(self):
+    #     # import ipdb; ipdb.set_trace()
+    #     acc = self.evaluate(0)
+    #     self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
     
     def evaluate(self, current_step):
         '''
@@ -48,6 +47,7 @@ class STAEEvaluateHook(HookBase):
         !!! Will change, e.g. accuracy, mAP.....
         !!! Or can call other methods written by the official
         '''
+        self.trainer.set_requires_grad(self.trainer.STAE, False)
         self.trainer.STAE.eval()
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]

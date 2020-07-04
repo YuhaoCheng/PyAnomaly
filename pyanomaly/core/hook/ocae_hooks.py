@@ -10,7 +10,7 @@ from pyanomaly.datatools.evaluate.utils import psnr_error, oc_score
 from pyanomaly.core.utils import multi_obj_grid_crop, frame_gradient, flow_batch_estimate, get_batch_dets, tensorboard_vis_images, save_results
 from pyanomaly.core.other.kmeans import kmeans, kmeans_predict
 # from lib.datatools.evaluate import eval_api
-from .abstract.abstract_hook import HookBase
+from .abstract.abstract_hook import HookBase, EvaluateHook
 
 # from sklearn.cluster import KMeans
 # from kmeans_pytorch import kmeans, kmeans_predict
@@ -112,28 +112,28 @@ class ClusterHook(HookBase):
             # import ipdb; ipdb.set_trace()
             
 
-class OCEvaluateHook(HookBase):
-    def after_step(self, current_step):
-        acc = 0.0
-        if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
-            with torch.no_grad():
-                acc = self.evaluate(current_step)
-                if acc > self.trainer.accuarcy:
-                    self.trainer.accuarcy = acc
-                    # save the model & checkpoint
-                    self.trainer.save(current_step, best=True)
-                elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
-                    # save the checkpoint
-                    self.trainer.save(current_step)
-                    self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
-                else:
-                    pass
-        else:
-            pass
+class OCEvaluateHook(EvaluateHook):
+    # def after_step(self, current_step):
+    #     acc = 0.0
+    #     if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
+    #         with torch.no_grad():
+    #             acc = self.evaluate(current_step)
+    #             if acc > self.trainer.accuarcy:
+    #                 self.trainer.accuarcy = acc
+    #                 # save the model & checkpoint
+    #                 self.trainer.save(current_step, best=True)
+    #             elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
+    #                 # save the checkpoint
+    #                 self.trainer.save(current_step)
+    #                 self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
+    #             else:
+    #                 pass
+    #     else:
+    #         pass
     
-    def inference(self):
-        acc = self.evaluate(0)
-        self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
+    # def inference(self):
+    #     acc = self.evaluate(0)
+    #     self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
         
     def evaluate(self, current_step):
         '''
@@ -141,14 +141,15 @@ class OCEvaluateHook(HookBase):
         !!! Will change, e.g. accuracy, mAP.....
         !!! Or can call other methods written by the official
         '''
-        self.trainer.A.eval()
-        self.trainer.B.eval()
-        self.trainer.C.eval()
         self.trainer.set_requires_grad(self.trainer.A, False)
         self.trainer.set_requires_grad(self.trainer.B, False)
         self.trainer.set_requires_grad(self.trainer.C, False)
         self.trainer.set_requires_grad(self.trainer.Detector, False)
-
+        self.trainer.A.eval()
+        self.trainer.B.eval()
+        self.trainer.C.eval()
+        self.trainer.Detector.eval()
+        
         frame_num = self.trainer.config.DATASET.test_clip_length
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]

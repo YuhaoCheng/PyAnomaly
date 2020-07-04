@@ -5,7 +5,7 @@ import pickle
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 from torch.utils.data import DataLoader
-from .abstract.abstract_hook import HookBase
+from .abstract.abstract_hook import EvaluateHook
 
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from pyanomaly.core.utils import flow_batch_estimate, tensorboard_vis_images, save_results, vis_optical_flow
@@ -13,32 +13,28 @@ from pyanomaly.datatools.evaluate.utils import simple_diff, find_max_patch, amc_
 
 HOOKS = ['AMCEvaluateHook']
 
-class AMCEvaluateHook(HookBase):
-    def after_step(self, current_step):
-        acc = 0.0
-        if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
-            with torch.no_grad():
-                acc = self.evaluate(current_step)
-                if acc > self.trainer.accuarcy:
-                    self.trainer.accuarcy = acc
-                    # save the model & checkpoint
-                    self.trainer.save(current_step, best=True)
-                elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
-                    # save the checkpoint
-                    self.trainer.save(current_step)
-                    self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
-                else:
-                    pass
-        else:
-            pass
+class AMCEvaluateHook(EvaluateHook):
+    # def after_step(self, current_step):
+    #     acc = 0.0
+    #     if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
+    #         with torch.no_grad():
+    #             acc = self.evaluate(current_step)
+    #             if acc > self.trainer.accuarcy:
+    #                 self.trainer.accuarcy = acc
+    #                 # save the model & checkpoint
+    #                 self.trainer.save(current_step, best=True)
+    #             elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
+    #                 # save the checkpoint
+    #                 self.trainer.save(current_step)
+    #                 self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
+    #             else:
+    #                 pass
+    #     else:
+    #         pass
     
-    def inference(self):
-        # import ipdb; ipdb.set_trace()
-        self.trainer.set_requires_grad(self.trainer.F, False)
-        self.trainer.set_requires_grad(self.trainer.G, False)
-        self.trainer.set_requires_grad(self.trainer.D, False)
-        acc = self.evaluate(0)
-        self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
+    # def inference(self):
+    #     acc = self.evaluate(0)
+    #     self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
     
     def evaluate(self, current_step):
         '''
@@ -46,8 +42,12 @@ class AMCEvaluateHook(HookBase):
         !!! Will change, e.g. accuracy, mAP.....
         !!! Or can call other methods written by the official
         '''
+        self.trainer.set_requires_grad(self.trainer.F, False)
+        self.trainer.set_requires_grad(self.trainer.G, False)
+        self.trainer.set_requires_grad(self.trainer.D, False)
         self.trainer.D.eval()
         self.trainer.G.eval()
+        self.trainer.F.eval()
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
         frame_num = self.trainer.config.DATASET.test_clip_length

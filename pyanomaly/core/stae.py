@@ -25,102 +25,34 @@ from pyanomaly.core.engine.default_engine import DefaultTrainer, DefaultInferenc
 
 class Trainer(DefaultTrainer):
     NAME = ["STAE.TRAIN"]
-    def __init__(self, *defaults, **kwargs):
-        '''
-        Args:
-            defaults(tuple): the default will have:
-                0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
-                1->train_dataloader: the dataloader   
-                2->val_dataloader: the dataloader     
-                3->optimizer:{'optimizer_g':op_g, 'optimizer_d'}
-                4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
-                5->logger: the logger of the whole training process
-                6->config: the config object of the whole process
-
-            kwargs(dict): the default will have:
-                verbose(str):
-                parallel(bool): True-> data parallel
-                pertrain(bool): True-> use the pretarin model
-                extra param:
-                    test_dataset_keys: the dataset keys of each video
-                    test_dataset_dict: the dataset dict of whole test videos
-        '''
-        self._hooks = []
-        self._eval_hooks = []
-        self._register_hooks(kwargs['hooks'])
-        # logger & config
-        self.logger = defaults[5]
-        self.config = defaults[6]
-
-        model = defaults[0]
+    def custom_setup(self):
         # basic things
-        if kwargs['parallel']:
-            self.STAE = self.data_parallel(model['STAE'])
+        if self.kwargs['parallel']:
+            self.STAE = self.data_parallel(self.model['STAE'])
         else:
-            self.STAE = model['STAE'].cuda()
+            self.STAE = self.model['STAE'].cuda()
         
-        if kwargs['pretrain']:
-            self.load_pretrain()
-
-        self.train_dataloader = defaults[1]
-        self._train_loader_iter = iter(self.train_dataloader)
-
-        self.val_dataloader = defaults[2]
-        self._val_loader_iter = iter(self.val_dataloader)
-
         # get the optimizer
-        optimizer = defaults[3]
-        self.optim_STAE = optimizer['optimizer_stae']
+        self.optim_STAE = self.optimizer['optimizer_stae']
 
         # get the loss_fucntion
-        loss_function = defaults[4]
-        # self.rec_loss = loss_function['rec_loss']
-        self.rec_loss = loss_function['rec_loss']
-        # self.pred_loss = loss_function['pred_loss']
-        self.pred_loss = loss_function['weighted_pred_loss']
+        self.rec_loss = self.loss_function['rec_loss']
+        self.pred_loss = self.loss_function['weighted_pred_loss']
+        
+        # the lr scheduler
+        self.lr_stae = self.scheduler_dict['optimizer_stae_scheduler']
 
         # basic meter
-        self.batch_time =  AverageMeter()
-        self.data_time = AverageMeter()
         self.loss_meter_STAE = AverageMeter(name='loss_STAE')
 
-        # others
-        self.verbose = kwargs['verbose']
-        self.accuarcy = 0.0  # to store the accuracy varies from epoch to epoch
-        self.config_name = kwargs['config_name']
-        self.kwargs = kwargs
-        self.result_path = ''
+        self.test_dataset_keys = self.kwargs['test_dataset_keys']
+        self.test_dataset_dict = self.kwargs['test_dataset_dict']
 
-        self.normalize = ParamSet(name='normalize', 
-                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
-                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
-        self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
-                              max=self.config.TRAIN.max_steps, mini_eval=self.config.TRAIN.mini_eval_step, dynamic_steps=self.config.TRAIN.dynamic_steps)
-        self.optical = ParamSet(name='optical', size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format)
-
-        self.test_dataset_keys = kwargs['test_dataset_keys']
-        self.test_dataset_dict = kwargs['test_dataset_dict']
-
-        self.evaluate_function = kwargs['evaluate_function']
-        # hypyer-parameters of loss 
-        self.loss_lamada = kwargs['loss_lamada']
-
-        # the lr scheduler
-        scheduler_dict = kwargs['lr_scheduler_dict']
-        self.lr_stae = scheduler_dict['optimizer_stae_scheduler']
-
-        if self.config.RESUME.flag:
-            self.resume()
-        
-        if self.config.FINETUNE.flag:
-            self.fine_tune()
-        
-    
     def train(self,current_step):
         # Pytorch [N, C, D, H, W]
-        
         # initialize
         start = time.time()
+        self.set_requires_grad(self.STAE, True)
         self.STAE.train()
         writer = self.kwargs['writer_dict']['writer']
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
@@ -183,6 +115,7 @@ class Trainer(DefaultTrainer):
             return
         temp_meter_rec = AverageMeter()
         # temp_meter_pred = AverageMeter()
+        self.set_requires_grad(self.STAE, False)
         self.STAE.eval()
         for data, _ in self.val_dataloader:
             input_mini = data.cuda()
@@ -193,60 +126,20 @@ class Trainer(DefaultTrainer):
             temp_meter_rec.update(rec_psnr_mini.detach())
             # temp_meter_pred.update(pred_psnr_mini.detach())
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the REC PSNR is {temp_meter_rec.avg:.3f}')
-        # return temp_meter.avg
-
 
 class Inference(DefaultInference):
     NAME = ["STAE.INFERENCE"]
-    def __init__(self, *defaults,**kwargs):
-        '''
-         Args:
-            defaults(tuple): the default will have:
-                0->model: the model of the experiment
-                1->model_path: the path of the model path
-                2->val_dataloader: the dataloader to inference
-                3->logger: the logger of the whole process
-                4->config: the config object of the whole process
-            kwargs(dict): the default will have:
-                verbose(str):
-                parallel(bool): True-> data parallel
-                pertrain(bool): True-> use the pretarin model
-                mode(str): 'dataset' -> the data will use the dataloder to pass in(dicard, becasue we will use the dataset to get all I need)
-        '''
-        self._hooks = []
-        self._register_hooks(kwargs['hooks'])
-        self.logger = defaults[3]
-        self.config = defaults[4]
-        self.model_path = defaults[1]
-
-        save_model = torch.load(self.model_path)
-        
-        model = defaults[0]
-        if kwargs['parallel']:
-            self.STAE = self.data_parallel(model['STAE']).load_state_dict(save_model['STAE'])
+    def custom_setup(self, *defaults,**kwargs):
+        if self.kwargs['parallel']:
+            self.STAE = self.data_parallel(self.model['STAE']).load_state_dict(self.save_model['STAE'])
         else:
             # import ipdb; ipdb.set_trace()
-            self.STAE = model['STAE'].cuda()
-            self.STAE.load_state_dict(save_model['STAE'])
+            self.STAE = self.model['STAE'].cuda()
+            self.STAE.load_state_dict(self.save_model['STAE'])
         
-        # self.load()
+        self.test_dataset_keys = self.kwargs['test_dataset_keys']
+        self.test_dataset_dict = self.kwargs['test_dataset_dict']
 
-        self.verbose = kwargs['verbose']
-        self.kwargs = kwargs
-        self.config_name = kwargs['config_name']
-        
-        self.normalize = ParamSet(name='normalize', 
-                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
-                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
-        # self.mode = kwargs['mode']
-
-        self.test_dataset_keys = kwargs['test_dataset_keys']
-        self.test_dataset_dict = kwargs['test_dataset_dict']
-
-        self.metric = 0.0
-
-        self.evaluate_function = kwargs['evaluate_function']
-    
     def inference(self):
         for h in self._hooks:
             h.inference()
