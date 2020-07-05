@@ -44,9 +44,8 @@ def get_model_anopcn(cfg):
         raise Exception('Not support optical flow methods')
 
     generator_model = AnoPcn(cfg)
-    # discriminator_model = AMCDiscriminiator(c_in=6, filters=64)
-    # discriminator_model = PixelDiscriminator(3, cfg.MODEL.discriminator_channels, use_norm=False)
-    discriminator_model = NLayerDiscriminator(3)
+    discriminator_model = PixelDiscriminator(3, cfg.MODEL.discriminator_channels, use_norm=False)
+    # discriminator_model = NLayerDiscriminator(3)
     
     model_dict = OrderedDict()
     model_dict['Generator'] = generator_model

@@ -48,10 +48,10 @@ class Trainer(DefaultTrainer):
         self.lr_d = self.lr_scheduler_dict['optimizer_d_scheduler']
 
         # basic meter
-        self.loss_predmeter_G = AverageMeter(name='loss_predmeter_G')
-        self.loss_predmeter_D = AverageMeter(name='loss_predmeter_D')
-        self.loss_refinemeter_G = AverageMeter(name='loss_refinemeter_G')
-        self.loss_refinemeter_D = AverageMeter(name='loss_refinemeter_D')
+        self.loss_predmeter_G = AverageMeter(name='loss_pred_G')
+        self.loss_predmeter_D = AverageMeter(name='loss_pred_D')
+        self.loss_refinemeter_G = AverageMeter(name='loss_refine_G')
+        self.loss_refinemeter_D = AverageMeter(name='loss_refine_D')
 
         # others
         self.test_dataset_keys = self.kwargs['test_dataset_keys']
@@ -195,8 +195,8 @@ class Trainer(DefaultTrainer):
         self.set_requires_grad(self.D, False)
         _, output_refineframe_G = self.G(input_data, target)
         
-        predFlowEstim = torch.cat([pred_last, output_refineframe_G],1).cuda()
         gtFlowEstim = torch.cat([pred_last, target], 1).cuda()
+        predFlowEstim = torch.cat([pred_last, output_refineframe_G],1).cuda()
 
         gtFlow_vis, gtFlow = flow_batch_estimate(self.F, gtFlowEstim, self.normalize.param['train'], 
                                                  output_format=self.config.DATASET.optical_format, optical_size=self.config.DATASET.optical_size)
@@ -208,7 +208,8 @@ class Trainer(DefaultTrainer):
         loss_int = self.int_loss(output_refineframe_G, target)
         loss_gd = self.gd_loss(output_refineframe_G, target)
 
-        loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + self.loss_lamada['opticalflow_loss_sqrt'] * loss_op + self.loss_lamada['gan_loss_mse'] * loss_g_adv
+        loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + \
+                     self.loss_lamada['opticalflow_loss_sqrt'] * loss_op + self.loss_lamada['gan_loss_mse'] * loss_g_adv
         self.optim_G.zero_grad()
         loss_g_all.backward()
         self.optim_G.step()
@@ -236,8 +237,8 @@ class Trainer(DefaultTrainer):
         self.batch_time.update(time.time() - start)
 
         if (current_step % self.steps.param['log'] == 0):
-            msg = make_info_message(current_step, self.max_steps, self.kwargs['model_type'], self.batch_time, 
-                                    self.config.TRAIN.batch_sizes, self.data_time, [self.loss_refinemeter_G, self.loss_refinemeter_D])
+            msg = make_info_message(current_step, self.steps.param['max'], self.kwargs['model_type'], self.batch_time, 
+                                    self.config.TRAIN.batch_size, self.data_time, [self.loss_refinemeter_G, self.loss_refinemeter_D])
             self.logger.info(msg)
         
         writer.add_scalar('Train_loss_G', self.loss_refinemeter_G.val, global_steps)
@@ -277,7 +278,7 @@ class Trainer(DefaultTrainer):
             target_mini = data[:, :, -1, :, :].cuda() # t frame
             input_data_mini = data[:, :, :-1, :, :].cuda() # 0 ~ t-1 frame
             _, output_refineframe_G_mini = self.G(input_data_mini, target_mini)
-            vaild_psnr = psnr_error(output_refineframe_G_mini.detach(), target_mini, hat=True)
+            vaild_psnr = psnr_error(output_refineframe_G_mini.detach(), target_mini, hat=False)
             temp_meter.update(vaild_psnr.detach())
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the PSNR is {temp_meter.avg:.3f}')
 

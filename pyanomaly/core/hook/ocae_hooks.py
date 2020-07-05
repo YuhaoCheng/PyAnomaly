@@ -16,6 +16,8 @@ from .abstract.abstract_hook import HookBase, EvaluateHook
 # from kmeans_pytorch import kmeans, kmeans_predict
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import LinearSVC
+from sklearn.cluster import KMeans
+from sklearn.metrics import calinski_harabaz_score
 from sklearn.preprocessing import MultiLabelBinarizer
 try:
     from sklearn.externals import joblib
@@ -78,21 +80,30 @@ class ClusterHook(HookBase):
                         # import ipdb; ipdb.set_trace()
                 self.trainer.logger.info(f'Finish the video:{video_name}')
             self.trainer.logger.info(f'Finish extract feature, the sample:{len(feature_record)}')
-            # model = KMeans(n_clusters=self.trainer.config.TRAIN.cluster.k)
             device = torch.device('cuda:0')
-            cluster_input = torch.from_numpy(np.array(feature_record))
+            # cluster_input = torch.from_numpy(np.array(feature_record))
+            cluster_input = np.array(feature_record)
             time = mmcv.Timer()
             # import ipdb; ipdb.set_trace()
-            cluster_centers = cluster_input.new_zeros(size=[self.trainer.config.TRAIN.cluster.k, 3072])
-            for _ in range(10):
-                cluster_ids_x, cluster_center = kmeans(X=cluster_input, num_clusters=self.trainer.config.TRAIN.cluster.k, distance='euclidean', device=device)
-                cluster_centers += cluster_center
+            # cluster_centers = cluster_input.new_zeros(size=[self.trainer.config.TRAIN.cluster.k, 3072])
+            cluster_score = 0.0
+            cluster_model = None
+            for _ in range(1):
+                model = KMeans(n_clusters=self.trainer.config.TRAIN.cluster.k, init='k-means++',n_init=10, algorithm='full',max_iter=300).fit(cluster_input)
+                labels = model.labels_
+                temp = calinski_harabaz_score(cluster_input, labels)
+                if temp > cluster_score:
+                    cluster_model = model
+                print(f'the temp score is {temp}')
+                # cluster_ids_x, cluster_center = kmeans(X=cluster_input, num_clusters=self.trainer.config.TRAIN.cluster.k, distance='euclidean', device=device)
+                # cluster_centers += cluster_center
             # import ipdb; ipdb.set_trace()
-            cluster_centers =  cluster_centers / 10
+            # cluster_centers =  cluster_centers / 10
             # model.fit(cluster_input)
             # pusedo_labels = model.predict(cluster_input)
-            pusedo_labels = kmeans_predict(cluster_input, cluster_centers, 'euclidean', device=device).detach().cpu().numpy()
-            print(f'The cluster time is :{time.since_start()/10} min')
+            # pusedo_labels = kmeans_predict(cluster_input, cluster_centers, 'euclidean', device=device).detach().cpu().numpy()
+            pusedo_labels = cluster_model.labels_
+            print(f'The cluster time is :{time.since_start()/60} min')
             # import ipdb; ipdb.set_trace()
             # pusedo_labels = np.split(pusedo_labels, pusedo_labels.shape[0], 0)
 
@@ -112,29 +123,7 @@ class ClusterHook(HookBase):
             # import ipdb; ipdb.set_trace()
             
 
-class OCEvaluateHook(EvaluateHook):
-    # def after_step(self, current_step):
-    #     acc = 0.0
-    #     if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
-    #         with torch.no_grad():
-    #             acc = self.evaluate(current_step)
-    #             if acc > self.trainer.accuarcy:
-    #                 self.trainer.accuarcy = acc
-    #                 # save the model & checkpoint
-    #                 self.trainer.save(current_step, best=True)
-    #             elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
-    #                 # save the checkpoint
-    #                 self.trainer.save(current_step)
-    #                 self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
-    #             else:
-    #                 pass
-    #     else:
-    #         pass
-    
-    # def inference(self):
-    #     acc = self.evaluate(0)
-    #     self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
-        
+class OCEvaluateHook(EvaluateHook):    
     def evaluate(self, current_step):
         '''
         Evaluate the results of the model

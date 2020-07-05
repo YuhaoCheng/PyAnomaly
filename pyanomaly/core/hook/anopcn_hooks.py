@@ -10,28 +10,6 @@ from pyanomaly.core.utils import save_results, tensorboard_vis_images
 HOOKS = ['AnoPCNEvaluateHook']
 
 class AnoPCNEvaluateHook(EvaluateHook):
-    # def after_step(self, current_step):
-    #     acc = 0.0
-    #     if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
-    #         with torch.no_grad():
-    #             acc = self.evaluate(current_step)
-    #             if acc > self.trainer.accuarcy:
-    #                 self.trainer.accuarcy = acc
-    #                 # save the model & checkpoint
-    #                 self.trainer.save(current_step, best=True)
-    #             elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
-    #                 # save the checkpoint
-    #                 self.trainer.save(current_step)
-    #                 self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
-    #             else:
-    #                 pass
-    #     else:
-    #         pass
-    
-    # def inference(self):
-    #     acc = self.evaluate(0)
-    #     self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
-    
     def evaluate(self, current_step):
         '''
         Evaluate the results of the model
@@ -71,12 +49,12 @@ class AnoPCNEvaluateHook(EvaluateHook):
             scores = np.empty(shape=(len_dataset,),dtype=np.float32)
             # for test_input, _ in data_loader:
             vis_range = range(int(len_dataset*0.5), int(len_dataset*0.5 + 5))
-            for frame_sn, (test_input, _) in enumerate(data_loader):
+            for frame_sn, (test_input, _ ) in enumerate(data_loader):
                 test_target = test_input[:, :, -1, :, :].cuda()
-                test_input = test_input.cuda()
+                test_input = test_input[:, :, :-1, :, :].cuda()
 
                 _, g_output = self.trainer.G(test_input, test_target)
-                test_psnr = psnr_error(g_output, test_target, hat=True)
+                test_psnr = psnr_error(g_output, test_target, hat=False)
                 test_psnr = test_psnr.tolist()
                 psnrs[test_counter+frame_num-1]=test_psnr
                 scores[test_counter+frame_num-1]=test_psnr
