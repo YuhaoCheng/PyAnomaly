@@ -45,8 +45,8 @@ class Trainer(DefaultTrainer):
         self.op_loss = self.loss_function['opticalflow_loss']
 
         # the lr scheduler
-        self.lr_g = self.scheduler_dict['optimizer_g_scheduler']
-        self.lr_d = self.scheduler_dict['optimizer_d_scheduler']
+        self.lr_g = self.lr_scheduler_dict['optimizer_g_scheduler']
+        self.lr_d = self.lr_scheduler_dict['optimizer_d_scheduler']
 
         # basic meter
         self.loss_meter_G = AverageMeter(name='Loss_G')

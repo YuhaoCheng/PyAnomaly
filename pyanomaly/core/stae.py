@@ -40,7 +40,7 @@ class Trainer(DefaultTrainer):
         self.pred_loss = self.loss_function['weighted_pred_loss']
         
         # the lr scheduler
-        self.lr_stae = self.scheduler_dict['optimizer_stae_scheduler']
+        self.lr_stae = self.lr_scheduler_dict['optimizer_stae_scheduler']
 
         # basic meter
         self.loss_meter_STAE = AverageMeter(name='loss_STAE')

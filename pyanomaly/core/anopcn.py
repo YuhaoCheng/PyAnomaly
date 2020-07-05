@@ -44,8 +44,8 @@ class Trainer(DefaultTrainer):
         self.int_loss = self.loss_function['intentsity_loss']
         self.op_loss = self.loss_function['opticalflow_loss_sqrt']
 
-        self.lr_g = self.scheduler_dict['optimizer_g_scheduler']
-        self.lr_d = self.scheduler_dict['optimizer_d_scheduler']
+        self.lr_g = self.lr_scheduler_dict['optimizer_g_scheduler']
+        self.lr_d = self.lr_scheduler_dict['optimizer_d_scheduler']
 
         # basic meter
         self.loss_predmeter_G = AverageMeter(name='loss_predmeter_G')

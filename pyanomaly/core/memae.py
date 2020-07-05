@@ -37,7 +37,7 @@ class Trainer(DefaultTrainer):
         self.mem_loss = self.loss_function['mem_loss']
 
         # the lr scheduler
-        self.lr_memae = self.scheduler_dict['optimizer_memae_scheduler']
+        self.lr_memae = self.lr_scheduler_dict['optimizer_memae_scheduler']
 
         # basic meter
         self.loss_meter_MemAE = AverageMeter(name='loss_memae')
