@@ -220,6 +220,7 @@ def frame_gradient(x):
     
     dx = torch.stack(dx, dim=1)
     dy = torch.stack(dy, dim=1)
+    # import ipdb; ipdb.set_trace()
     gradient = dx + dy
     return dx, dy, gradient
 

@@ -61,9 +61,9 @@ class ClusterHook(HookBase):
                         A_input = A_input.sum(1)
                         _, _, C_input = frame_gradient(current2past)
                         C_input = C_input.sum(1)
-                        A_feature, _ = self.trainer.A(A_input)
-                        B_feature, _ = self.trainer.B(current_object)
-                        C_feature, _ = self.trainer.C(C_input)
+                        A_feature, _, _ = self.trainer.A(A_input)
+                        B_feature, _, _ = self.trainer.B(current_object)
+                        C_feature, _, _ = self.trainer.C(C_input)
                         
                         A_flatten_feature = A_feature.flatten(start_dim=1)
                         B_flatten_feature = B_feature.flatten(start_dim=1)
@@ -196,9 +196,9 @@ class OCEvaluateHook(EvaluateHook):
                     A_input = A_input.sum(1)
                     _, _, C_input = frame_gradient(current2past)
                     C_input = C_input.sum(1)
-                    A_feature, temp_a = self.trainer.A(A_input)
-                    B_feature, temp_b = self.trainer.B(current_object)
-                    C_feature, temp_c = self.trainer.C(C_input)
+                    A_feature, temp_a, _ = self.trainer.A(A_input)
+                    B_feature, temp_b, _ = self.trainer.B(current_object)
+                    C_feature, temp_c, _ = self.trainer.C(C_input)
 
                     # import ipdb; ipdb.set_trace()
                     if sn == random_video_sn and frame_sn == random_frame_sn:

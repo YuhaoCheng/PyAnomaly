@@ -73,7 +73,7 @@ class DefaultTrainer(AbstractTrainer):
         self.loss_lamada = kwargs['loss_lamada']
 
         # the lr scheduler
-        self.scheduler_dict = kwargs['lr_scheduler_dict']
+        self.lr_scheduler_dict = kwargs['lr_scheduler_dict']
         
         self.custom_setup()
 

@@ -62,6 +62,8 @@ class Trainer(DefaultTrainer):
         self.cluster_dataset_keys = self.kwargs['cluster_dataset_keys']
         self.cluster_dataset_dict = self.kwargs['cluster_dataset_dict']
 
+        self.ovr_model_path = os.path.join(self.config.TRAIN.model_output, f'ocae_cfg@{self.config_name}#{self.verbose}.npy') 
+
     
     def train(self,current_step):
         # Pytorch [N, C, D, H, W]
@@ -96,23 +98,31 @@ class Trainer(DefaultTrainer):
             # get the crop objects
             input_currentObject_B, _ = multi_obj_grid_crop(current[index], bbox)
             future_object, _ = multi_obj_grid_crop(future[index], bbox)
-            future2current = torch.stack([future_object, input_currentObject_B], dim=1)
+            # future2current = torch.stack([future_object, input_currentObject_B], dim=1)
+            current2future = torch.stack([input_currentObject_B, future_object], dim=1)
             past_object, _ = multi_obj_grid_crop(past[index], bbox)
-            current2past = torch.stack([input_currentObject_B, past_object], dim=1)
+            # current2past = torch.stack([input_currentObject_B, past_object], dim=1)
+            past2current = torch.stack([past_object, input_currentObject_B], dim=1)
 
-            _, _, input_objectGradient_A = frame_gradient(future2current)
+            _, _, input_objectGradient_A = frame_gradient(current2future)
             input_objectGradient_A = input_objectGradient_A.sum(1)
-            _, _, input_objectGradient_C = frame_gradient(current2past)
+            _, _, input_objectGradient_C = frame_gradient(past2current)
             input_objectGradient_C = input_objectGradient_C.sum(1)
             # import ipdb; ipdb.set_trace()
             # True Process =================Start===================
-            _, output_recGradient_A = self.A(input_objectGradient_A)
-            _, output_recObject_B = self.B(input_currentObject_B)
-            _, output_recGradient_C = self.C(input_objectGradient_C)
+            # original_A = (0.3 * input_objectGradient_A[:,0] + 0.59 * input_objectGradient_A[:,1] + 0.11 * input_objectGradient_A[:,2]).unsqueeze(1)
+            # original_B = (0.3 * input_currentObject_B[:,0] + 0.59 * input_currentObject_B[:,1] + 0.11 * input_currentObject_B[:,2]).unsqueeze(1)
+            # original_C = (0.3 * input_objectGradient_C[:,0] + 0.59 * input_objectGradient_C[:,1] + 0.11 * input_objectGradient_C[:,2]).unsqueeze(1)
+            _, output_recGradient_A, original_A = self.A(input_objectGradient_A)
+            _, output_recObject_B, original_B = self.B(input_currentObject_B)
+            _, output_recGradient_C, original_C = self.C(input_objectGradient_C)
             # import ipdb; ipdb.set_trace()
-            loss_A = self.a_loss(output_recGradient_A, input_objectGradient_A)
-            loss_B = self.b_loss(output_recObject_B, input_currentObject_B)
-            loss_C = self.c_loss(output_recGradient_C, input_objectGradient_C)
+            # loss_A = self.a_loss(output_recGradient_A, input_objectGradient_A)
+            # loss_B = self.b_loss(output_recObject_B, input_currentObject_B)
+            # loss_C = self.c_loss(output_recGradient_C, input_objectGradient_C)
+            loss_A = self.a_loss(output_recGradient_A, original_A)
+            loss_B = self.b_loss(output_recObject_B, original_B)
+            loss_C = self.c_loss(output_recGradient_C, original_C)
 
             loss_all = self.loss_lamada['A_loss'] * loss_A + self.loss_lamada['B_loss'] * loss_B + self.loss_lamada['C_loss'] * loss_C
             self.optim_ABC.zero_grad()
@@ -191,9 +201,9 @@ class Trainer(DefaultTrainer):
                 _, _, input_objectGradient_C = frame_gradient(current2past)
                 input_objectGradient_C = input_objectGradient_C.sum(1)
             
-                _, output_recGradient_A = self.A(input_objectGradient_A)
-                _, output_recObject_B = self.B(input_currentObject_B)
-                _, output_recGradient_C = self.C(input_objectGradient_C)
+                _, output_recGradient_A, _ = self.A(input_objectGradient_A)
+                _, output_recObject_B, _ = self.B(input_currentObject_B)
+                _, output_recGradient_C, _ = self.C(input_objectGradient_C)
 
                 psnr_A = psnr_error(output_recGradient_A.detach(), input_objectGradient_A)
                 psnr_B = psnr_error(output_recObject_B.detach(), input_currentObject_B)

@@ -4,110 +4,12 @@ The network of the 'Memoryizing Normality to detect anomaly: memory-augmented de
 import torch
 import torch.nn as nn
 import math
-from torch.nn.parameter import Parameter
+# from torch.nn.parameter import Parameter
 from torch.nn import functional as F
 import numpy as np
 from collections import OrderedDict
 
 import torchsnooper
-
-class MemoryUnit(nn.Module):
-    def __init__(self, mem_dim, fea_dim, hard_shrink=True, shrink_thres=0.0025):
-        super(MemoryUnit, self).__init__()
-        self.mem_dim = mem_dim
-        self.fea_dim = fea_dim
-        self.hard_shrink = hard_shrink
-        self.weight = Parameter(torch.Tensor(self.mem_dim, self.fea_dim))  # M x C
-        self.bias = None
-        self.shrink_thres= shrink_thres
-        # self.hard_sparse_shrink_opt = nn.Hardshrink(lambd=shrink_thres)
-
-        self._init_weights()
-
-    def _init_weights(self):
-        nn.init.kaiming_uniform_(self.weight, mode='fan_in', nonlinearity='relu')
-    
-    def hard_shrink_relu(self, input, lambd=0, epsilon=1e-12):
-        output = (F.relu(input-lambd) * input) / (torch.abs(input - lambd) + epsilon)
-        return output
-
-    def forward(self, input):
-        N, C, D, H, W = input.size()
-        att_weight = F.linear(input, self.weight)  # Fea x Mem^T, (TxC) x (CxM) = TxM
-        att_weight = F.softmax(att_weight, dim=1)  # TxM
-        # ReLU based shrinkage, hard shrinkage for positive value
-        if self.hard_shrink:
-            att_weight = self.hard_shrink_relu(att_weight, lambd=self.shrink_thres)
-            # att_weight = F.softshrink(att_weight, lambd=self.shrink_thres)
-            # normalize???
-            att_weight = F.normalize(att_weight, p=1, dim=1)
-            # att_weight = F.softmax(att_weight, dim=1)
-            # att_weight = self.hard_sparse_shrink_opt(att_weight)
-        else:
-            att_weight = F.ReLU(att_weight)
-
-        mem_trans = self.weight.permute(1, 0)  # Mem^T, MxC
-        output = F.linear(att_weight, mem_trans)  # AttWeight x Mem^T^T = AW x Mem, (TxM) x (MxC) = TxC
-        return {'output': output, 'att': att_weight}  # output, att_weight
-
-    def extra_repr(self):
-        return 'mem_dim={}, fea_dim={}'.format(
-            self.mem_dim, self.fea_dim is not None
-        )
-
-
-# NxCxHxW -> (NxHxW)xC -> addressing Mem, (NxHxW)xC -> NxCxHxW
-class MemModule(nn.Module):
-    def __init__(self, mem_dim, fea_dim, shrink_thres=0.0025, device='cuda'):
-        super(MemModule, self).__init__()
-        self.mem_dim = mem_dim
-        self.fea_dim = fea_dim
-        self.shrink_thres = shrink_thres
-        self.memory = MemoryUnit(self.mem_dim, self.fea_dim, self.shrink_thres)
-
-    def forward(self, input):
-        s = input.data.shape
-        l = len(s)
-
-        if l == 3:
-            x = input.permute(0, 2, 1)
-        elif l == 4:
-            x = input.permute(0, 2, 3, 1)
-        elif l == 5:
-            x = input.permute(0, 2, 3, 4, 1)
-        else:
-            x = []
-            print('wrong feature map size')
-        x = x.contiguous()
-        x = x.view(-1, s[1])
-        #
-        y_and = self.memory(x)
-        #
-        y = y_and['output']
-        att = y_and['att']
-
-        if l == 3:
-            y = y.view(s[0], s[2], s[1])
-            y = y.permute(0, 2, 1)
-            att = att.view(s[0], s[2], self.mem_dim)
-            att = att.permute(0, 2, 1)
-        elif l == 4:
-            y = y.view(s[0], s[2], s[3], s[1])
-            y = y.permute(0, 3, 1, 2)
-            att = att.view(s[0], s[2], s[3], self.mem_dim)
-            att = att.permute(0, 3, 1, 2)
-        elif l == 5:
-            y = y.view(s[0], s[2], s[3], s[4], s[1])
-            y = y.permute(0, 4, 1, 2, 3)
-            att = att.view(s[0], s[2], s[3], s[4], self.mem_dim)
-            att = att.permute(0, 4, 1, 2, 3)
-        else:
-            y = x
-            att = att
-            print('wrong feature map size')
-        return {'output': y, 'att': att}
-
-# relu based hard shrinkage function, only works for positive values
 
 
 class MemoryModule3D(nn.Module):
@@ -118,7 +20,7 @@ class MemoryModule3D(nn.Module):
         self.hard_shrink = hard_shrink
         if hard_shrink:
             self.shrink_thres = 1.0 / self.mem_dim
-        self.memory = Parameter(torch.Tensor(self.mem_dim, self.fea_dim))  # M x C
+        self.memory = nn.Parameter(torch.Tensor(self.mem_dim, self.fea_dim))  # M x C
         self.cos_similarity = nn.CosineSimilarity(dim=2, )
 
         self._init_weights()
@@ -141,7 +43,7 @@ class MemoryModule3D(nn.Module):
         if self.hard_shrink:
             w_hat = self.hard_shrink_relu(w, lambd=self.shrink_thres)
         else:
-            w_hat = F.ReLU(w)
+            w_hat = F.relu(w)
         
         # import ipdb; ipdb.set_trace()
         w_hat = F.normalize(w_hat, p=1, dim=1)
