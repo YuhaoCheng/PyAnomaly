@@ -147,7 +147,7 @@ TRAIN:
       name: 'adam'
       lr: 1e-3
       momentum: 0.9
-      weight_decay: 0.0001
+      weight_decay: 0.0
       nesterov: false
       output_name: ['optimizer_memae']
     scheduler:

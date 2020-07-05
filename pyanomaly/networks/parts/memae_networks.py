@@ -13,13 +13,13 @@ import torchsnooper
 
 
 class MemoryModule3D(nn.Module):
-    def __init__(self, mem_dim, fea_dim, hard_shrink=True):
+    def __init__(self, mem_dim, fea_dim, hard_shrink=True, lam=1.0):
         super(MemoryModule3D, self).__init__()
         self.mem_dim = mem_dim
         self.fea_dim = fea_dim
         self.hard_shrink = hard_shrink
         if hard_shrink:
-            self.shrink_thres = 1.0 / self.mem_dim
+            self.shrink_thres = lam / self.mem_dim
         self.memory = nn.Parameter(torch.Tensor(self.mem_dim, self.fea_dim))  # M x C
         self.cos_similarity = nn.CosineSimilarity(dim=2, )
 

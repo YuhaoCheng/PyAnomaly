@@ -101,7 +101,7 @@ class Trainer(DefaultTrainer):
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
     def mini_eval(self, current_step):
-        if current_step % self.steps.param['mini_eval']!= 0:
+        if current_step % self.steps.param['mini_eval'] != 0:
             return
         temp_meter_frame = AverageMeter()
         self.set_requires_grad(self.MemAE, False)
