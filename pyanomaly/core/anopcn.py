@@ -114,7 +114,8 @@ class Trainer(DefaultTrainer):
         loss_int = self.int_loss(output_predframe_G, target)
         loss_gd = self.gd_loss(output_predframe_G, target)
 
-        loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + self.loss_lamada['opticalflow_loss_sqrt'] * loss_op + self.loss_lamada['gan_loss_mse'] * loss_g_adv
+        loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + \
+                     self.loss_lamada['opticalflow_loss_sqrt'] * loss_op + self.loss_lamada['gan_loss_mse'] * loss_g_adv
         self.optim_G.zero_grad()
         loss_g_all.backward()
         self.optim_G.step()
