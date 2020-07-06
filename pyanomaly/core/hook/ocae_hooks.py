@@ -16,8 +16,8 @@ from .abstract.abstract_hook import HookBase, EvaluateHook
 # from kmeans_pytorch import kmeans, kmeans_predict
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import LinearSVC
-from sklearn.cluster import KMeans
-from sklearn.metrics import calinski_harabaz_score
+# from sklearn.cluster import KMeans
+# from sklearn.metrics import calinski_harabaz_score
 from sklearn.preprocessing import MultiLabelBinarizer
 try:
     from sklearn.externals import joblib
@@ -81,28 +81,28 @@ class ClusterHook(HookBase):
                 self.trainer.logger.info(f'Finish the video:{video_name}')
             self.trainer.logger.info(f'Finish extract feature, the sample:{len(feature_record)}')
             device = torch.device('cuda:0')
-            # cluster_input = torch.from_numpy(np.array(feature_record))
-            cluster_input = np.array(feature_record)
+            cluster_input = torch.from_numpy(np.array(feature_record))
+            # cluster_input = np.array(feature_record)
             time = mmcv.Timer()
             # import ipdb; ipdb.set_trace()
-            # cluster_centers = cluster_input.new_zeros(size=[self.trainer.config.TRAIN.cluster.k, 3072])
+            cluster_centers = cluster_input.new_zeros(size=[self.trainer.config.TRAIN.cluster.k, 3072])
             cluster_score = 0.0
             cluster_model = None
             for _ in range(1):
-                model = KMeans(n_clusters=self.trainer.config.TRAIN.cluster.k, init='k-means++',n_init=10, algorithm='full',max_iter=300).fit(cluster_input)
-                labels = model.labels_
-                temp = calinski_harabaz_score(cluster_input, labels)
-                if temp > cluster_score:
-                    cluster_model = model
-                print(f'the temp score is {temp}')
-                # cluster_ids_x, cluster_center = kmeans(X=cluster_input, num_clusters=self.trainer.config.TRAIN.cluster.k, distance='euclidean', device=device)
-                # cluster_centers += cluster_center
+                # model = KMeans(n_clusters=self.trainer.config.TRAIN.cluster.k, init='k-means++',n_init=10, algorithm='full',max_iter=300).fit(cluster_input)
+                # labels = model.labels_
+                # temp = calinski_harabaz_score(cluster_input, labels)
+                # if temp > cluster_score:
+                    # cluster_model = model
+                # print(f'the temp score is {temp}')
+                cluster_ids_x, cluster_center = kmeans(X=cluster_input, num_clusters=self.trainer.config.TRAIN.cluster.k, distance='euclidean', device=device)
+                cluster_centers += cluster_center
             # import ipdb; ipdb.set_trace()
             # cluster_centers =  cluster_centers / 10
             # model.fit(cluster_input)
             # pusedo_labels = model.predict(cluster_input)
-            # pusedo_labels = kmeans_predict(cluster_input, cluster_centers, 'euclidean', device=device).detach().cpu().numpy()
-            pusedo_labels = cluster_model.labels_
+            pusedo_labels = kmeans_predict(cluster_input, cluster_centers, 'euclidean', device=device).detach().cpu().numpy()
+            # pusedo_labels = cluster_model.labels_
             print(f'The cluster time is :{time.since_start()/60} min')
             # import ipdb; ipdb.set_trace()
             # pusedo_labels = np.split(pusedo_labels, pusedo_labels.shape[0], 0)
@@ -218,7 +218,7 @@ class OCEvaluateHook(EvaluateHook):
 
                 # test_psnr = psnr_error(g_output, test_target)
                 # test_psnr = test_psnr.tolist()
-                scores[test_counter+frame_num-1]=frame_score
+                scores[test_counter+frame_num-1] = frame_score
 
                 test_counter += 1
                 total+=1
