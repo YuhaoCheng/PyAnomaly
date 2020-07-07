@@ -280,7 +280,7 @@ class Trainer(DefaultTrainer):
             _, output_refineframe_G_mini = self.G(input_data_mini, target_mini)
             vaild_psnr = psnr_error(output_refineframe_G_mini.detach(), target_mini, hat=False)
             temp_meter.update(vaild_psnr.detach())
-        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.max_steps} the PSNR is {temp_meter.avg:.3f}')
+        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the PSNR is {temp_meter.avg:.3f}')
 
 
 class Inference(DefaultInference):

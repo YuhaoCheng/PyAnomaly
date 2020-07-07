@@ -4,9 +4,42 @@ import torchsnooper
 from collections import OrderedDict, namedtuple
 from pyanomaly.networks.parts.pcn_parts.pcm import PCM
 from pyanomaly.networks.parts.pcn_parts.erm import ERM
-
-from pyanomaly.networks.parts.amc_networks import AMCDiscriminiator
 from pyanomaly.networks.parts.base.commonness import PixelDiscriminator, NLayerDiscriminator
+from pyanomaly.networks.parts.base.commonness import DoubleConv, Down, Up, OutConv,  BasicConv2d
+
+
+
+class UNet(nn.Module):
+    def __init__(self, c_in, c_out, bilinear=False, output=False):
+        super(UNet, self).__init__()
+        self.c_in = c_in
+        self.c_out = c_out
+        self.bilinear = bilinear
+        self.output = output
+        self.inc = DoubleConv(self.c_in, 64)
+        self.down1 = Down(64, 128)
+        self.down2 = Down(128, 256)
+        self.down3 = Down(256,512)
+        self.up1 = Up(768, 512, 256, self.bilinear)
+        self.up2 = Up(384,256,128, self.bilinear)
+        self.up3 = Up(192,128,64, self.bilinear)
+        if output:
+            self.output_conv = nn.Conv2d(64, self.c_out, 3, padding=1)
+
+    # @torchsnooper.snoop()
+    def forward(self, x):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)   
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x = self.up1(x4, x3)
+        x = self.up2(x, x2)
+        x = self.up3(x, x1)
+        if self.output:
+            x = self.output(x)
+        return x
+
+
 
 class AnoPcn(nn.Module):
     def __init__(self, cfg):
