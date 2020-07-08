@@ -34,7 +34,7 @@ class Trainer(DefaultTrainer):
 
         # get the loss_fucntion
         self.rec_loss = self.loss_function['rec_loss']
-        self.mem_loss = self.loss_function['mem_loss']
+        # self.mem_loss = self.loss_function['mem_loss']
 
         # the lr scheduler
         self.lr_memae = self.lr_scheduler_dict['optimizer_memae_scheduler']
@@ -64,9 +64,10 @@ class Trainer(DefaultTrainer):
         # True Process =================Start===================
         output_rec, att = self.MemAE(input_data)
         loss_rec = self.rec_loss(output_rec, input_data)
-        loss_mem = self.mem_loss(att)
+        # loss_mem = self.mem_loss(att)
         # import ipdb; ipdb.set_trace()
-        loss_memae_all = self.loss_lamada['rec_loss'] * loss_rec + self.loss_lamada['mem_loss'] * loss_mem 
+        # loss_memae_all = self.loss_lamada['rec_loss'] * loss_rec + self.loss_lamada['mem_loss'] * loss_mem 
+        loss_memae_all = self.loss_lamada['rec_loss'] * loss_rec 
         self.optim_MemAE.zero_grad()
         loss_memae_all.backward()
         self.optim_MemAE.step()

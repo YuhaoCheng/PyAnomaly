@@ -17,24 +17,24 @@ DATASET:
   name: 'ped2'
   seed: 2020
   read_format: 'opencv'
-  image_format: 'tif'
+  image_format: 'jpg'
   channel_num: 1
   channel_name: 'gray'
-  train_path: './data/ped2_tif/training/frames'
+  train_path: './data/ped2/training/frames'
   train_clip_length: 16
   train_sampled_clip_length: 16
   train_frame_step: 1
   train_clip_step: 1
-  test_path: './data/ped2_tif/testing/frames'
+  test_path: './data/ped2/testing/frames'
   test_clip_length: 16
   test_sampled_clip_length: 16
   test_frame_step: 1
   test_clip_step: 1
-  gt_path: './data/ped2_tif'
+  gt_path: './data/ped2'
   number_of_class: 1
   score_normalize: false
   score_type: 'normal'
-  decidable_idx: 4
+  decidable_idx: 16
   decidable_idx_back: 0
   smooth:
     guassian: true
@@ -56,10 +56,10 @@ ARGUMENT:
       mean: []
       std: []
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
-      use: true
+      use: false
       p: 0.5
     rote:
       use: false
@@ -69,13 +69,13 @@ ARGUMENT:
       high: 100
       low: 80
     GaussianBlur:
-      use: true
+      use: false
       high: 0.3
       low: 0.03
     CropToFixedSize:
       use: false
-      height: 256
-      width: 256
+      height: 128
+      width: 128
       position: 'center'
   val:
     use: true
@@ -129,17 +129,18 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
-  batch_size: 4
+  batch_size: 1
   start_step: 0
-  max_steps: 26796
-  log_step: 10
+  max_steps: 127600
+  log_step: 100
   vis_step: 638
-  mini_eval_step: 500
+  mini_eval_step: 5000
   eval_step: 638
   save_step: 638
   epochs: 1
-  loss: ['rec_loss', 'mem_loss']
-  loss_coefficients: [1, 0.0002]
+  # loss: ['rec_loss', 'mem_loss']
+  loss: ['rec_loss']
+  loss_coefficients: [1]
   mode: 'general'
   general:
     optimizer:
@@ -147,14 +148,14 @@ TRAIN:
       name: 'adam'
       lr: 1e-3
       momentum: 0.9
-      weight_decay: 0.0
+      weight_decay: 0.1
       nesterov: false
       output_name: ['optimizer_memae']
     scheduler:
       use: true
       name: 'MultiStepLR'
       step_size: 1000
-      steps: [10000, 15000]
+      steps: [63800, 127600]
       gamma: 0.1
       T_max: 6380
       eta_min: 0
