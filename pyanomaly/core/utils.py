@@ -36,6 +36,21 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count if self.count != 0 else 0
 
+class ParamSet(object):
+    """
+    A set of a group of params with samiliar meaning
+    """
+    def __init__(self, name='default', **kwargs):
+        self.param_names = list(kwargs.keys())
+        self.name = name
+        self.param = OrderedDict(kwargs)
+    
+    def get_name(self):
+        return self.name
+    
+    def get_params_names(self):
+        return self.param_names
+
 
 def modelparallel(model):
     '''
@@ -205,27 +220,28 @@ def frame_gradient(x):
     
     dx = torch.stack(dx, dim=1)
     dy = torch.stack(dy, dim=1)
+    # import ipdb; ipdb.set_trace()
     gradient = dx + dy
     return dx, dy, gradient
 
 
-def vis_optical_flow(batch_optical, output_format, output_size, normalize, mean=[], std=[]):
+def vis_optical_flow(batch_optical, output_format, output_size, normalize):
     temp = batch_optical.detach().cpu().permute(0,2,3,1).numpy()
     temp_list = list()
     for i in range(temp.shape[0]):
         np_image = flow2img(temp[i], output_format)
         temp_image = torch.from_numpy(np_image.transpose((2, 0, 1)))
-        if normalize:
+        if normalize['use']:
             temp_image = temp_image / 255.0
-            if (len(mean)!=0) and (len(std) != 0):
-                temp_image = tf.normalize(temp_image, mean=mean, std=std)
+            if (len(normalize['mean'])!=0) and (len(normalize['std']) != 0):
+                temp_image = tf.normalize(temp_image, mean=normalize['mean'], std=normalize['std'])
         temp_list.append(temp_image)
     optical_flow_image = torch.stack(temp_list, 0).cuda()
     optical_flow_image = torch.nn.functional.interpolate(input=optical_flow_image,size=output_size, mode='bilinear', align_corners=False)
     return optical_flow_image
 
 
-def flow_batch_estimate(flow_model, tensor_batch, output_format='xym', optical_size=None, output_size=None, normalize=True, mean=[], std=[]):
+def flow_batch_estimate(flow_model, tensor_batch, normalize, output_format='xym', optical_size=None, output_size=None):
     '''
     output_format:
         general: u,v
@@ -262,7 +278,7 @@ def flow_batch_estimate(flow_model, tensor_batch, output_format='xym', optical_s
     output_flowmodel = flow_model(input_flowmodel)
     
     optical_flow_uv = torch.nn.functional.interpolate(input=output_flowmodel,size=(intHeight_o, intWidth_o), mode='bilinear', align_corners=False)
-    optical_flow_3channel = vis_optical_flow(output_flowmodel, output_format=output_format, output_size=(intHeight_o, intWidth_o), normalize=normalize, mean=mean, std=std)
+    optical_flow_3channel = vis_optical_flow(output_flowmodel, output_format=output_format, output_size=(intHeight_o, intWidth_o), normalize=normalize)
     
     return optical_flow_3channel, optical_flow_uv
 
@@ -279,15 +295,14 @@ def tsne_vis(feature, feature_labels, vis_path):
     plt.savefig(vis_path)
 
 
-def tensorboard_vis_images(vis_objects, writer, global_step, normalize=True, mean=None, std=None):
+def tensorboard_vis_images(vis_objects, writer, global_step, normalize):
     '''
     Visualize the images in tensorboard
     Args:
         vis_objects: the dict of visualized images.{'name1':iamge, ...}
         writer: tensorboard
         global_step: the step
-        normalize: whether the image is normalize
-        mean, std
+        normalize: {'use':..., 'mean':..., 'std':...}
     '''
     def verse_normalize(image_tensor, mean, std, video=False):
         if len(mean) == 0 and len(std) == 0:
@@ -310,22 +325,22 @@ def tensorboard_vis_images(vis_objects, writer, global_step, normalize=True, mea
         temp = vis_objects[vis_key]
         if len(temp.shape) == 5:
             video_flag=True
-            if normalize:
-                temp = verse_normalize(temp, mean, std, video=video_flag)
+            if normalize['use']:
+                temp = verse_normalize(temp, normalize['mean'], normalize['std'], video=video_flag)
             batch_num = temp.shape[0]
             for i in range(batch_num):
                 temp_one = temp[i,:,:,:,:].permute(1,0,2,3)
                 writer.add_images(vis_key+f'video_{i}in{batch_num}', temp_one, global_step)
         elif len(temp.shape) == 4:
             # visualize a batch of image
-            if normalize:
-                temp = verse_normalize(temp, mean, std, video=video_flag)
+            if normalize['use']:
+                temp = verse_normalize(temp, normalize['mean'], normalize['std'], video=video_flag)
             writer.add_images(vis_key+'_batch', temp, global_step)
         elif len(temp.shape) == 3:
             # vis a single image
-            if normalize:
+            if normalize['use']:
                 temp = temp.unsqueeze(0)
-                temp = verse_normalize(temp, mean, std, video=video_flag)
+                temp = verse_normalize(temp, normalize['mean'], normalize['std'], video=video_flag)
             writer.add_image(vis_key+'_image', temp, global_step)
 
 
@@ -415,6 +430,27 @@ def save_results(cfg, logger, verbose=None, config_name='None', current_step=0, 
         pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
 
     return result_path
+
+
+def make_info_message(current_step, max_step, model_type, batch_time, batch_size, data_time, loss_list):
+    speed = batch_time.val / batch_size
+    loss_string = ''
+    for index, loss_meter in enumerate(loss_list):
+        loss_name = loss_meter.name
+        loss_val = loss_meter.val
+        loss_avg = loss_meter.avg
+        loss_string += f'{loss_name}:{loss_val:.5f}({loss_avg:.5f})'
+        if index != (len(loss_list) -1):
+            loss_string += '\t'
+    
+    msg = f'Step: [{current_step}/{max_step}]\t' \
+          f'Type: {model_type}\t' \
+          f'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
+          f'Speed: {speed:.1f} samples/s\t' \
+          f'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' + loss_string
+    
+    return msg
+
 
 if __name__ == '__main__':
     path = '/export/home/chengyh/data/COCO/MSCOCO/images/test2017/000000000019.jpg'

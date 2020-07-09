@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchsnooper
-# from torch.autograd import Variable
 from pyanomaly.networks.parts.base.commonness import Conv2dLeakly
 from pyanomaly.networks.parts.base.commonness import DoubleConv, Down, Up, OutConv,  BasicConv2d
 from .convolution_lstm import ConvLSTMCell
@@ -23,6 +22,7 @@ class SingleStampConvLSTM(nn.Module):
             cell = ConvLSTMCell(self.input_channels[i], self.hidden_channels[i], self.kernel_size)
             setattr(self, name, cell)
             self._all_layers.append(cell)
+
         # for each sequence, we need to clear the internal_state
         self.internal_state = list()
     
@@ -46,45 +46,6 @@ class SingleStampConvLSTM(nn.Module):
             self.internal_state[i] = (x, new_c)
         return x, new_c
 
-# class PEP(nn.Module):
-#     def __init__(self, in_channels, out_channels):
-#         super(PEP, self).__init__()
-#         # downsample
-#         self.h1 = Conv2dLeakly(c_in=in_channels,   c_out=64, kernel_size=3, stride=1, padding=1)
-#         self.h1_pooling = nn.MaxPooling(kernel_size=2)
-#         self.h2 = Conv2dLeakly(c_in=64,  c_out=128, kernel_size=3, stride=2, padding=1)
-#         self.h2_pooling = nn.MaxPooling(kernel_size=2)
-#         self.h3 = Conv2dLeakly(c_in=128, c_out=256, kernel_size=3, stride=2, padding=1)
-#         self.h3_pooling = nn.MaxPooling(kernel_size=2)
-#         self.h4 = Conv2dLeakly(c_in=256, c_out=512, kernel_size=3, stride=2, padding=1)
-#         # upsample
-#         self.uh3 = ConcatDeconv2d(c_in=512, c_out=256)
-#         self.uh2 = ConcatDeconv2d(c_in=256, c_out=128)
-#         self.uh1 = ConcatDeconv2d(c_in=128, c_out=out_channels)
-
-#         self._init_weights()
-    
-#     def _init_weights(self):
-#         for m in self.modules():
-#             if isinstance(m, nn.Conv2d):
-#                 m.weight = nn.init.kaiming_normal_(m.weight, mode='fan_out')
-#             if isinstance(m, nn.ConvTranspose2d):
-#                 m.weight = nn.init.kaiming_normal_(m.weight, mode='fan_out')
-    
-#     def forward(self, x):
-#         x1 = self.h1(x)
-#         x1 = self.h1_pooling(x1)
-#         x2 = self.h2(x1)
-#         x2 = self.h2_pooling(x2)
-#         x3 = self.h3(x2)
-#         x3 = self.h3_pooling(x3)
-#         x4 = self.h4(x3)
-
-#         ux3 = self.uh3(x4, x3)
-#         ux2 = self.uh2(ux3, x2)
-#         ux1 = self.uh1(ux2, x1)
-
-#         return ux1
 
 class PEP(nn.Module):
     def __init__(self, c_in, c_out, bilinear=False):
@@ -97,34 +58,36 @@ class PEP(nn.Module):
         self.down1 = Down(64, 128)
         self.down2 = Down(128, 256)
         self.down3 = Down(256,512)
-        # self.inter = DoubleConv(256, 512)
         self.up1 = Up(768, 512, 256, self.bilinear)
         self.up2 = Up(384,256,128, self.bilinear)
         self.up3 = Up(192,128,64, self.bilinear)
-        # self.output = BasicConv2d(64, self.c_out, kernel_size=3, padding=1)
-    
+
     # @torchsnooper.snoop()
     def forward(self, x):
         x1 = self.inc(x)
         x2 = self.down1(x1)   
         x3 = self.down2(x2)
         x4 = self.down3(x3)
-        # x4 = self.inter(x3)
-        # import ipdb; ipdb.set_trace()
         x = self.up1(x4, x3)
         x = self.up2(x, x2)
         x = self.up3(x, x1)
-        # x = self.output(x)
-        # return x
         return x
+
 
 
 class PCM(nn.Module):
     def __init__(self):
         super(PCM, self).__init__()
-        self.convlstm = SingleStampConvLSTM(input_channels=64, hidden_channels=[128, 128, 64], kernel_size=3)
-        self.pep = PEP(c_in=3, c_out=64)
-        self.fr = Conv2dLeakly(c_in=64, c_out=3,kernel_size=3, stride=1, padding=1)
+        self.convlstm = SingleStampConvLSTM(input_channels=64, hidden_channels=[128, 64], kernel_size=3)
+        self.pep = PEP(c_in=3, c_out=64, bilinear=True)
+        # self.fr = Conv2dLeakly(c_in=64, c_out=3,kernel_size=3, stride=1, padding=1)
+        self.fr = nn.Sequential(
+            nn.Conv2d(64, 32, 3, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(32, 16, 3, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(16, 3, 3, 1, 1)
+        )
 
         self._init_weights()
     
@@ -149,13 +112,62 @@ class PCM(nn.Module):
                 E = torch.sub(frame, temp)
             R = self.pep(E)
             x, _ = self.convlstm(R, time_stamp)
-            # import ipdb; ipdb.set_trace()
             Ihat = self.fr(x)
-            temp = Ihat.detach()
+            # import ipdb; ipdb.set_trace()
+            # temp = Ihat.detach()
+            temp = Ihat
             if time_stamp == len_video-1: # 最后一个
                 result = Ihat
         
         return result
+
+
+class ConvLSTM(nn.Module):
+    # input_channels corresponds to the first input feature map
+    # hidden state is a list of succeeding lstm layers.
+    def __init__(self, input_channels, hidden_channels, kernel_size, step=1, effective_step=[1]):
+        super(ConvLSTM, self).__init__()
+        # the part to initalize the convLSTM
+        self.input_channels = [input_channels] + hidden_channels
+        self.hidden_channels = hidden_channels
+        self.kernel_size = kernel_size
+        self.num_layers = len(hidden_channels)
+        self.step = step
+        self.effective_step = effective_step
+        self._all_layers = []
+        for i in range(self.num_layers):
+            name = 'cell{}'.format(i)
+            cell = ConvLSTMCell(self.input_channels[i], self.hidden_channels[i], self.kernel_size)
+            setattr(self, name, cell)
+            self._all_layers.append(cell)
+        
+        self.pep = PEP(c_in=3, c_out=64, bilinear=False)
+
+    def forward(self, input):
+        internal_state = []
+        outputs = []
+        for step in range(self.step):
+            x = input
+            for i in range(self.num_layers):
+                # all cells are initialized in the first step
+                name = 'cell{}'.format(i)
+                print(name)
+                if step == 0:
+                    bsize, _, height, width = x.size()
+                    (h, c) = getattr(self, name).init_hidden(batch_size=bsize, hidden=self.hidden_channels[i],
+                                                             shape=(height, width))
+                    internal_state.append((h, c))
+
+                # do forward
+                (h, c) = internal_state[i]
+                x, new_c = getattr(self, name)(x, h, c)
+                internal_state[i] = (x, new_c)
+            # only record effective steps
+            if step in self.effective_step:
+                outputs.append(x)
+
+        return outputs, (x, new_c)
+
 
 
 if __name__ == '__main__':

@@ -10,12 +10,14 @@ from pyanomaly.datatools.evaluate.utils import psnr_error, oc_score
 from pyanomaly.core.utils import multi_obj_grid_crop, frame_gradient, flow_batch_estimate, get_batch_dets, tensorboard_vis_images, save_results
 from pyanomaly.core.other.kmeans import kmeans, kmeans_predict
 # from lib.datatools.evaluate import eval_api
-from .abstract.abstract_hook import HookBase
+from .abstract.abstract_hook import HookBase, EvaluateHook
 
 # from sklearn.cluster import KMeans
 # from kmeans_pytorch import kmeans, kmeans_predict
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import LinearSVC
+# from sklearn.cluster import KMeans
+# from sklearn.metrics import calinski_harabaz_score
 from sklearn.preprocessing import MultiLabelBinarizer
 try:
     from sklearn.externals import joblib
@@ -61,9 +63,9 @@ class ClusterHook(HookBase):
                         A_input = A_input.sum(1)
                         _, _, C_input = frame_gradient(current2past)
                         C_input = C_input.sum(1)
-                        A_feature, _ = self.trainer.A(A_input)
-                        B_feature, _ = self.trainer.B(current_object)
-                        C_feature, _ = self.trainer.C(C_input)
+                        A_feature, _, _ = self.trainer.A(A_input)
+                        B_feature, _, _ = self.trainer.B(current_object)
+                        C_feature, _, _ = self.trainer.C(C_input)
                         
                         A_flatten_feature = A_feature.flatten(start_dim=1)
                         B_flatten_feature = B_feature.flatten(start_dim=1)
@@ -78,21 +80,30 @@ class ClusterHook(HookBase):
                         # import ipdb; ipdb.set_trace()
                 self.trainer.logger.info(f'Finish the video:{video_name}')
             self.trainer.logger.info(f'Finish extract feature, the sample:{len(feature_record)}')
-            # model = KMeans(n_clusters=self.trainer.config.TRAIN.cluster.k)
             device = torch.device('cuda:0')
             cluster_input = torch.from_numpy(np.array(feature_record))
+            # cluster_input = np.array(feature_record)
             time = mmcv.Timer()
             # import ipdb; ipdb.set_trace()
             cluster_centers = cluster_input.new_zeros(size=[self.trainer.config.TRAIN.cluster.k, 3072])
-            for _ in range(10):
+            cluster_score = 0.0
+            cluster_model = None
+            for _ in range(1):
+                # model = KMeans(n_clusters=self.trainer.config.TRAIN.cluster.k, init='k-means++',n_init=10, algorithm='full',max_iter=300).fit(cluster_input)
+                # labels = model.labels_
+                # temp = calinski_harabaz_score(cluster_input, labels)
+                # if temp > cluster_score:
+                    # cluster_model = model
+                # print(f'the temp score is {temp}')
                 cluster_ids_x, cluster_center = kmeans(X=cluster_input, num_clusters=self.trainer.config.TRAIN.cluster.k, distance='euclidean', device=device)
                 cluster_centers += cluster_center
             # import ipdb; ipdb.set_trace()
-            cluster_centers =  cluster_centers / 10
+            # cluster_centers =  cluster_centers / 10
             # model.fit(cluster_input)
             # pusedo_labels = model.predict(cluster_input)
             pusedo_labels = kmeans_predict(cluster_input, cluster_centers, 'euclidean', device=device).detach().cpu().numpy()
-            print(f'The cluster time is :{time.since_start()/10} min')
+            # pusedo_labels = cluster_model.labels_
+            print(f'The cluster time is :{time.since_start()/60} min')
             # import ipdb; ipdb.set_trace()
             # pusedo_labels = np.split(pusedo_labels, pusedo_labels.shape[0], 0)
 
@@ -104,48 +115,30 @@ class ClusterHook(HookBase):
             print(f'The save time is {time.since_last_check() / 60} min')
             # binary_labels = MultiLabelBinarizer().fit_transform(pusedo_labels)
             # self.trainer.ovr_model = OneVsRestClassifier(LinearSVC(random_state = 0)).fit(cluster_input,binary_labels)
-            self.trainer.ovr_model = OneVsRestClassifier(LinearSVC(random_state = 0), n_jobs=16).fit(cluster_input, pusedo_labels)
+            # self.trainer.ovr_model = OneVsRestClassifier(LinearSVC(random_state = 0), n_jobs=16).fit(cluster_input, pusedo_labels)
+            self.trainer.ovr_model = self.trainer.ovr_model.fit(cluster_input, pusedo_labels)
+            # self.trainer.saved_model['OVR'] = self.trainer.ovr_model
             print(f'The train ovr: {time.since_last_check() / 60} min')
-            # joblib.dump(self.trainer.ovr_model, os.path.join(self.trainer.config.TEST.result_output))
+            joblib.dump(self.trainer.ovr_model, self.trainer.ovr_model_path)
             # import ipdb; ipdb.set_trace()
             
 
-class OCEvaluateHook(HookBase):
-    def after_step(self, current_step):
-        acc = 0.0
-        if current_step % self.trainer.eval_step == 0 and current_step != 0:
-            with torch.no_grad():
-                acc = self.evaluate(current_step)
-                if acc > self.trainer.accuarcy:
-                    self.trainer.accuarcy = acc
-                    # save the model & checkpoint
-                    self.trainer.save(current_step, best=True)
-                elif current_step % self.trainer.save_step == 0 and current_step != 0:
-                    # save the checkpoint
-                    self.trainer.save(current_step)
-                    self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
-                else:
-                    pass
-        else:
-            pass
-    
-    def inference(self):
-        self.trainer.set_requires_grad(self.trainer.A, False)
-        self.trainer.set_requires_grad(self.trainer.B, False)
-        self.trainer.set_requires_grad(self.trainer.C, False)
-        self.trainer.set_requires_grad(self.trainer.Detector, False)
-        acc = self.evaluate(0)
-        self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
-        
+class OCEvaluateHook(EvaluateHook):    
     def evaluate(self, current_step):
         '''
         Evaluate the results of the model
         !!! Will change, e.g. accuracy, mAP.....
         !!! Or can call other methods written by the official
         '''
+        self.trainer.set_requires_grad(self.trainer.A, False)
+        self.trainer.set_requires_grad(self.trainer.B, False)
+        self.trainer.set_requires_grad(self.trainer.C, False)
+        self.trainer.set_requires_grad(self.trainer.Detector, False)
         self.trainer.A.eval()
         self.trainer.B.eval()
         self.trainer.C.eval()
+        self.trainer.Detector.eval()
+        
         frame_num = self.trainer.config.DATASET.test_clip_length
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
@@ -192,21 +185,21 @@ class OCEvaluateHook(HookBase):
                     A_input = A_input.sum(1)
                     _, _, C_input = frame_gradient(current2past)
                     C_input = C_input.sum(1)
-                    A_feature, temp_a = self.trainer.A(A_input)
-                    B_feature, temp_b = self.trainer.B(current_object)
-                    C_feature, temp_c = self.trainer.C(C_input)
+                    A_feature, temp_a, _ = self.trainer.A(A_input)
+                    B_feature, temp_b, _ = self.trainer.B(current_object)
+                    C_feature, temp_c, _ = self.trainer.C(C_input)
 
                     # import ipdb; ipdb.set_trace()
                     if sn == random_video_sn and frame_sn == random_frame_sn:
-                        vis_objects = OrderedDict()
-                        vis_objects['oc_input_a'] =A_input.detach()
-                        vis_objects['oc_output_a'] = temp_a.detach()
-                        vis_objects['oc_input_b'] = current_object.detach()
-                        vis_objects['oc_output_b'] = temp_b.detach()
-                        vis_objects['oc_input_c'] = C_input.detach()
-                        vis_objects['oc_output_c'] = temp_c.detach()
-                        tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
-
+                        vis_objects = OrderedDict({
+                            'eval_oc_input_a': A_input.detach(),
+                            'eval_oc_output_a': temp_a.detach(),
+                            'eval_oc_input_b': current_object.detach(),
+                            'eval_oc_output_b':  temp_b.detach(),
+                            'eval_oc_input_c': C_input.detach(),
+                            'eval_oc_output_c': temp_c.detach(),
+                        })
+                        tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize.param['val'])
 
                     A_flatten_feature = A_feature.flatten(start_dim=1)
                     B_flatten_feature = B_feature.flatten(start_dim=1)
@@ -219,12 +212,13 @@ class OCEvaluateHook(HookBase):
                         feature_record_object.append(temp)
                 
                 predict_input = np.array(feature_record_object)
+                self.trainer.ovr_model = joblib.load(self.trainer.ovr_model_path)
                 g_i = self.trainer.ovr_model.decision_function(predict_input) # the svm score of each object in one frame
                 frame_score = oc_score(g_i)
 
                 # test_psnr = psnr_error(g_output, test_target)
                 # test_psnr = test_psnr.tolist()
-                scores[test_counter+frame_num-1]=frame_score
+                scores[test_counter+frame_num-1] = frame_score
 
                 test_counter += 1
                 total+=1
@@ -240,19 +234,8 @@ class OCEvaluateHook(HookBase):
         tb_writer.add_text('AUC of ROC curve', f'AUC is {results.auc:.5f}',global_steps)
         return results.auc
 
-    def add_vis_images(self, A_input, current_object, C_input, temp_a, temp_b,temp_c):
-        # import ipdb; ipdb.set_trace()
-        writer = self.trainer.kwargs['writer_dict']['writer']
-        global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
-        writer.add_images('oc_input_a', A_input.detach(), global_steps)
-        writer.add_images('oc_output_a', temp_a.detach(), global_steps)
-        writer.add_images('oc_input_b', current_object.detach(), global_steps)
-        writer.add_images('oc_output_b', temp_b.detach(), global_steps)
-        writer.add_images('oc_input_c', C_input.detach(), global_steps)
-        writer.add_images('oc_output_c', temp_c.detach(), global_steps)
 
-
-def get_oc_hooks(name):
+def get_ocae_hooks(name):
     if name in HOOKS:
         t = eval(name)()
     else:

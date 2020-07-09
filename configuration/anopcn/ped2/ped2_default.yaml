@@ -3,7 +3,7 @@ SYSTEM:
   num_gpus: 2
   gpus: [0,1]
   cudnn:
-    benchmark: false
+    benchmark: true
     deterministic: true
     enable: true
   distributed:
@@ -133,15 +133,15 @@ TRAIN:
   batch_size: 4
   start_step: 0
   max_steps: 25520
-  dynamic_steps: [0, 638, 1276]
-  log_step: 5
+  dynamic_steps: [0, 400, 638]
+  log_step: 20
   vis_step: 638
-  mini_eval_step: 20
+  mini_eval_step: 500
   eval_step: 638
   save_step: 638
   epochs: 1
   loss: ['gan_loss_mse','gradient_loss', 'intentsity_loss', 'opticalflow_loss_sqrt']
-  loss_coefficients: [0.025,1,1,2]
+  loss_coefficients: [0.025,1,1,1]
   mode: 'adversarial'
   adversarial:
     optimizer:
@@ -149,7 +149,7 @@ TRAIN:
       name: 'adam'
       g_lr: 0.0001
       d_lr: 0.00001
-      weight_decay: 0.0001
+      weight_decay: 0.0
       output_name: ['optimizer_g', 'optimizer_d']
     scheduler:
       use: false

@@ -12,36 +12,35 @@ import matplotlib.pyplot as plt
 from tsnecuda import TSNE
 from scipy.ndimage import gaussian_filter1d
 
-from .abstract.abstract_hook import HookBase
+from .abstract.abstract_hook import EvaluateHook
 from pyanomaly.datatools.evaluate.utils import reconstruction_loss
 from pyanomaly.datatools.evaluate.gtloader import GroundTruthLoader
 from pyanomaly.core.utils import tsne_vis, save_results, tensorboard_vis_images
 
 HOOKS = ['MemAEEvaluateHook']
 
-class MemAEEvaluateHook(HookBase):
-    def after_step(self, current_step):
-        acc = 0.0
-        if current_step % self.trainer.eval_step == 0 and current_step != 0:
-            with torch.no_grad():
-                acc = self.evaluate(current_step)
-                if acc > self.trainer.accuarcy:
-                    self.trainer.accuarcy = acc
-                    # save the model & checkpoint
-                    self.trainer.save(current_step, best=True)
-                elif current_step % self.trainer.save_step == 0 and current_step != 0:
-                    # save the checkpoint
-                    self.trainer.save(current_step)
-                    self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
-                else:
-                    pass
-        else:
-            pass
+class MemAEEvaluateHook(EvaluateHook):
+    # def after_step(self, current_step):
+    #     acc = 0.0
+    #     if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
+    #         with torch.no_grad():
+    #             acc = self.evaluate(current_step)
+    #             if acc > self.trainer.accuarcy:
+    #                 self.trainer.accuarcy = acc
+    #                 # save the model & checkpoint
+    #                 self.trainer.save(current_step, best=True)
+    #             elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
+    #                 # save the checkpoint
+    #                 self.trainer.save(current_step)
+    #                 self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
+    #             else:
+    #                 pass
+    #     else:
+    #         pass
     
-    def inference(self):
-        self.trainer.set_requires_grad(self.trainer.MemAE, False)
-        acc = self.evaluate(0)
-        self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
+    # def inference(self):
+    #     acc = self.evaluate(0)
+    #     self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
     
     def evaluate(self, current_step):
         '''
@@ -49,6 +48,7 @@ class MemAEEvaluateHook(HookBase):
         !!! Will change, e.g. accuracy, mAP.....
         !!! Or can call other methods written by the official
         '''
+        self.trainer.set_requires_grad(self.trainer.MemAE, False)
         self.trainer.MemAE.eval()
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
@@ -93,10 +93,11 @@ class MemAEEvaluateHook(HookBase):
                 test_counter += 1
 
                 if sn == random_video_sn and (clip_sn in vis_range):
-                    vis_objects = OrderedDict()
-                    vis_objects['memae_eval_clip'] = test_target.detach()
-                    vis_objects['memae_eval_clip_hat'] = output.detach()
-                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.val_normalize, mean=self.trainer.val_mean, std=self.trainer.val_std)
+                    vis_objects = OrderedDict({
+                        'memae_eval_clip': test_target.detach(),
+                        'memae_eval_clip_hat': output.detach()
+                    })
+                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize.param['val'])
                 
                 if test_counter >= test_iters:
                     # import ipdb; ipdb.set_trace()

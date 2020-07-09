@@ -55,10 +55,10 @@ ARGUMENT:
       mean: [0.5]
       std: [0.5]
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
-      use: true
+      use: false
       p: 0.5
     rote:
       use: false
@@ -68,7 +68,7 @@ ARGUMENT:
       high: 100
       low: 80
     GaussianBlur:
-      use: false
+      use: true
       high: 0.3
       low: 0.03
     CropToFixedSize:
@@ -150,7 +150,7 @@ TRAIN:
       nesterov: false
       output_name: ['optimizer_memae']
     scheduler:
-      use: true
+      use: false
       name: 'WarmupCosLR'
       step_size: 1000
       steps: [10000, 15000]

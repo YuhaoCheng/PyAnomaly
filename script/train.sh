@@ -46,8 +46,8 @@ do
     echo "config:"$config
     ;;
     v)
-    verobose=$OPTARG
-    echo "verbose:"$verobose
+    verbose=$OPTARG
+    echo "verbose:"$verbose
     ;;
     h)
     func

@@ -148,34 +148,34 @@ def calculate_psnr(loss_file, logger, cfg):
     print('max mean psnr = {}'.format(np.max(mean_psnr)))
 
 
-def calculate_score(loss_file, logger, cfg):
-    if not os.path.isdir(loss_file):
-        loss_file_path = loss_file
-    else:
-        optical_result = compute_auc_score(loss_file, logger, cfg)
-        loss_file_path = optical_result.loss_file
-        print('##### optimal result and model = {}'.format(optical_result))
-    dataset, psnr_records, _, gt, num_videos = load_pickle_results(loss_file=loss_file_path, cfg=cfg)
+# def calculate_score(loss_file, logger, cfg):
+#     if not os.path.isdir(loss_file):
+#         loss_file_path = loss_file
+#     else:
+#         optical_result = compute_auc_score(loss_file, logger, cfg)
+#         loss_file_path = optical_result.loss_file
+#         print('##### optimal result and model = {}'.format(optical_result))
+#     dataset, psnr_records, _, gt, num_videos = load_pickle_results(loss_file=loss_file_path, cfg=cfg)
 
-    # the number of videos
-    # num_videos = len(psnr_records)
-    DECIDABLE_IDX = cfg.DATASET.decidable_idx
+#     # the number of videos
+#     # num_videos = len(psnr_records)
+#     DECIDABLE_IDX = cfg.DATASET.decidable_idx
 
-    scores = np.array([], dtype=np.float32)
-    labels = np.array([], dtype=np.int8)
-    # video normalization
-    for i in range(num_videos):
-        distance = psnr_records[i]
+#     scores = np.array([], dtype=np.float32)
+#     labels = np.array([], dtype=np.int8)
+#     # video normalization
+#     for i in range(num_videos):
+#         distance = psnr_records[i]
 
-        distance = (distance - distance.min()) / (distance.max() - distance.min())
+#         distance = (distance - distance.min()) / (distance.max() - distance.min())
 
-        scores = np.concatenate((scores, distance[DECIDABLE_IDX:]), axis=0)
-        labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:]), axis=0)
+#         scores = np.concatenate((scores, distance[DECIDABLE_IDX:]), axis=0)
+#         labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:]), axis=0)
 
-    mean_normal_scores = np.mean(scores[labels == 0])
-    mean_abnormal_scores = np.mean(scores[labels == 1])
-    print('mean normal scores = {}, mean abnormal scores = {}, '
-          'delta = {}'.format(mean_normal_scores, mean_abnormal_scores, mean_normal_scores - mean_abnormal_scores))
+#     mean_normal_scores = np.mean(scores[labels == 0])
+#     mean_abnormal_scores = np.mean(scores[labels == 1])
+#     print('mean normal scores = {}, mean abnormal scores = {}, '
+#           'delta = {}'.format(mean_normal_scores, mean_abnormal_scores, mean_normal_scores - mean_abnormal_scores))
 
 def compute_auc_psnr(loss_file, logger, cfg, score_type='normal'):
     '''
@@ -315,7 +315,7 @@ eval_functions = {
     'compute_eer': compute_eer,
     'precision_recall_auc': precision_recall_auc,
     'calculate_psnr': calculate_psnr,
-    'calculate_score': calculate_score,
+    # 'calculate_score': calculate_score,
     'average_psnr': average_psnr,
     'average_psnr_sample': average_psnr
 }

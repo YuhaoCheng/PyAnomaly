@@ -1,22 +1,19 @@
 import torch
-from pyanomaly.core.utils import AverageMeter
+from pyanomaly.core.utils import AverageMeter, ParamSet
 from .utils import engine_save_checkpoint
 from .utils import engine_save_model
 from .abstract import AbstractTrainer, AbstractInference
 
 class DefaultTrainer(AbstractTrainer):
-    ''' __init__ template 
-    the inf trainer 
-    '''
     def __init__(self, *defaults, **kwargs):
         '''
         Args:
             defaults(tuple): the default will have:
-                0->model: the model of the experiment 
+                0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
                 1->train_dataloader: the dataloader   
                 2->val_dataloader: the dataloader     
-                3->optimizer: the optimizer of the network
-                4->loss_function: the loss function of the model
+                3->optimizer:{'optimizer_g':op_g, 'optimizer_d'}
+                4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
                 5->logger: the logger of the whole training process
                 6->config: the config object of the whole process
 
@@ -24,45 +21,72 @@ class DefaultTrainer(AbstractTrainer):
                 verbose(str):
                 parallel(bool): True-> data parallel
                 pertrain(bool): True-> use the pretarin model
-
+                extra param:
+                    test_dataset_keys: the dataset keys of each video
+                    test_dataset_dict: the dataset dict of whole test videos
         '''
+        self._hooks = []
+        self._eval_hooks = []
+        self._register_hooks(kwargs['hooks'])
         # logger & config
         self.logger = defaults[5]
         self.config = defaults[6]
-        
-        # basic things
-        if kwargs['parallele']:
-            self.model = self.data_parallel(defaults[0])
-        else:
-            self.model = defaults[0].cuda()
+
+        self.model = defaults[0]
         
         if kwargs['pretrain']:
             self.load_pretrain()
 
         self.train_dataloader = defaults[1]
+        self._train_loader_iter = iter(self.train_dataloader)
+
         self.val_dataloader = defaults[2]
+        self._val_loader_iter = iter(self.val_dataloader)
+
+        # get the optimizer
         self.optimizer = defaults[3]
+
+        # get the loss_fucntion
         self.loss_function = defaults[4]
 
         # basic meter
-        self.batch_time =  AverageMeter()
-        self.data_time = AverageMeter()
-        self.loss_basic = AverageMeter()
+        self.batch_time =  AverageMeter(name='batch_time')
+        self.data_time = AverageMeter(name='data_time')
 
         # others
         self.verbose = kwargs['verbose']
         self.accuarcy = 0.0  # to store the accuracy varies from epoch to epoch
+        self.config_name = kwargs['config_name']
+        self.result_path = ''
         self.kwargs = kwargs
-        self.result_path = '.'
-        self.log_step = 5  # how many steps to print the information
-        self.eval_step = 5 # how many steps to use the val dataset to test the model
-        self.save_step = 5
+
+        self.normalize = ParamSet(name='normalize', 
+                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
+                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
+
+        self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
+                              max=self.config.TRAIN.max_steps, mini_eval=self.config.TRAIN.mini_eval_step, dynamic_steps=self.config.TRAIN.dynamic_steps)
+
+        self.evaluate_function = kwargs['evaluate_function']
+        
+        # hypyer-parameters of loss
+        self.loss_lamada = kwargs['loss_lamada']
+
+        # the lr scheduler
+        self.lr_scheduler_dict = kwargs['lr_scheduler_dict']
+        
+        self.custom_setup()
 
         if self.config.RESUME.flag:
-            self.resume()
+            # self.resume()
+            pass
         
         if self.config.FINETUNE.flag:
             self.fine_tune()
+        
+    
+    def custom_setup(self):
+        raise Exception('Not implement the custom setup')
     
     def load_pretrain(self):
         model_path = self.config.MODEL.pretrain_model
@@ -133,7 +157,7 @@ class DefaultTrainer(AbstractTrainer):
         for h in self._hooks:
             h.after_step(current_step)
         
-        if (current_step % self.eval_step != 0) or current_step == 0:
+        if (current_step % self.steps.param['mini_eval'] != 0) or current_step == 0:
             self.mini_eval(current_step)
             return
 
@@ -192,21 +216,30 @@ class DefaultInference(AbstractInference):
                 pertrain(bool): True-> use the pretarin model
                 mode(str): 'dataset' -> the data will use the dataloder to pass in(dicard, becasue we will use the dataset to get all I need)
         '''
+        self._hooks = []
+        self._register_hooks(kwargs['hooks'])
         self.logger = defaults[3]
         self.config = defaults[4]
         self.model_path = defaults[1]
-        if kwargs['parallel']:
-            self.model = self.data_parallel(defaults[0])
-        else:
-            self.model = defaults[0]
 
-        self.load()
+        self.save_model = torch.load(self.model_path)
+        
+        self.model = defaults[0]
 
         self.verbose = kwargs['verbose']
         self.kwargs = kwargs
-        self.mode = kwargs['mode']
+        self.config_name = kwargs['config_name']
+        self.normalize = ParamSet(name='normalize', 
+                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
+                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
 
+        self.evaluate_function = kwargs['evaluate_function']
         self.metric = 0.0
+
+        self.custom_setup()
+
+    def custom_setup(self):
+        raise Exception('Not implement the inference custom up')
 
     def load(self):
         if type(self.model) == type(dict()):
@@ -228,12 +261,13 @@ class DefaultInference(AbstractInference):
         return model_parallel
     
     def inference(self, current_step):
-        if self.mode == 'dataset':
-            metric = self.evaluate()
-        elif self.mode == 'other':
-            self.get_result()
-        else:
-            raise Exception('Wrong inference mode')
+        # if self.mode == 'dataset':
+        #     metric = self.evaluate()
+        # elif self.mode == 'other':
+        #     self.get_result()
+        # else:
+        #     raise Exception('Wrong inference mode')
+        pass
     
 
     

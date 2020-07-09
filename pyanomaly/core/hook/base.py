@@ -24,10 +24,10 @@ class VisScoreHook(HookBase):
         if not os.path.exists(self.trainer.config.LOG.vis_dir):
             os.mkdir(self.trainer.config.LOG.vis_dir)
         
-        if current_step % self.trainer.config.TRAIN.eval_step == 0 and current_step != 0:
+        if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
             with open(self.trainer.pkl_path, 'rb') as reader:
                 results = pickle.load(reader)
-            print(f'The results in {self.trainer.pkl_path}')
+            print(f'Vis The results in {self.trainer.pkl_path}')
             sigma = self.trainer.config.DATASET.smooth.guassian_sigma[0]
             psnrs = results['psnr']
             smooth_psnrs = results[f'psnr_smooth_{sigma}']

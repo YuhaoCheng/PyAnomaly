@@ -115,7 +115,7 @@ MODEL:
   type: 'ocae'
   hooks:
     train: ['oc.ClusterHook', 'oc.OCEvaluateHook', 'base.VisScoreHook']
-    val: ['oc.ClusterHook', 'oc.OCEvaluateHook']
+    val: [oc.OCEvaluateHook']
   detector_config: 'COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml'
   detector_model_path: "./pretrained_model/faster_rcnn_X_101_FPN_model_final_68b088.pkl"
   flow_model_path: ''
@@ -128,17 +128,17 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
-  batch_size: 16
+  batch_size: 64
   start_step: 0
-  max_steps: 6400
+  max_steps: 8000
   log_step: 20
-  vis_step: 160
-  mini_eval_step: 100
-  eval_step: 160
-  save_step: 160
+  vis_step: 40
+  mini_eval_step: 160
+  eval_step: 40
+  save_step: 40
   epochs: 1
   loss: ['A_loss', 'B_loss', 'C_loss']
-  loss_coefficients: [1,2,1]
+  loss_coefficients: [1,1,1]
   mode: 'general'
   general:
     optimizer:
@@ -153,7 +153,7 @@ TRAIN:
       use: true
       name: 'MultiStepLR'
       step_size: 1000
-      steps: [63800]
+      steps: [4000, 8000]
       gamma: 0.1
       T_max: 300
       eta_min: 0
