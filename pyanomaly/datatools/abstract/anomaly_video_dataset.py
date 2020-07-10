@@ -79,6 +79,7 @@ class AbstractVideoAnomalyDataset(AbstractImageDataset):
             self.pics_len = len(self.videos[video_name]['frames'])
             self.videos_keys = self.videos.keys()
             print(f'\033[1;34m The clip number of one video {video_name}#{self.flag} is:{self.total_clips_onevideo} of {self.cfg.DATASET.name}\033[0m')
+        
     def __getitem__(self, indice):
         # item, meta_data = self._get_frames(indice)
         item = self._get_frames(indice)
@@ -91,10 +92,12 @@ class AbstractVideoAnomalyDataset(AbstractImageDataset):
             annotation = self._get_annotations(indice)
         else:
             annotation = 'None'
+        
         if self.extra:
             custom = self._custom_get(indice)
         else:
             custom = 'None'
+        
         return item, annotation, custom
 
     def _get_frames(self, indice):
