@@ -49,7 +49,7 @@ class AnoPCNEvaluateHook(EvaluateHook):
             scores = np.empty(shape=(len_dataset,),dtype=np.float32)
             # for test_input, _ in data_loader:
             vis_range = range(int(len_dataset*0.5), int(len_dataset*0.5 + 5))
-            for frame_sn, (test_input, _ ) in enumerate(data_loader):
+            for frame_sn, (test_input, anno, meta) in enumerate(data_loader):
                 test_target = test_input[:, :, -1, :, :].cuda()
                 test_input = test_input[:, :, :-1, :, :].cuda()
 

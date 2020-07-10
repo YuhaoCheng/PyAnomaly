@@ -14,28 +14,6 @@ from pyanomaly.datatools.evaluate.utils import simple_diff, find_max_patch, amc_
 HOOKS = ['AMCEvaluateHook']
 
 class AMCEvaluateHook(EvaluateHook):
-    # def after_step(self, current_step):
-    #     acc = 0.0
-    #     if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
-    #         with torch.no_grad():
-    #             acc = self.evaluate(current_step)
-    #             if acc > self.trainer.accuarcy:
-    #                 self.trainer.accuarcy = acc
-    #                 # save the model & checkpoint
-    #                 self.trainer.save(current_step, best=True)
-    #             elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
-    #                 # save the checkpoint
-    #                 self.trainer.save(current_step)
-    #                 self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
-    #             else:
-    #                 pass
-    #     else:
-    #         pass
-    
-    # def inference(self):
-    #     acc = self.evaluate(0)
-    #     self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
-    
     def evaluate(self, current_step):
         '''
         Evaluate the results of the model
@@ -66,7 +44,7 @@ class AMCEvaluateHook(EvaluateHook):
             data_loader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, num_workers=1)
             scores = [0.0 for i in range(len_dataset)]
 
-            for data, _ in data_loader:
+            for data, anno, meta in data_loader:
                 input_data_test = data[:, :, 0, :, :].cuda()
                 target_test = data[:, :, 1, :, :].cuda()
                 output_flow_G, output_frame_G = self.trainer.G(input_data_test)
@@ -104,7 +82,7 @@ class AMCEvaluateHook(EvaluateHook):
             vis_range = range(int(len_dataset*0.5), int(len_dataset*0.5 + 5))
             psnrs = np.empty(shape=(len_dataset,),dtype=np.float32)
             scores = np.empty(shape=(len_dataset,),dtype=np.float32)
-            for frame_sn, (data, _) in enumerate(data_loader):
+            for frame_sn, (data, anno, meta) in enumerate(data_loader):
                 test_input = data[:, :, 0, :, :].cuda()
                 test_target = data[:, :, 1, :, :].cuda()
 

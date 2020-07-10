@@ -52,7 +52,7 @@ class MemAEEvaluateHook(EvaluateHook):
             # scores = np.empty(shape=(len_dataset,),dtype=np.float32)
             scores = torch.zeros(len_dataset)
             # scores = [0.0 for i in range(len_dataset)]
-            for clip_sn, (test_input, _) in enumerate(data_loader):
+            for clip_sn, (test_input, anno, meta) in enumerate(data_loader):
                 test_target = test_input.cuda()
                 time_len = test_input.shape[2]
                 output, _ = self.trainer.MemAE(test_target)
