@@ -20,28 +20,6 @@ from pyanomaly.core.utils import tsne_vis, save_results, tensorboard_vis_images
 HOOKS = ['MemAEEvaluateHook']
 
 class MemAEEvaluateHook(EvaluateHook):
-    # def after_step(self, current_step):
-    #     acc = 0.0
-    #     if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
-    #         with torch.no_grad():
-    #             acc = self.evaluate(current_step)
-    #             if acc > self.trainer.accuarcy:
-    #                 self.trainer.accuarcy = acc
-    #                 # save the model & checkpoint
-    #                 self.trainer.save(current_step, best=True)
-    #             elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
-    #                 # save the checkpoint
-    #                 self.trainer.save(current_step)
-    #                 self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
-    #             else:
-    #                 pass
-    #     else:
-    #         pass
-    
-    # def inference(self):
-    #     acc = self.evaluate(0)
-    #     self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
-    
     def evaluate(self, current_step):
         '''
         Evaluate the results of the model
@@ -80,16 +58,13 @@ class MemAEEvaluateHook(EvaluateHook):
                 output, _ = self.trainer.MemAE(test_target)
                 clip_score = reconstruction_loss(output, test_target)
                 
-                try:
-                    # scores[test_counter*time_len:(test_counter + 1)*time_len] = clip_score.squeeze(0)
-                    if (frame_num + test_counter) > len_dataset:
-                        temp = test_counter + frame_num - len_dataset
-                        scores[test_counter:len_dataset] = clip_score[temp:]
-                    else:
-                        scores[test_counter:(frame_num + test_counter)] = clip_score
-                except:
-                    import ipdb; ipdb.set_trace()
-                
+                # scores[test_counter*time_len:(test_counter + 1)*time_len] = clip_score.squeeze(0)
+                if (frame_num + test_counter) > len_dataset:
+                    temp = test_counter + frame_num - len_dataset
+                    scores[test_counter:len_dataset] = clip_score[temp:]
+                else:
+                    scores[test_counter:(frame_num + test_counter)] = clip_score
+                        
                 test_counter += 1
 
                 if sn == random_video_sn and (clip_sn in vis_range):
