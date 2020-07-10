@@ -13,27 +13,6 @@ from pyanomaly.core.utils import save_results, tensorboard_vis_images
 HOOKS = ['AnoPredEvaluateHook']
 
 class AnoPredEvaluateHook(EvaluateHook):
-    # def after_step(self, current_step):
-    #     acc = 0.0
-    #     if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
-    #         with torch.no_grad():
-    #             acc = self.evaluate(current_step)
-    #             if acc > self.trainer.accuarcy:
-    #                 self.trainer.accuarcy = acc
-    #                 # save the model & checkpoint
-    #                 self.trainer.save(current_step, best=True)
-    #             elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
-    #                 # save the checkpoint
-    #                 self.trainer.save(current_step)
-    #                 self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
-    #             else:
-    #                 pass
-    #     else:
-    #         pass
-    
-    # def inference(self):
-    #     acc = self.evaluate(0)
-    #     self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
     
     def evaluate(self, current_step):
         '''
@@ -70,7 +49,7 @@ class AnoPredEvaluateHook(EvaluateHook):
             scores = np.empty(shape=(len_dataset,),dtype=np.float32)
             vis_range = range(int(len_dataset*0.5), int(len_dataset*0.5 + 5))
             
-            for frame_sn, (test_input, _) in enumerate(data_loader):
+            for frame_sn, (test_input, anno, meta) in enumerate(data_loader):
                 test_target = test_input[:, :, -1, :, :].cuda()
                 test_input = test_input[:, :, :-1, :, :].reshape(test_input.shape[0], -1, test_input.shape[-2],test_input.shape[-1]).cuda()
 

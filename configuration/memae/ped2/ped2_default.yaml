@@ -53,8 +53,8 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: []
-      std: []
+      mean: [0.5]
+      std: [0.5]
     fliplr:
       use: false
       p: 0.5
@@ -87,8 +87,8 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: []
-      std: []
+      mean: [0.5]
+      std: [0.5]
     fliplr:
       use: false
       p: 0.5
@@ -129,12 +129,12 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
-  batch_size: 1
+  batch_size: 8
   start_step: 0
   max_steps: 127600
   log_step: 100
   vis_step: 638
-  mini_eval_step: 5000
+  mini_eval_step: 500
   eval_step: 638
   save_step: 638
   epochs: 1

@@ -74,7 +74,7 @@ class Trainer(DefaultTrainer):
         global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
 
         # get the data
-        data, _ = next(self._train_loader_iter) 
+        data, anno, meta = next(self._train_loader_iter) 
         self.data_time.update(time.time() - start)
 
         # base on the D to get each frame

@@ -157,9 +157,9 @@ class DefaultTrainer(AbstractTrainer):
         for h in self._hooks:
             h.after_step(current_step)
         
-        if (current_step % self.steps.param['mini_eval'] != 0) or current_step == 0:
+        if (current_step % self.steps.param['mini_eval'] == 0) or current_step == 0:
             self.mini_eval(current_step)
-            return
+            # return
 
     
     def after_train(self):
