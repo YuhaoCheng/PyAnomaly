@@ -2,7 +2,7 @@ import torch
 import glob
 import os
 from collections import OrderedDict
-from .image_dataset import AbstractVideoDataset
+from .video_dataset import AbstractVideoDataset
 from pyanomaly.datatools.abstract.tools import ImageLoader, VideoLoader
 
 class AbstractVideoAnomalyDataset(AbstractVideoDataset):
