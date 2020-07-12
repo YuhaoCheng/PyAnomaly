@@ -3,8 +3,6 @@ import numpy as np
 import torch.nn as nn
 from torch import gt
 
-
-
 def pad_same(in_dim, ks, stride, dilation=1):
     """
     Refernces:
@@ -35,7 +33,9 @@ class L2Loss(nn.Module):
         super(L2Loss, self).__init__()
     
     def forward(self, gen, gt):
-        x = torch.mean(torch.sqrt(((gen - gt)**2 + 0.0001)))
+        # x = torch.mean(torch.sqrt(((gen - gt)**2 + (1e-8))))
+        x = torch.sqrt(((gen - gt)**2 + (1e-8)))
+        import ipdb; ipdb.set_trace()
         if torch.isnan(x):
             import ipdb; ipdb.set_trace()
         return x
@@ -224,7 +224,8 @@ LOSSDICT ={
     'A_loss': IntensityLoss().cuda(),
     'B_loss': IntensityLoss().cuda(),
     'C_loss': IntensityLoss().cuda(),
-    'rec_loss': nn.MSELoss(reduction='mean').cuda(),
+    # 'rec_loss': nn.MSELoss(reduction='mean').cuda(),
+    'rec_loss': L2Loss().cuda(),
     'weighted_pred_loss': WeightedPredLoss().cuda()
 }
 
