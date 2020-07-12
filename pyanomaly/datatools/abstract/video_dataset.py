@@ -22,7 +22,9 @@ class AbstractVideoDataset(Dataset):
         '''
         # the meta structure of video dataset
         self.videos = OrderedDict() # contains 'video_name' ->'path', 'frames', 'length', 'cursor'
-        
+        self.annos = OrderedDict()
+        self.metas = OrderedDict()
+
         # the params of dataset
         self.dir = frames_folder
         self.clip_length = clip_length
@@ -72,30 +74,31 @@ class AbstractVideoDataset(Dataset):
             self.videos_keys = self.videos.keys()
             print(f'\033[1;34m The clip number of one video {video_name}#{self.flag} is:{self.total_clips_onevideo} of {self.cfg.DATASET.name}\033[0m') 
     
-    def get_image(self, image_name):
-        '''
-        Get one single image
-        '''
-        pass
+    # def get_image(self, image_name):
+    #     '''
+    #     Get one single image
+    #     '''
+    #     pass
     
-    def _get_frames(self, indice):
-        '''
-        get the frames 
-        '''
-        return None 
+    # def _get_frames(self, indice):
+    #     '''
+    #     get the frames 
+    #     '''
+    #     return None 
     
-    def _get_annotations(self, indice):
-        '''
-        get the frames
-        '''
-        return None
+    # def _get_annotations(self, indice):
+    #     '''
+    #     get the frames
+    #     '''
+    #     return None
     
-    def _get_meta(self, indice):
-        '''
-        get the meta data 
-        '''
-        return None
+    # def _get_meta(self, indice):
+    #     '''
+    #     get the meta data 
+    #     '''
+    #     return None
     
+
     def __getitem__(self, indice):
         raise Exception(f'No inplement at {AbstractVideoDataset._NAME}')
     
