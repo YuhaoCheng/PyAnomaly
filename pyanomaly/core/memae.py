@@ -34,7 +34,7 @@ class Trainer(DefaultTrainer):
 
         # get the loss_fucntion
         self.rec_loss = self.loss_function['rec_loss']
-        # self.mem_loss = self.loss_function['mem_loss']
+        self.mem_loss = self.loss_function['mem_loss']
 
         # the lr scheduler
         self.lr_memae = self.lr_scheduler_dict['optimizer_memae_scheduler']
@@ -64,11 +64,12 @@ class Trainer(DefaultTrainer):
         # True Process =================Start===================
         output_rec, att = self.MemAE(input_data)
         loss_rec = self.rec_loss(output_rec, input_data)
-        # loss_mem = self.mem_loss(att)
+        loss_mem = self.mem_loss(att)
         # import ipdb; ipdb.set_trace()
-        # loss_memae_all = self.loss_lamada['rec_loss'] * loss_rec + self.loss_lamada['mem_loss'] * loss_mem 
-        loss_memae_all = self.loss_lamada['rec_loss'] * loss_rec 
+        loss_memae_all = self.loss_lamada['rec_loss'] * loss_rec + self.loss_lamada['mem_loss'] * loss_mem 
+        # loss_memae_all = self.loss_lamada['rec_loss'] * loss_rec 
         self.optim_MemAE.zero_grad()
+        # with torch.autograd.set_detect_anomaly(True):
         loss_memae_all.backward()
         self.optim_MemAE.step()
         self.loss_meter_MemAE.update(loss_memae_all.detach())
@@ -105,7 +106,7 @@ class Trainer(DefaultTrainer):
         temp_meter_frame = AverageMeter()
         self.set_requires_grad(self.MemAE, False)
         self.MemAE.eval()
-        for data, _ in self.val_dataloader:
+        for data, _, _ in self.val_dataloader:
             # get the data
             input_data_mini = data.cuda()
             output_rec, _ = self.MemAE(input_data_mini)

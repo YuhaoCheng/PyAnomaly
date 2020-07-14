@@ -6,9 +6,10 @@ class MemLoss(nn.Module):
         super(MemLoss, self).__init__()
         # self.l_num =2
     def forward(self, att_weights):
-        att_weights += att_weights + (att_weights == 0).float() * 0.001
-        x = torch.sum(-att_weights * att_weights.log())
+        att_weights = att_weights + (att_weights == 0).float() * 1.0
+        x = torch.mean(-att_weights * att_weights.log())
         # import ipdb; ipdb.set_trace()
+        # print(f'the memae loss is{x}')
         return x
 
 LOSSDICT ={

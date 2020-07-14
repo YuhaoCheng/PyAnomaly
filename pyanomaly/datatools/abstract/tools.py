@@ -153,10 +153,9 @@ class VideoLoader(object):
 
         clip_np = np.array(clip_list)  # the shape of the clip_np is [D,H,W,C]
         clip_original = self._normalize_original(torch.from_numpy(np.array(clip_list_original)))  # the shape of the clip_original is [C, D, H, W]
-        try:
-            assert clip_np.shape[0] == clip_length, f'The clip length is {clip_length}, the real one is {clip_np[0]}'
-        except:
-            import ipdb; ipdb.set_trace()
+        
+        assert clip_np.shape[0] == clip_length, f'The clip length is {clip_length}, the real one is {clip_np[0]}'
+        
         # Use the data augment for the video
         if self.transforms is not None:
             # type of clip is ndarray

@@ -29,13 +29,13 @@ def conv2d_samepad(in_dim, in_ch, out_ch, ks, stride, dilation=1, bias=True):
 
 
 class L2Loss(nn.Module):
-    def __init__(self):
+    def __init__(self, eps=1e-8):
         super(L2Loss, self).__init__()
+        self.eps = eps
     
     def forward(self, gen, gt):
-        # x = torch.mean(torch.sqrt(((gen - gt)**2 + (1e-8))))
-        x = torch.sqrt(((gen - gt)**2 + (1e-8)))
-        import ipdb; ipdb.set_trace()
+        error = torch.mean((gen - gt)**2)
+        x = torch.sqrt(error + self.eps)
         if torch.isnan(x):
             import ipdb; ipdb.set_trace()
         return x

@@ -34,8 +34,8 @@ DATASET:
   number_of_class: 1
   score_normalize: false
   score_type: 'normal'
-  decidable_idx: 16
-  decidable_idx_back: 0
+  decidable_idx: 0
+  decidable_idx_back: 16
   smooth:
     guassian: true
     guassian_sigma: [3,5,15,10,20,30]
@@ -56,10 +56,10 @@ ARGUMENT:
       mean: [0.5]
       std: [0.5]
     fliplr:
-      use: false
+      use: true
       p: 0.5
     flipud:
-      use: false
+      use: true
       p: 0.5
     rote:
       use: false
@@ -138,9 +138,9 @@ TRAIN:
   eval_step: 638
   save_step: 638
   epochs: 1
-  # loss: ['rec_loss', 'mem_loss']
-  loss: ['rec_loss']
-  loss_coefficients: [1]
+  loss: ['rec_loss', 'mem_loss']
+  # loss: ['rec_loss']
+  loss_coefficients: [1, 0.0002]
   mode: 'general'
   general:
     optimizer:

@@ -148,35 +148,6 @@ def calculate_psnr(loss_file, logger, cfg):
     print('max mean psnr = {}'.format(np.max(mean_psnr)))
 
 
-# def calculate_score(loss_file, logger, cfg):
-#     if not os.path.isdir(loss_file):
-#         loss_file_path = loss_file
-#     else:
-#         optical_result = compute_auc_score(loss_file, logger, cfg)
-#         loss_file_path = optical_result.loss_file
-#         print('##### optimal result and model = {}'.format(optical_result))
-#     dataset, psnr_records, _, gt, num_videos = load_pickle_results(loss_file=loss_file_path, cfg=cfg)
-
-#     # the number of videos
-#     # num_videos = len(psnr_records)
-#     DECIDABLE_IDX = cfg.DATASET.decidable_idx
-
-#     scores = np.array([], dtype=np.float32)
-#     labels = np.array([], dtype=np.int8)
-#     # video normalization
-#     for i in range(num_videos):
-#         distance = psnr_records[i]
-
-#         distance = (distance - distance.min()) / (distance.max() - distance.min())
-
-#         scores = np.concatenate((scores, distance[DECIDABLE_IDX:]), axis=0)
-#         labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:]), axis=0)
-
-#     mean_normal_scores = np.mean(scores[labels == 0])
-#     mean_abnormal_scores = np.mean(scores[labels == 1])
-#     print('mean normal scores = {}, mean abnormal scores = {}, '
-#           'delta = {}'.format(mean_normal_scores, mean_abnormal_scores, mean_normal_scores - mean_abnormal_scores))
-
 def compute_auc_psnr(loss_file, logger, cfg, score_type='normal'):
     '''
     For psnr, score_type is always 'normal', means that the higher PSNR, the higher normality 
@@ -240,9 +211,10 @@ def compute_auc_score(loss_file, logger, cfg, score_type='normal'):
         # video normalization
         for i in range(num_videos):
             score_one_video = score_record[i]
+            l = len(score_one_video)
             score_one_video = np.clip(score_one_video, 0, None)
-            scores = np.concatenate((scores, score_one_video[DECIDABLE_IDX:]), axis=0)
-            labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:]), axis=0)
+            scores = np.concatenate((scores, score_one_video[DECIDABLE_IDX:l-DECIDABLE_IDX_BACK]), axis=0)
+            labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:l-DECIDABLE_IDX_BACK]), axis=0)
         
         fpr, tpr, thresholds = metrics.roc_curve(labels, scores, pos_label=pos_label)
         auc = metrics.auc(fpr, tpr)
@@ -265,6 +237,7 @@ def compute_auc_score(loss_file, logger, cfg, score_type='normal'):
 
     optimal_results = RecordResult()
     DECIDABLE_IDX = cfg.DATASET.decidable_idx
+    DECIDABLE_IDX_BACK = cfg.DATASET.decidable_idx
     for sub_loss_file in loss_file_list:
         # the name of dataset, loss, and ground truth
         dataset, psnr_records, score_records, gt, num_videos = load_pickle_results(loss_file=sub_loss_file, cfg=cfg)

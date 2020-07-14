@@ -2,11 +2,10 @@ import glob
 import os
 from collections import OrderedDict
 from torch.utils.data import Dataset
-from .tools import np_load_frame, LoadImage
 
 class AbstractVideoDataset(Dataset):
     _NAME = 'AbstractVideoDataset'
-    def __init__(self, frames_folder, clip_length, sampled_clip_length, frame_step=1, clip_step=1, video_format='mp4', fps=10, transforms=None, is_training=True, one_video=False, mini=False, **kwargs):
+    def __init__(self, frames_folder, clip_length, sampled_clip_length, frame_step=1, clip_step=1, video_format='mp4', fps=10, transforms=None, is_training=True, one_video=False, mini=False, cfg=None, **kwargs):
         '''
         Args:
             dataset_folder: the frames folder of one video (video_name/...jpg) or whole datasets (xxx/video_name/xxx.jpg)
@@ -37,8 +36,13 @@ class AbstractVideoDataset(Dataset):
         self.is_training = is_training
         self.one_video = one_video
         self.mini = mini
+        self.cfg = cfg
         self.kwargs = kwargs
         
+        if self.is_training:
+            self.flag = 'Train'
+        else:
+            self.flag = 'Not Train'
         self.abstract_setup()
 
 
@@ -74,31 +78,6 @@ class AbstractVideoDataset(Dataset):
             self.videos_keys = self.videos.keys()
             print(f'\033[1;34m The clip number of one video {video_name}#{self.flag} is:{self.total_clips_onevideo} of {self.cfg.DATASET.name}\033[0m') 
     
-    # def get_image(self, image_name):
-    #     '''
-    #     Get one single image
-    #     '''
-    #     pass
-    
-    # def _get_frames(self, indice):
-    #     '''
-    #     get the frames 
-    #     '''
-    #     return None 
-    
-    # def _get_annotations(self, indice):
-    #     '''
-    #     get the frames
-    #     '''
-    #     return None
-    
-    # def _get_meta(self, indice):
-    #     '''
-    #     get the meta data 
-    #     '''
-    #     return None
-    
-
     def __getitem__(self, indice):
         raise Exception(f'No inplement at {AbstractVideoDataset._NAME}')
     
