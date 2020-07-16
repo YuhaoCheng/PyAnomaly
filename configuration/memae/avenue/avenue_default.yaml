@@ -17,8 +17,8 @@ DATASET:
   name: 'avenue'
   seed: 2020
   read_format: 'opencv'
-  channel_num: 1
-  channel_name: 'gray'
+  channel_num: 3
+  channel_name: 'rgb'
   train_path: './data/Avenue/training/frames'
   train_clip_length: 16
   train_sampled_clip_length: 16
@@ -33,8 +33,8 @@ DATASET:
   number_of_class: 1
   score_normalize: true
   score_type: 'normal'
-  decidable_idx: 4
-  decidable_idx_back: 0
+  decidable_idx: 0
+  decidable_idx_back: 16
   smooth:
     guassian: true
     guassian_sigma: [3,5,15,10,20,30]
@@ -52,8 +52,8 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: [0.5]
-      std: [0.5]
+      mean: [0.5, 0.5, 0.5]
+      std: [0.5, 0.5, 0.5]
     fliplr:
       use: false
       p: 0.5
@@ -86,8 +86,8 @@ ARGUMENT:
       use: false
     normal:
       use: true
-      mean: [0.5]
-      std: [0.5]
+      mean: [0.5, 0.5, 0.5]
+      std: [0.5, 0.5, 0.5]
     fliplr:
       use: false
       p: 0.5
@@ -131,7 +131,7 @@ TRAIN:
   batch_size: 4
   start_step: 0
   max_steps: 160944
-  log_step: 50
+  log_step: 100
   vis_step: 3832
   mini_eval_step: 3000
   eval_step: 3832
@@ -144,7 +144,7 @@ TRAIN:
     optimizer:
       include: ['MemAE']
       name: 'adam'
-      lr: 1e-4
+      lr: 1e-3
       momentum: 0.9
       weight_decay: 0.0001
       nesterov: false
