@@ -7,7 +7,6 @@ results {
         }
 '''
 import numpy as np
-# import scipy.io as scio
 import os
 import argparse
 import pickle

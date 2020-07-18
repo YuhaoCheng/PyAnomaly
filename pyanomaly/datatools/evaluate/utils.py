@@ -245,4 +245,11 @@ def reconstruction_loss(x_hat, x):
     w_dim = len(rl.shape) - 1
     # the number of rl is equal to the frame number
     rl = torch.mean(rl, (h_dim, w_dim)).squeeze(0)
+    if len(rl.shape) == 2:
+        rl = rl.mean(0)
+    elif len(rl.shape) == 1:
+        rl = rl
+    else:
+        raise Exception('in reconstruction_loss')
+    # import ipdb; ipdb.set_trace()
     return rl
