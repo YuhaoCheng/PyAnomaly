@@ -1,0 +1,9 @@
+pytorch==1.3
+cupy-cuda101
+tensorboard
+torchvision
+torchsnooper
+tsnecuda
+scikit-image
+opencv
+imgaug
