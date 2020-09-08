@@ -13,14 +13,6 @@ Specifically usage please refer to [USAGE.md](./docs/usage.md)
 
 The introduction of some useful tools is in [TOOLS](./docs/tools.md)
 
-### Update
-
-- 2020/6/4: Finish migrating the readme and add some information
-
-- 2020/6/1: Make the new version  of PyAnomaly and start migrating from the old version
-
-  
-
 ### License
 This project is released under the [Apache 2.0 license](./LICENSE).
 

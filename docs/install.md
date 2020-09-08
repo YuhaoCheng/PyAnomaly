@@ -1,9 +1,9 @@
-### Installation
+## Installation
 
-#### System Requirement
+### System Requirement
 - Linux
 
-#### Packages Requirements
+### Packages Requirements
 
 The requirement packages are as follows, and if users have some problems in installation, please submit an issue, and we will solve it ASAP.
 
@@ -27,30 +27,42 @@ The requirement packages are as follows, and if users have some problems in inst
 - `imgaug`
 - `opencv`
 
-#### Pretrain Models
+### Pretrain Models
 
-##### Optical Flow
+#### Optical Flow
 
 This package will use Flownet2 and Liteflownet, so please follow the instructions on their Github to get the models and users should change the  location of these models in configuration.
 
 - [Flownet2](https://github.com/NVIDIA/flownet2-pytorch)
 - [LiteFlowNet](https://github.com/sniklaus/pytorch-liteflownet)
 
-##### Detection
+#### Detection
 
 This project will use Detector, and we choose [Detectron2](https://github.com/facebookresearch/detectron2). So please download the models and change the location in configuration. 
 
+### Install PyAnomaly
+#### Get the Package
+##### Method1-From the Release(Recommended)
+1. Download the zip file from [Release](https://github.com/YuhaoCheng/PyAnomaly/releases)
+   - Please download the latest version
+2. Unzip the zip file
 
-#### Install PyAnomaly
+#####  Method2-For Master branch
 
-#### Method1
+- the master branch contains some new features which may not 
+
 ```shell
 cd ROOT/PATH
 git clone https://github.com/YuhaoCheng/PyAnomaly.git
 cd PyAnomaly
 ```
+##### Method3-Using Docker
+Using the docker, please refer to [DOCKER](./docker.md)
 
-##### Dataset Preparing
+
+
+#### Dataset Preparing
+
 1. Make the `data` folder in `PyAnomaly`:
 
    ```shell
@@ -89,6 +101,4 @@ cd PyAnomaly
    - Please put the annotations in the path which is written in the configuration file.
    - Please check the data path in the configuration file.
 
-#### Method2
-Using the docker, please refer to [DOCKER](./docker.md)
 
