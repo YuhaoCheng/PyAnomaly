@@ -79,7 +79,7 @@ class Trainer(DefaultTrainer):
         self.optim_STAE.step()
         self.loss_meter_STAE.update(loss_stae_all.detach())
         
-        if self.config.TRAIN.adversarial.scheduler.use:
+        if self.config.TRAIN.general.scheduler.use:
             self.lr_stae.step()
         # ======================End==================
 
