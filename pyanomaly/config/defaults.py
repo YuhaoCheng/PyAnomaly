@@ -1,4 +1,5 @@
-from yacs.config import CfgNode as CN
+# from yacs.config import CfgNode as CN
+from fvcore.common.config import CfgNode as CN
 
 __all__ = ['update_config'] 
 
