@@ -14,7 +14,7 @@ We have put the docker image on the docker hub, so you can use the following com
 docker pull roviocyh/pytorch16-cu101:latest
 ```
 
-However,  in order to 
+However,  in order to make the docker docker general, we do not install some requirements of this project
 
 ### Build Usage
 
