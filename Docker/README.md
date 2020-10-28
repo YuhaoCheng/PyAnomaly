@@ -6,7 +6,17 @@
 - `.condarc` is the channels of `conda`, we choose `tuna` source. Users can change it. 
 - If you want to change to the default sources, please run use this [condarc](https://drive.google.com/file/d/1OIqaTbebbIs94Ku_9wraU-BT7g5F_5q8/view?usp=sharing) to replace the original one in the `Docker `folder
 
-### Usage
+### Docker Hub
+
+We have put the docker image on the docker hub, so you can use the following command to pull the docker image
+
+```
+docker pull roviocyh/pytorch16-cu101:latest
+```
+
+However,  in order to 
+
+### Build Usage
 
 #### Method1
 
