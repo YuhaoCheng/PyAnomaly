@@ -1,5 +1,5 @@
 ![logo](./docs/Logo.jpg)
-
+---
 ### Introduction
 PyAnomaly is the open-source tool for anomaly detection, which provides a tool for researchers and engineers to accelerate their study and development. 
 
