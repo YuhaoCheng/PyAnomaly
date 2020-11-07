@@ -1,8 +1,6 @@
 """
 reference to the implementation in the Pytorch
 """
-import sys
-# sys.path.append('/export/home/chengyh/Anomaly_DA')
 import torch
 import torch.nn as nn
 import torchsnooper
@@ -10,6 +8,9 @@ import torch.nn.functional as F
 from collections import OrderedDict
 from pyanomaly.networks.parts.base.commonness import Conv2dLeakly, ConcatDeconv2d, Deconv2d, BasicConv2d, Inception
 
+from ..model_registry import META_ARCH_REGISTER
+
+@META_ARCH_REGISTER.register()
 class AMCGenerator(nn.Module):
     def __init__(self, c_in, opticalflow_channel_num=2, image_channel_num=3, dropout_prob=0, bilinear=True):
         super(AMCGenerator, self).__init__()
@@ -70,6 +71,7 @@ class AMCGenerator(nn.Module):
 
         return out_flow, out_frame
 
+@META_ARCH_REGISTER.register()
 class AMCDiscriminiator(nn.Module):
     def __init__(self, c_in, filters):
         super(AMCDiscriminiator, self).__init__()

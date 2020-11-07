@@ -3,6 +3,7 @@ from fvcore.common.config import CfgNode as CN
 
 __all__ = ['update_config'] 
 
+
 config = CN()
 
 # configure the system related matters, such as gpus, cudnn and so on
@@ -138,17 +139,42 @@ config.ARGUMENT.val.normal.std = [0.229, 0.224, 0.225]
 # configure the model related things
 config.MODEL = CN()
 config.MODEL.name = ''   # the name of the network, such as resnet
-config.MODEL.type = ''   # the type of the network, such as resnet50, resnet101 or resnet152
+config.MODEL.type1 = ''   # the type of the network, such as resnet50, resnet101 or resnet152, only for test
+
+# a. trainable one model(e2e); b. trainable multi models(me2e); c. trainable one model + auxiliary(ae2e); d. trainable multi models + + auxiliary(ame2e)
+config.MODEL.type2 = 'e2e'
+
+# must be even, the 0-th is name in dict, 1-th is the model named registered in the registry; e.g. ['backbone', 'resnet18', 'head', 'ps']
+# if the model type is e2e, the 0-th is ''(None)
+config.MODEL.parts = ['','resnet18']
+
 config.MODEL.hooks = CN()  # determine the hooks use in the training
 config.MODEL.hooks.train = []  # determine the hooks use in the training
 config.MODEL.hooks.val = []  # determine the hooks use in the training
+config.MODEL.discriminator_channels = []
+config.MODEL.pretrain_model = ''
+
+# Will be discarded in the future--------------------------------
 config.MODEL.flownet = 'flownet2' # the flownet type 'flownet2' | 'liteflownet'
 config.MODEL.flow_model_path = ''
-config.MODEL.discriminator_channels = []
 config.MODEL.detector = 'detectron2'
 config.MODEL.detector_config = ''
 config.MODEL.detector_model_path = ''
-config.MODEL.pretrain_model = ''
+#--------------------------------------------------------
+
+# This part defines the auxiliary of the whole model, most of time these models are frozen
+config.MODEL.auxiliary = CN()
+# config.MODEL.auxiliary.parts = ['optical_flow', 'detector']
+config.MODEL.auxiliary.optical_flow = CN()
+config.MODEL.auxiliary.optical_flow.require_grad = False
+config.MODEL.auxiliary.optical_flow.name = 'flownet2' # the flownet type 'flownet2' | 'liteflownet'
+config.MODEL.auxiliary.optical_flow.model_path = ''
+config.MODEL.auxiliary.detector = CN()
+config.MODEL.auxiliary.detector.require_grad = False
+config.MODEL.auxiliary.detector.name = 'detectron2'
+config.MODEL.auxiliary.detector.config = ''
+config.MODEL.auxiliary.detector.model_path = ''
+
 
 # configure the resume
 config.RESUME = CN()
