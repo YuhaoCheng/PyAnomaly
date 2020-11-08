@@ -5,7 +5,12 @@ PyAnomaly is the open-source tool for anomaly detection, which provides a tool f
 
 More introduction of the toolbox is in [INTRO.md](./docs/intro.md)
 
+### News
+- [Nov 2020] Change the methods to get model, make it much easier to use
+- [Jun 2020] The repo is open!!
+
 ### Install
+
 Please refer to the [INSTALL.md](./docs/install.md)
 
 ### Usage 

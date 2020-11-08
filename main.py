@@ -34,11 +34,11 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     # get the optimizer
     oa = OptimizerAPI(cfg, logger)
     optimizer_dict = oa(model_dict)
-    
     # get the the scheduler
     sa = SchedulerAPI(cfg, logger)
     lr_scheduler_dict = sa(optimizer_dict)
     
+    import ipdb; ipdb.set_trace()
     # get data augment
     aa = AugmentAPI(cfg, logger)
 

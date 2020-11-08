@@ -7,12 +7,15 @@ class SchedulerAPI(object):
         self.cfg = cfg
         self.logger = logger
         self.train_mode = cfg.TRAIN.mode
-        if self.train_mode == 'general':
-            self.type = self.cfg.TRAIN.general.scheduler.name
-            self.params = self.cfg.TRAIN.general.scheduler
-        elif self.train_mode == 'adversarial':
-            self.type = self.cfg.TRAIN.adversarial.scheduler.name
-            self.params = self.cfg.TRAIN.adversarial.scheduler
+        self.params = self.cfg.get('TRAIN')[self.train_mode]['scheduler']
+        self.type = self.params.name
+
+        # if self.train_mode == 'general':
+        #     self.type = self.cfg.TRAIN.general.scheduler.name
+        #     self.params = self.cfg.TRAIN.general.scheduler
+        # elif self.train_mode == 'adversarial':
+        #     self.type = self.cfg.TRAIN.adversarial.scheduler.name
+        #     self.params = self.cfg.TRAIN.adversarial.scheduler
         
     def _build_scheduler(self, optimizer_param):
         if self.type not in SchedulerAPI._SUPPORT:

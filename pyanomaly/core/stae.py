@@ -39,7 +39,7 @@ class Trainer(DefaultTrainer):
             else:
                 temp_model = self.model[item_key].cuda()
             self.__setattr__(attr_name, temp_model)
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         
         # get the optimizer
         self.optim_STAE = self.optimizer['optimizer_stae']
