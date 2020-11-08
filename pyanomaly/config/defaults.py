@@ -139,12 +139,13 @@ config.ARGUMENT.val.normal.std = [0.229, 0.224, 0.225]
 # configure the model related things
 config.MODEL = CN()
 config.MODEL.name = ''   # the name of the network, such as resnet
-config.MODEL.type1 = ''   # the type of the network, such as resnet50, resnet101 or resnet152, only for test
+# config.MODEL.type1 = ''   # the type of the network, such as resnet50, resnet101 or resnet152, only for test
 
 # a. trainable one model(e2e); b. trainable multi models(me2e); c. trainable one model + auxiliary(ae2e); d. trainable multi models + + auxiliary(ame2e)
-config.MODEL.type2 = 'e2e'
+config.MODEL.type = 'e2e'
 
-# must be even, the 0-th is name in dict, 1-th is the model named registered in the registry; e.g. ['backbone', 'resnet18', 'head', 'ps']
+# must be even, the 0-th is name in dict, 1-th is the model named registered in the registry; e.g. ['meta_Backbone', 'resnet18', 'meta_Head', 'ps'], 
+#                                                                                                  ['meta_Generator', 'AMCGenerator', 'meta_Discriminiator', 'AMCDiscriminiator', 'auxiliary_Flownet', 'flownet2']
 # if the model type is e2e, the 0-th is ''(None)
 config.MODEL.parts = ['','resnet18']
 
@@ -292,4 +293,12 @@ def update_config(yaml_path, opts):
     cfg.freeze()
 
     return cfg
+
+def create_debug_yaml():
+    import yaml
+    with open( './debug.yaml', 'w') as f:
+        yaml.dump(config, f)
+
+if __name__ == '__main__':
+    create_debug_yaml()
     

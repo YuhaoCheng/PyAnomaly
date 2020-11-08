@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 from collections import OrderedDict
 import torchsnooper
-from ..model_registry import META_ARCH_REGISTER
+from ..model_registry import META_ARCH_REGISTRY
 
 __all__=['STAutoEncoderCov3D', 'get_model_stae']
 
-@META_ARCH_REGISTER.register()
+@META_ARCH_REGISTRY.register()
 class STAutoEncoderCov3D(nn.Module):
     def __init__(self, cfg):
         super(STAutoEncoderCov3D, self).__init__()

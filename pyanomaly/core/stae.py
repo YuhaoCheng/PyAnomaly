@@ -27,10 +27,19 @@ class Trainer(DefaultTrainer):
     NAME = ["STAE.TRAIN"]
     def custom_setup(self):
         # basic things
-        if self.kwargs['parallel']:
-            self.STAE = self.data_parallel(self.model['STAE'])
-        else:
-            self.STAE = self.model['STAE'].cuda()
+        # if self.kwargs['parallel']:
+        #     self.STAE = self.data_parallel(self.model['STAE'])
+        # else:
+        #     self.STAE = self.model['STAE'].cuda()
+        
+        for item_key in self.model.keys():
+            attr_name = str(item_key)
+            if self.kwargs['parallel']:
+                temp_model = self.data_parallel(self.model[item_key])
+            else:
+                temp_model = self.model[item_key].cuda()
+            self.__setattr__(attr_name, temp_model)
+        import ipdb; ipdb.set_trace()
         
         # get the optimizer
         self.optim_STAE = self.optimizer['optimizer_stae']

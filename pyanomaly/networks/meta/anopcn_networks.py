@@ -16,8 +16,9 @@ from pyanomaly.networks.meta.base.commonness import (
     BasicConv2d
 )
 
-from ..model_registry import META_ARCH_REGISTER
+from ..model_registry import META_ARCH_REGISTRY
 
+__all__ = ['AnoPcn', 'get_model_anopcn']
 
 class ERM(nn.Module):
     def __init__(self, c_in, c_out, bilinear=False):
@@ -251,7 +252,7 @@ class UNet(nn.Module):
             x = self.output(x)
         return x
 
-@META_ARCH_REGISTER.register()
+@META_ARCH_REGISTRY.register()
 class AnoPcn(nn.Module):
     def __init__(self, cfg):
         super(AnoPcn, self).__init__()

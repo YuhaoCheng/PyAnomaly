@@ -8,14 +8,18 @@ class OptimizerAPI(object):
         self.cfg = cfg
         self.logger = logger
         self.train_mode = cfg.TRAIN.mode
-        if self.train_mode == 'general':
-            self.type = self.cfg.TRAIN.general.optimizer.name
-            self.params = self.cfg.TRAIN.general.optimizer
-            self.lr = self.params.lr
-        elif self.train_mode == 'adversarial':
-            self.type = self.cfg.TRAIN.adversarial.optimizer.name
-            self.params = self.cfg.TRAIN.adversarial.optimizer
-            self.lr = 0        
+        # if self.train_mode == 'general':
+        #     self.type = self.cfg.TRAIN.general.optimizer.name
+        #     self.params = self.cfg.TRAIN.general.optimizer
+        #     self.lr = self.params.lr
+        # elif self.train_mode == 'adversarial':
+        #     self.type = self.cfg.TRAIN.adversarial.optimizer.name
+        #     self.params = self.cfg.TRAIN.adversarial.optimizer
+        #     self.lr = 0
+        self.params = self.cfg.get('TRAIN')[self.train_mode]['optimizer']
+        self.type = self.params.name
+        self.lr = self.params.lr
+
         self.setup()
 
     def setup(self):

@@ -1,0 +1,538 @@
+!!python/object/new:fvcore.common.config.CfgNode
+dictitems:
+  ARGUMENT: !!python/object/new:fvcore.common.config.CfgNode
+    dictitems:
+      train: !!python/object/new:fvcore.common.config.CfgNode
+        dictitems:
+          CropToFixedSize: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              height: 256
+              position: center
+              use: false
+              width: 256
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          GaussianBlur: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              high: 0.3
+              low: 0.03
+              use: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          JpegCompression: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              high: 100
+              low: 80
+              use: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          fliplr: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              p: 1.0
+              use: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          flipud: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              p: 1.0
+              use: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          grayscale: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              use: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          normal: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              mean:
+              - 0.485
+              - 0.456
+              - 0.406
+              std:
+              - 0.229
+              - 0.224
+              - 0.225
+              use: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          resize: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              height: 32
+              use: false
+              width: 32
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          rote: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              degrees:
+              - 0
+              - 0
+              use: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          use: false
+        state:
+          __deprecated_keys__: !!set {}
+          __immutable__: false
+          __new_allowed__: false
+          __renamed_keys__: {}
+      val: !!python/object/new:fvcore.common.config.CfgNode
+        dictitems:
+          CropToFixedSize: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              height: 256
+              position: center
+              use: false
+              width: 256
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          GaussianBlur: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              high: 0.3
+              low: 0.03
+              use: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          JpegCompression: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              high: 100
+              low: 80
+              use: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          fliplr: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              p: 1.0
+              use: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          flipud: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              p: 1.0
+              use: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          grayscale: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              use: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          normal: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              mean:
+              - 0.485
+              - 0.456
+              - 0.406
+              std:
+              - 0.229
+              - 0.224
+              - 0.225
+              use: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          resize: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              height: 32
+              use: false
+              width: 32
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          rote: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              degrees:
+              - 0
+              - 0
+              use: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          use: false
+        state:
+          __deprecated_keys__: !!set {}
+          __immutable__: false
+          __new_allowed__: false
+          __renamed_keys__: {}
+    state:
+      __deprecated_keys__: !!set {}
+      __immutable__: false
+      __new_allowed__: false
+      __renamed_keys__: {}
+  DATASET: !!python/object/new:fvcore.common.config.CfgNode
+    dictitems:
+      channel_name: rgb
+      channel_num: 3
+      decidable_idx: 1
+      decidable_idx_back: 1
+      evaluate_function_type: compute_auc_score
+      gt_path: ''
+      image_format: jpg
+      mini_dataset: !!python/object/new:fvcore.common.config.CfgNode
+        dictitems:
+          samples: 2
+        state:
+          __deprecated_keys__: !!set {}
+          __immutable__: false
+          __new_allowed__: false
+          __renamed_keys__: {}
+      name: ''
+      number_of_class: 1
+      optical_format: Y
+      optical_size:
+      - 384
+      - 512
+      read_format: opencv
+      score_normalize: true
+      score_type: normal
+      seed: 2020
+      smooth: !!python/object/new:fvcore.common.config.CfgNode
+        dictitems:
+          guassian: true
+          guassian_sigma:
+          - 10
+        state:
+          __deprecated_keys__: !!set {}
+          __immutable__: false
+          __new_allowed__: false
+          __renamed_keys__: {}
+      test_clip_length: 5
+      test_clip_step: 1
+      test_frame_step: 1
+      test_path: ''
+      test_sampled_clip_length: 5
+      train_clip_length: 5
+      train_clip_step: 1
+      train_frame_step: 1
+      train_path: ''
+      train_sampled_clip_length: 5
+    state:
+      __deprecated_keys__: !!set {}
+      __immutable__: false
+      __new_allowed__: false
+      __renamed_keys__: {}
+  FINETUNE: !!python/object/new:fvcore.common.config.CfgNode
+    dictitems:
+      flag: false
+      layer_list: []
+    state:
+      __deprecated_keys__: !!set {}
+      __immutable__: false
+      __new_allowed__: false
+      __renamed_keys__: {}
+  LOG: !!python/object/new:fvcore.common.config.CfgNode
+    dictitems:
+      log_output_dir: ''
+      tb_output_dir: ''
+      vis_dir: ./output/vis
+    state:
+      __deprecated_keys__: !!set {}
+      __immutable__: false
+      __new_allowed__: false
+      __renamed_keys__: {}
+  MODEL: !!python/object/new:fvcore.common.config.CfgNode
+    dictitems:
+      auxiliary: !!python/object/new:fvcore.common.config.CfgNode
+        dictitems:
+          detector: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              config: ''
+              model_path: ''
+              name: detectron2
+              require_grad: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          optical_flow: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              model_path: ''
+              name: flownet2
+              require_grad: false
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+        state:
+          __deprecated_keys__: !!set {}
+          __immutable__: false
+          __new_allowed__: false
+          __renamed_keys__: {}
+      detector: detectron2
+      detector_config: ''
+      detector_model_path: ''
+      discriminator_channels: []
+      flow_model_path: ''
+      flownet: flownet2
+      hooks: !!python/object/new:fvcore.common.config.CfgNode
+        dictitems:
+          train: []
+          val: []
+        state:
+          __deprecated_keys__: !!set {}
+          __immutable__: false
+          __new_allowed__: false
+          __renamed_keys__: {}
+      name: ''
+      parts:
+      - ''
+      - resnet18
+      pretrain_model: ''
+      type1: ''
+      type2: e2e
+    state:
+      __deprecated_keys__: !!set {}
+      __immutable__: false
+      __new_allowed__: false
+      __renamed_keys__: {}
+  RESUME: !!python/object/new:fvcore.common.config.CfgNode
+    dictitems:
+      checkpoint_path: ''
+      flag: false
+    state:
+      __deprecated_keys__: !!set {}
+      __immutable__: false
+      __new_allowed__: false
+      __renamed_keys__: {}
+  SYSTEM: !!python/object/new:fvcore.common.config.CfgNode
+    dictitems:
+      cudnn: !!python/object/new:fvcore.common.config.CfgNode
+        dictitems:
+          benchmark: true
+          deterministic: false
+          enable: true
+        state:
+          __deprecated_keys__: !!set {}
+          __immutable__: false
+          __new_allowed__: false
+          __renamed_keys__: {}
+      distributed: !!python/object/new:fvcore.common.config.CfgNode
+        dictitems:
+          use: false
+        state:
+          __deprecated_keys__: !!set {}
+          __immutable__: false
+          __new_allowed__: false
+          __renamed_keys__: {}
+      gpus:
+      - 0
+      multigpus: false
+      num_gpus: 1
+    state:
+      __deprecated_keys__: !!set {}
+      __immutable__: false
+      __new_allowed__: false
+      __renamed_keys__: {}
+  TEST: !!python/object/new:fvcore.common.config.CfgNode
+    dictitems:
+      label_folder: ''
+      model_file: ''
+      name: ''
+      path: ''
+      result_output: ''
+    state:
+      __deprecated_keys__: !!set {}
+      __immutable__: false
+      __new_allowed__: false
+      __renamed_keys__: {}
+  TRAIN: !!python/object/new:fvcore.common.config.CfgNode
+    dictitems:
+      adversarial: !!python/object/new:fvcore.common.config.CfgNode
+        dictitems:
+          optimizer: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              betas:
+              - 0.9
+              - 0.999
+              d_lr: 0.01
+              g_lr: 0.01
+              include:
+              - Generator
+              - Discriminator
+              name: adam
+              output_name:
+              - optimizer_g
+              - optimizer_d
+              weight_decay: 0.0001
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          scheduler: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              T_max: 300
+              eta_min: 0
+              gamma: 0.1
+              name: none
+              step_size: 30
+              steps:
+              - 1000
+              - 2000
+              use: true
+              warmup_factor: 0.001
+              warmup_iters: 5000
+              warmup_method: linear
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+        state:
+          __deprecated_keys__: !!set {}
+          __immutable__: false
+          __new_allowed__: false
+          __renamed_keys__: {}
+      batch_size: 2
+      checkpoint_output: ''
+      cluster: !!python/object/new:fvcore.common.config.CfgNode
+        dictitems:
+          k: 10
+        state:
+          __deprecated_keys__: !!set {}
+          __immutable__: false
+          __new_allowed__: false
+          __renamed_keys__: {}
+      dynamic_steps:
+      - 0
+      - 50
+      - 100
+      epochs: 1
+      eval_step: 100
+      general: !!python/object/new:fvcore.common.config.CfgNode
+        dictitems:
+          optimizer: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              betas:
+              - 0.9
+              - 0.999
+              include:
+              - A
+              - B
+              - C
+              lr: 0.001
+              momentum: 0.9
+              name: adam
+              nesterov: false
+              output_name:
+              - optimizer_abc
+              weight_decay: 0.0001
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+          scheduler: !!python/object/new:fvcore.common.config.CfgNode
+            dictitems:
+              T_max: 300
+              eta_min: 0
+              gamma: 0.1
+              name: none
+              step_size: 30
+              steps:
+              - 10000
+              - 20000
+              use: true
+              warmup_factor: 0.001
+              warmup_iters: 1000
+              warmup_method: linear
+            state:
+              __deprecated_keys__: !!set {}
+              __immutable__: false
+              __new_allowed__: false
+              __renamed_keys__: {}
+        state:
+          __deprecated_keys__: !!set {}
+          __immutable__: false
+          __new_allowed__: false
+          __renamed_keys__: {}
+      log_step: 5
+      loss:
+      - mse
+      - cross
+      loss_coefficients:
+      - 0.5
+      - 0.5
+      max_steps: 20000
+      mini_eval_step: 10
+      mode: general
+      model_output: ''
+      pusedo_data_path: ''
+      save_step: 500
+      split: ''
+      start_step: 0
+      vis_step: 100
+    state:
+      __deprecated_keys__: !!set {}
+      __immutable__: false
+      __new_allowed__: false
+      __renamed_keys__: {}
+  VAL: !!python/object/new:fvcore.common.config.CfgNode
+    dictitems:
+      batch_size: 2
+      name: ''
+      path: ''
+    state:
+      __deprecated_keys__: !!set {}
+      __immutable__: false
+      __new_allowed__: false
+      __renamed_keys__: {}
+state:
+  __deprecated_keys__: !!set {}
+  __immutable__: false
+  __new_allowed__: false
+  __renamed_keys__: {}

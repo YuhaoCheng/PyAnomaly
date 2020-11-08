@@ -5,7 +5,10 @@ import torchsnooper
 from collections import OrderedDict
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import LinearSVC
+from ..model_registry import META_ARCH_REGISTRY
+__all__ = ['CAE', 'get_model_ocae']
 
+@META_ARCH_REGISTRY.register()
 class CAE(nn.Module):
     def __init__(self, c_in):
         super(CAE,self).__init__()

@@ -3,7 +3,7 @@ import torch.nn as nn
 from collections import OrderedDict
 import torchsnooper
 # from pyanomaly.networks.parts.base.commonness import DoubleConv, Down, Up, OutConv, PixelDiscriminator, BasicConv2d
-from ..model_registry import META_ARCH_REGISTER
+from ..model_registry import META_ARCH_REGISTRY
 from pyanomaly.networks.meta.base.commonness import (
     PixelDiscriminator, 
     DoubleConv, 
@@ -16,7 +16,7 @@ from pyanomaly.networks.meta.base.commonness import (
 __all__ = ['AnoPredGeneratorUnet', 'get_model_ano_pred']
 
 
-@META_ARCH_REGISTER.register()
+@META_ARCH_REGISTRY.register()
 class AnoPredGeneratorUnet(nn.Module):
     def __init__(self, c_in, c_out, bilinear=False):
         super(GeneratorUnet, self).__init__()

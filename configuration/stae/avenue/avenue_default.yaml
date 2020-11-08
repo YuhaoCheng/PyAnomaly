@@ -112,7 +112,9 @@ ARGUMENT:
       position: 'center'
 MODEL:
   name: 'stae'
-  type: 'stae'
+  type: 'e2e'
+  # type: 'stae'
+  parts: ['meta_STAE', 'STAutoEncoderCov3D']
   hooks:
     train: ['stae.STAEEvaluateHook', 'base.VisScoreHook']
     val: ['stae.STAEEvaluateHook']

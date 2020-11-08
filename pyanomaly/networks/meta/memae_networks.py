@@ -10,7 +10,9 @@ import numpy as np
 from collections import OrderedDict
 
 import torchsnooper
+from ..model_registry import META_ARCH_REGISTRY
 
+__all__ = ['AutoEncoderCov3DMem', 'get_model_memae']
 
 class MemoryModule3D(nn.Module):
     def __init__(self, mem_dim, fea_dim, hard_shrink=True, lam=1.0):
@@ -54,7 +56,7 @@ class MemoryModule3D(nn.Module):
             return z_output, w_hat
         
 
-
+@META_ARCH_REGISTRY.register()
 class AutoEncoderCov3DMem(nn.Module):
     def __init__(self, chnum_in, mem_dim, shrink_thres=0.0025):
         super(AutoEncoderCov3DMem, self).__init__()
