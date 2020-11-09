@@ -1,6 +1,10 @@
 import torch
 import torch.nn as nn
+from ..loss_registry import LOSS_REGISTRY
 
+__all__ = ['MemLoss', 'get_expand_loss']
+
+@LOSS_REGISTRY.register()
 class MemLoss(nn.Module):
     def __init__(self):
         super(MemLoss, self).__init__()

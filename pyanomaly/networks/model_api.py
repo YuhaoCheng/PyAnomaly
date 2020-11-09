@@ -27,7 +27,7 @@ class ModelAPI(object):
         # 1. Decide the model type: a. trainable one model(e2e); b. trainable multi models(me2e); c. trainable one model + auxiliary(ae2e); d. trainable multi models + + auxiliary(ame2e)
         self.logger.info('The name is ' +f'\033[1;31m {self.cfg.MODEL.name} \033[0m')
         self.logger.info('The model type is' + f'\033[1;31m {self.cfg.MODEL.type} \033[0m')
-        model_name = self.cfg.MODEL.name
+        # model_name = self.cfg.MODEL.name
         model_parts = self.cfg.MODEL.parts
         # model_type = self.cfg.MODEL.type2
         model_type = self.cfg.MODEL.type

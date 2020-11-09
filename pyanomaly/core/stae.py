@@ -39,17 +39,26 @@ class Trainer(DefaultTrainer):
             else:
                 temp_model = self.model[item_key].cuda()
             self.__setattr__(attr_name, temp_model)
-        # import ipdb; ipdb.set_trace()
         
         # get the optimizer
-        self.optim_STAE = self.optimizer['optimizer_stae']
+        # self.optim_STAE = self.optimizer['optimizer_stae']
+        for item_key in self.optimizer.keys():
+            attr_name = str(item_key)
+            # get the optimizer
+            self.__setattr__(attr_name, self.optimizer[item_key])
+            # get the lr scheduler
+            self.__setattr__(f'{attr_name}_scheduler', self.lr_scheduler_dict[f'{attr_name}_scheduler'])
+
+
+        import ipdb; ipdb.set_trace()
 
         # get the loss_fucntion
         self.rec_loss = self.loss_function['rec_loss']
         self.pred_loss = self.loss_function['weighted_pred_loss']
         
         # the lr scheduler
-        self.lr_stae = self.lr_scheduler_dict['optimizer_stae_scheduler']
+        # self.lr_stae = self.lr_scheduler_dict['optimizer_stae_scheduler']
+        
 
         # basic meter
         self.loss_meter_STAE = AverageMeter(name='loss_STAE')

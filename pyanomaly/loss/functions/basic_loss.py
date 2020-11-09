@@ -2,6 +2,14 @@ import torch
 import numpy as np
 import torch.nn as nn
 from torch import gt
+from typing import Callable, Optional
+from torch import Tensor
+from ..loss_registry import LOSS_REGISTRY
+
+__all__ = ['L2Loss', 'IntensityLoss', 'GradientLoss', 'Adversarial_Loss', 
+           'Discriminate_Loss', 'AMCDiscriminateLoss', 'AMCGenerateLoss', 
+           'GANLoss', 'WeightedPredLoss', 'MSELoss', 'CrossEntropyLoss', 'get_basic_loss']
+
 
 def pad_same(in_dim, ks, stride, dilation=1):
     """
@@ -28,6 +36,7 @@ def conv2d_samepad(in_dim, in_ch, out_ch, ks, stride, dilation=1, bias=True):
                 nn.Conv2d(in_ch, out_ch, ks, stride, 0, dilation, bias=bias)]
 
 
+@LOSS_REGISTRY.register()
 class L2Loss(nn.Module):
     def __init__(self, eps=1e-8):
         super(L2Loss, self).__init__()
@@ -40,6 +49,7 @@ class L2Loss(nn.Module):
             import ipdb; ipdb.set_trace()
         return x
 
+@LOSS_REGISTRY.register()
 class IntensityLoss(nn.Module):
     def __init__(self):
         super(IntensityLoss, self).__init__()
@@ -49,6 +59,7 @@ class IntensityLoss(nn.Module):
         # x = torch.mean(torch.abs(gen_frames - gt_frames)**self.l_num)
         return x
 
+@LOSS_REGISTRY.register()
 class GradientLoss(nn.Module):
     def __init__(self):
         super(GradientLoss, self).__init__()
@@ -79,37 +90,40 @@ class GradientLoss(nn.Module):
         # return gen_dx, gen_dy
         return torch.mean(torch.pow(grad_diff_x, self.alpha)+ torch.pow(grad_diff_y, self.alpha))
 
-
+@LOSS_REGISTRY.register()
 class Adversarial_Loss(nn.Module):
     def __init__(self):
         super(Adversarial_Loss,self).__init__()
     def forward(self, fake_outputs):
         return torch.mean((fake_outputs-1)**2/2)
 
+@LOSS_REGISTRY.register()
 class Discriminate_Loss(nn.Module):
     def __init__(self):
         super(Discriminate_Loss,self).__init__()
     def forward(self,real_outputs,fake_outputs):
         return torch.mean((real_outputs-1)**2/2)+torch.mean(fake_outputs**2/2)
 
-class AMCDiscriminateLoss1(nn.Module):
-    def __init__(self):
-        super(AMCDiscriminateLoss1, self).__init__()
+# class AMCDiscriminateLoss1(nn.Module):
+#     def __init__(self):
+#         super(AMCDiscriminateLoss1, self).__init__()
+#         self.t1 = nn.BCELoss()
+        
+#     def forward(self, outputs, labels):
+#         loss  = self.t1(outputs, labels) 
+#         return loss
+
+@LOSS_REGISTRY.register()
+class AMCDiscriminateLoss(nn.Module):
+    def __init__(self, cfg):
+        super(AMCDiscriminateLoss, self).__init__()
         self.t1 = nn.BCELoss()
         
     def forward(self, outputs, labels):
         loss  = self.t1(outputs, labels) 
         return loss
 
-class AMCDiscriminateLoss2(nn.Module):
-    def __init__(self):
-        super(AMCDiscriminateLoss2, self).__init__()
-        self.t1 = nn.BCELoss()
-        
-    def forward(self, outputs, labels):
-        loss  = self.t1(outputs, labels) 
-        return loss
-
+@LOSS_REGISTRY.register()
 class AMCGenerateLoss(nn.Module):
     def __init__(self):
         super(AMCGenerateLoss, self).__init__()
@@ -118,6 +132,7 @@ class AMCGenerateLoss(nn.Module):
         loss  = self.t1(fake_outputs, fake)
         return loss
 
+@LOSS_REGISTRY.register()
 class GANLoss(nn.Module):
     """Define different GAN objectives.
 
@@ -188,6 +203,7 @@ class GANLoss(nn.Module):
                 loss = prediction.mean()
         return loss
 
+@LOSS_REGISTRY.register()
 class WeightedPredLoss(nn.Module):
     def __init__(self):
         super(WeightedPredLoss, self).__init__()
@@ -205,6 +221,15 @@ class WeightedPredLoss(nn.Module):
         error /= pred_len ** 2
         return error
 
+@LOSS_REGISTRY.register()
+class MSELoss(nn.MSELoss):
+    def __init__(self, size_average=None, reduce=None, reduction: str = 'mean'):
+        super(MSELoss, self).__init__(size_average=size_average, reduce=reduce, reduction=reduction)
+
+@LOSS_REGISTRY.register()
+class CrossEntropyLoss(nn.CrossEntropyLoss):
+    def __init__(self, weight: Optional[Tensor] = None, size_average=None, ignore_index: int = -100, reduce=None, reduction: str = 'mean'):
+        super(CrossEntropyLoss, self).__init__(weight=weight, size_average=size_average, ignore_index=ignore_index, reduce=reduce, reduction=reduction)
 
 
 LOSSDICT ={
