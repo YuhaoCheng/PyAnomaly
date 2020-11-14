@@ -205,8 +205,11 @@ config.TRAIN.epochs = 1
 # must be 4-times, the 0-th is name in dict, 1-th is the coefficicent of this loss, 2-th is the model named registered in the registry, 3-th is the params of the loss functions
 # e.g. ['loss_GeneratorLoss', 1.0, 'Adversarial_Loss', 'loss_Discriminiator', 1.0, 'Discriminate_Loss']
 # The 0-th's format is 'registryName_NameInEngine', for example, 'loss_GeneratorLoss' means the registry is 'loss' and the attribute named 'self.GeneratorLoss' refers to it. 
-# If 3-th is null, the loss will use the default setting. If not null, it will be depended on the designing 
-config.TRAIN.losses = ['loss_MSE', 0.5, 'MSELoss', [], 'loss_Cross', 0.5, 'CrossEntropyLoss', []]  
+# If 3-th is null, the loss will use the default setting. If not null, it will be depended on the designing
+# if 3-th is not null, it will be named as 'loss_cfg' and pass to the Loss class 
+config.TRAIN.losses = ['loss_MSE', 0.5, 'MSELoss', [['size_average', None], ['reduce', None], ['reduction', 'mean']], 
+                       'loss_Cross', 0.5, 'CrossEntropyLoss', []]  
+                    #    ['weight', None], ['size_average', None], ['ignore_index', -100], ['reduce', None], ['reduction', 'mean']
 # config.TRAIN.loss_coefficients = [0.5, 0.5] # the len must pair with the loss, Will be discarded in the future. 
 config.TRAIN.mode = 'general' # general | adversarial | ....
 #===============General Mode Settings==============
