@@ -112,7 +112,9 @@ ARGUMENT:
       position: 'center'
 MODEL:
   name: 'stae'
-  type: 'stae'
+  type: 'e2e'
+  # type: 'stae'
+  parts: ['meta_STAE', 'STAutoEncoderCov3D']
   hooks:
     train: ['stae.STAEEvaluateHook', 'base.VisScoreHook']
     val: ['stae.STAEEvaluateHook']
@@ -137,18 +139,18 @@ TRAIN:
   eval_step: 958
   save_step: 958
   epochs: 1
-  loss: ['rec_loss', 'weighted_pred_loss']
-  loss_coefficients: [1,1]
+  # loss: ['rec_loss', 'weighted_pred_loss']
+  # loss_coefficients: [1,1]
   mode: 'general'
   general:
     optimizer:
       include: ['STAE']
       name: 'adam'
-      lr: 1e-3
+      lrs: [1e-3]
       momentum: 0.9
       weight_decay: 0.0001
       nesterov: false
-      output_name: ['optimizer_stae']
+      # output_name: ['optimizer_stae']
     scheduler:
       use: false
       name: 'stepLR'

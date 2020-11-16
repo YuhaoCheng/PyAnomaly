@@ -26,16 +26,15 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     # get the model structure
     ma = ModelAPI(cfg, logger)
     model_dict = ma()
-
+    # import ipdb; ipdb.set_trace()
     # get the loss function dict
     la = LossAPI(cfg, logger)
     loss_function_dict, loss_lamada = la()
+    import ipdb; ipdb.set_trace()
     
-    # import ipdb; ipdb.set_trace()
     # get the optimizer
     oa = OptimizerAPI(cfg, logger)
     optimizer_dict = oa(model_dict)
-    
     # get the the scheduler
     sa = SchedulerAPI(cfg, logger)
     lr_scheduler_dict = sa(optimizer_dict)

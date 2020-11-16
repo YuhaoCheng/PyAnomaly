@@ -2,10 +2,15 @@ import torch
 import torch.nn as nn
 from collections import OrderedDict
 import torchsnooper
+from ..model_registry import META_ARCH_REGISTRY
+
+__all__=['STAutoEncoderCov3D', 'get_model_stae']
+
+@META_ARCH_REGISTRY.register()
 class STAutoEncoderCov3D(nn.Module):
-    def __init__(self, chnum_in):
+    def __init__(self, cfg):
         super(STAutoEncoderCov3D, self).__init__()
-        self.chnum_in = chnum_in # input channel number is 1;
+        self.chnum_in = cfg.DATASET.channel_num # input channel number is 1;
         self.encoder = nn.Sequential(
             nn.Conv3d(self.chnum_in, 32, (3,3,3), stride=(1, 1, 1), padding=(1, 1, 1)),
             nn.BatchNorm3d(32),

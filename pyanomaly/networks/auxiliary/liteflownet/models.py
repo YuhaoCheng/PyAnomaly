@@ -9,7 +9,7 @@ import os
 import PIL
 import PIL.Image
 import sys
-
+from pyanomaly.core.networks.model_registry import AUX_ARCH_REGISTRY
 try:
     from .correlation import correlation # the custom cost volume layer
 except:
@@ -56,7 +56,7 @@ def backwarp(tenInput, tenFlow):
 # end
 
 ##########################################################
-
+@AUX_ARCH_REGISTRY.register()
 class LiteFlowNet(torch.nn.Module):
     def __init__(self):
         super(LiteFlowNet, self).__init__()

@@ -27,20 +27,38 @@ class Trainer(DefaultTrainer):
     NAME = ["STAE.TRAIN"]
     def custom_setup(self):
         # basic things
-        if self.kwargs['parallel']:
-            self.STAE = self.data_parallel(self.model['STAE'])
-        else:
-            self.STAE = self.model['STAE'].cuda()
+        # if self.kwargs['parallel']:
+        #     self.STAE = self.data_parallel(self.model['STAE'])
+        # else:
+        #     self.STAE = self.model['STAE'].cuda()
+        
+        for item_key in self.model.keys():
+            attr_name = str(item_key)
+            if self.kwargs['parallel']:
+                temp_model = self.data_parallel(self.model[item_key])
+            else:
+                temp_model = self.model[item_key].cuda()
+            self.__setattr__(attr_name, temp_model)
         
         # get the optimizer
-        self.optim_STAE = self.optimizer['optimizer_stae']
+        # self.optim_STAE = self.optimizer['optimizer_stae']
+        for item_key in self.optimizer.keys():
+            attr_name = str(item_key)
+            # get the optimizer
+            self.__setattr__(attr_name, self.optimizer[item_key])
+            # get the lr scheduler
+            self.__setattr__(f'{attr_name}_scheduler', self.lr_scheduler_dict[f'{attr_name}_scheduler'])
+
+
+        import ipdb; ipdb.set_trace()
 
         # get the loss_fucntion
         self.rec_loss = self.loss_function['rec_loss']
         self.pred_loss = self.loss_function['weighted_pred_loss']
         
         # the lr scheduler
-        self.lr_stae = self.lr_scheduler_dict['optimizer_stae_scheduler']
+        # self.lr_stae = self.lr_scheduler_dict['optimizer_stae_scheduler']
+        
 
         # basic meter
         self.loss_meter_STAE = AverageMeter(name='loss_STAE')

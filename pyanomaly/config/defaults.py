@@ -3,6 +3,7 @@ from fvcore.common.config import CfgNode as CN
 
 __all__ = ['update_config'] 
 
+
 config = CN()
 
 # configure the system related matters, such as gpus, cudnn and so on
@@ -138,17 +139,44 @@ config.ARGUMENT.val.normal.std = [0.229, 0.224, 0.225]
 # configure the model related things
 config.MODEL = CN()
 config.MODEL.name = ''   # the name of the network, such as resnet
-config.MODEL.type = ''   # the type of the network, such as resnet50, resnet101 or resnet152
+# config.MODEL.type1 = ''   # the type of the network, such as resnet50, resnet101 or resnet152, only for test
+
+# a. trainable one model(e2e); b. trainable multi models(me2e); c. trainable one model + auxiliary(ae2e); d. trainable multi models  + auxiliary(ame2e)
+config.MODEL.type = 'e2e'
+
+# must be even, the 0-th is name in dict, 1-th is the model named registered in the registry; e.g. ['meta_Backbone', 'resnet18', 'meta_Head', 'ps'], 
+#                                                                                                  ['meta_Generator', 'AMCGenerator', 'meta_Discriminiator', 'AMCDiscriminiator', 'auxiliary_Flownet', 'flownet2']
+# The 0-th's format is 'registryName_NameInEngine', for example, 'meta_Generator' means the registry is 'meta' and the attribute named 'self.Generator' refers to it. 
+# if the model type is e2e, the 0-th is ''(None)
+config.MODEL.parts = ['','resnet18']
+
 config.MODEL.hooks = CN()  # determine the hooks use in the training
 config.MODEL.hooks.train = []  # determine the hooks use in the training
 config.MODEL.hooks.val = []  # determine the hooks use in the training
+config.MODEL.discriminator_channels = []
+config.MODEL.pretrain_model = ''
+
+# Will be discarded in the future--------------------------------
 config.MODEL.flownet = 'flownet2' # the flownet type 'flownet2' | 'liteflownet'
 config.MODEL.flow_model_path = ''
-config.MODEL.discriminator_channels = []
 config.MODEL.detector = 'detectron2'
 config.MODEL.detector_config = ''
 config.MODEL.detector_model_path = ''
-config.MODEL.pretrain_model = ''
+#--------------------------------------------------------
+
+# This part defines the auxiliary of the whole model, most of time these models are frozen
+config.MODEL.auxiliary = CN()
+# config.MODEL.auxiliary.parts = ['optical_flow', 'detector']
+config.MODEL.auxiliary.optical_flow = CN()
+config.MODEL.auxiliary.optical_flow.require_grad = False
+config.MODEL.auxiliary.optical_flow.name = 'flownet2' # the flownet type 'flownet2' | 'liteflownet'
+config.MODEL.auxiliary.optical_flow.model_path = ''
+config.MODEL.auxiliary.detector = CN()
+config.MODEL.auxiliary.detector.require_grad = False
+config.MODEL.auxiliary.detector.name = 'detectron2'
+config.MODEL.auxiliary.detector.config = ''
+config.MODEL.auxiliary.detector.model_path = ''
+
 
 # configure the resume
 config.RESUME = CN()
@@ -173,8 +201,16 @@ config.TRAIN.mini_eval_step = 10 # the step to exec the light-weight eval
 config.TRAIN.eval_step = 100 # the step to use the evaluate function
 config.TRAIN.save_step = 500  # the step to save the model
 config.TRAIN.epochs = 1 
-config.TRAIN.loss = ['mse', 'cross']  
-config.TRAIN.loss_coefficients = [0.5, 0.5] # the len must pair with the loss
+# config.TRAIN.loss = ['mse', 'cross']  # Will be discarded in the future
+# must be 4-times, the 0-th is name in dict, 1-th is the coefficicent of this loss, 2-th is the model named registered in the registry, 3-th is the params of the loss functions
+# e.g. ['loss_GeneratorLoss', 1.0, 'Adversarial_Loss', 'loss_Discriminiator', 1.0, 'Discriminate_Loss']
+# The 0-th's format is 'registryName_NameInEngine', for example, 'loss_GeneratorLoss' means the registry is 'loss' and the attribute named 'self.GeneratorLoss' refers to it. 
+# If 3-th is null, the loss will use the default setting. If not null, it will be depended on the designing
+# if 3-th is not null, it will be named as 'loss_cfg' and pass to the Loss class 
+config.TRAIN.losses = ['loss_MSE', 0.5, 'MSELoss', [['size_average', None], ['reduce', None], ['reduction', 'mean']], 
+                       'loss_Cross', 0.5, 'CrossEntropyLoss', []]  
+                    #    ['weight', None], ['size_average', None], ['ignore_index', -100], ['reduce', None], ['reduction', 'mean']
+# config.TRAIN.loss_coefficients = [0.5, 0.5] # the len must pair with the loss, Will be discarded in the future. 
 config.TRAIN.mode = 'general' # general | adversarial | ....
 #===============General Mode Settings==============
 config.TRAIN.general = CN()
@@ -182,12 +218,13 @@ config.TRAIN.general = CN()
 config.TRAIN.general.optimizer = CN()
 config.TRAIN.general.optimizer.include = ['A', 'B', 'C']
 config.TRAIN.general.optimizer.name = 'adam'
-config.TRAIN.general.optimizer.lr = 1e-3
+config.TRAIN.general.optimizer.lrs = [1e-3]
 config.TRAIN.general.optimizer.betas = [0.9, 0.999]
 config.TRAIN.general.optimizer.momentum = 0.9
 config.TRAIN.general.optimizer.weight_decay = 0.0001
 config.TRAIN.general.optimizer.nesterov = False
-config.TRAIN.general.optimizer.output_name = ['optimizer_abc']
+config.TRAIN.general.optimizer.mode = 'all'  # all | individual
+# config.TRAIN.general.optimizer.output_name = ['optimizer_abc'] # Will be discarded in the future
 #-----------------Scheduler configure--------------
 config.TRAIN.general.scheduler = CN()
 config.TRAIN.general.scheduler.use = True
@@ -206,11 +243,13 @@ config.TRAIN.adversarial = CN()
 config.TRAIN.adversarial.optimizer = CN()
 config.TRAIN.adversarial.optimizer.include = ['Generator', 'Discriminator']
 config.TRAIN.adversarial.optimizer.name = 'adam'
-config.TRAIN.adversarial.optimizer.g_lr = 1e-2
-config.TRAIN.adversarial.optimizer.d_lr = 1e-2
+# config.TRAIN.adversarial.optimizer.g_lr = 1e-2  # Will discard in the future
+# config.TRAIN.adversarial.optimizer.d_lr = 1e-2  # Will discard in the future 
+config.TRAIN.adversarial.optimizer.lrs = [1e-2, 1e-2]
 config.TRAIN.adversarial.optimizer.betas = [0.9, 0.999]
 config.TRAIN.adversarial.optimizer.weight_decay = 0.0001
-config.TRAIN.adversarial.optimizer.output_name = ['optimizer_g', 'optimizer_d']
+config.TRAIN.general.optimizer.mode = 'individual'  # all: all the model parts use one optimizer | individual: each model part uses one optimizer 
+# config.TRAIN.adversarial.optimizer.output_name = ['optimizer_g', 'optimizer_d'] # Will be discarded in the future
 #-----------------Scheduler configure--------------
 config.TRAIN.adversarial.scheduler = CN()
 config.TRAIN.adversarial.scheduler.use = True
@@ -266,4 +305,12 @@ def update_config(yaml_path, opts):
     cfg.freeze()
 
     return cfg
+
+def create_debug_yaml():
+    import yaml
+    with open( './debug.yaml', 'w') as f:
+        yaml.dump(config, f)
+
+if __name__ == '__main__':
+    create_debug_yaml()
     

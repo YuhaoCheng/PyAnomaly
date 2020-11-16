@@ -27,6 +27,10 @@ except:
     from .submodules import *
 'Parameter count = 162,518,834'
 
+
+from pyanomaly.core.networks.model_registry import AUX_ARCH_REGISTRY
+
+@AUX_ARCH_REGISTRY.register()
 class FlowNet2(nn.Module):
 
     def __init__(self, args, batchNorm=False, div_flow = 20.):

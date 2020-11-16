@@ -3,6 +3,7 @@ import math
 from bisect import bisect_right
 from typing import List
 import torch
+# from fvcore.common.registry import Registry
 
 # NOTE: PyTorch's LR scheduler interface uses names that assume the LR changes
 # only on epoch boundaries. We typically use iteration based schedules instead.
@@ -11,8 +12,9 @@ import torch
 
 # FIXME: ideally this would be achieved with a CombinedLRScheduler, separating
 # MultiStepLR with WarmupLR but the current LRScheduler design doesn't allow it.
+# SCHEDULER_REGISTRY = Registry("scheduler")
 
-
+# @SCHEDULER_REGISTRY.regsiter()
 class WarmupMultiStepLR(torch.optim.lr_scheduler._LRScheduler):
     def __init__(
         self,
@@ -48,7 +50,7 @@ class WarmupMultiStepLR(torch.optim.lr_scheduler._LRScheduler):
         # The new interface
         return self.get_lr()
 
-
+# @SCHEDULER_REGISTRY.regsiter()
 class WarmupCosineLR(torch.optim.lr_scheduler._LRScheduler):
     def __init__(
         self,

@@ -2,9 +2,22 @@ import torch
 import torch.nn as nn
 from collections import OrderedDict
 import torchsnooper
-from pyanomaly.networks.parts.base.commonness import DoubleConv, Down, Up, OutConv, PixelDiscriminator, BasicConv2d
+# from pyanomaly.networks.parts.base.commonness import DoubleConv, Down, Up, OutConv, PixelDiscriminator, BasicConv2d
+from ..model_registry import META_ARCH_REGISTRY
+from pyanomaly.networks.meta.base.commonness import (
+    PixelDiscriminator, 
+    DoubleConv, 
+    Down, 
+    Up, 
+    OutConv,  
+    BasicConv2d
+)
 
-class GeneratorUnet(nn.Module):
+__all__ = ['AnoPredGeneratorUnet', 'get_model_ano_pred']
+
+
+@META_ARCH_REGISTRY.register()
+class AnoPredGeneratorUnet(nn.Module):
     def __init__(self, c_in, c_out, bilinear=False):
         super(GeneratorUnet, self).__init__()
         self.c_in = c_in
@@ -36,6 +49,7 @@ class GeneratorUnet(nn.Module):
         # return x
         return torch.tanh(x)
 
+
 def get_model_ano_pred(cfg):
     if cfg.ARGUMENT.train.normal.use:
         rgb_max = 1.0
@@ -56,7 +70,7 @@ def get_model_ano_pred(cfg):
         raise Exception('Not support optical flow methods')
     
 
-    generator_model = GeneratorUnet(12,3) # 4*3 =12
+    generator_model = AnoPredGeneratorUnet(12,3) # 4*3 =12
     discriminator_model = PixelDiscriminator(3, cfg.MODEL.discriminator_channels, use_norm=False)
     model_dict = OrderedDict()
     model_dict['Generator'] = generator_model
