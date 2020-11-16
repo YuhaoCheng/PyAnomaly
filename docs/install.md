@@ -47,7 +47,7 @@ This project will use Detector, and we choose [Detectron2](https://github.com/fa
    - Please download the latest version
 2. Unzip the zip file
 
-#####  Method2-For Master branch
+#####  Method2-For Stable branch
 
 - the master branch contains some new features which may not 
 
@@ -56,6 +56,7 @@ cd ROOT/PATH
 git clone https://github.com/YuhaoCheng/PyAnomaly.git
 cd PyAnomaly
 ```
+- At present, you should change the branch to `stable` to use the stable version of the package. If you choose use  other branches, there may be some bugs. In the future, we will change this.
 ##### Method3-Using Docker
 Using the docker, please refer to [DOCKER](./docker.md)
 
