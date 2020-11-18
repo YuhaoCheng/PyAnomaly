@@ -35,7 +35,8 @@ class LossBuilder(object):
 #         self.logger.info(f'the loss lamada:{loss_lamada}')
 #         return loss_dict, loss_lamada
 
-class LossAPI(LossBuilder):
+# class LossAPI(LossBuilder):
+class LossAPI(object):
     def __init__(self, cfg, logger):
         # super(LossAPI, self).__init__(cfg)
         self.cfg = cfg
@@ -50,23 +51,22 @@ class LossAPI(LossBuilder):
     def build(self):
         loss_dict = OrderedDict()
         loss_coefficient_dict = OrderedDict()
-        # for index,loss_name in enumerate(self.loss_list):
         for index, couple in enumerate(self._individual_losses):
-            # loss_dict[loss_name] = self._get_loss(loss_name, self.cfg)
-            loss_name = couple[0].split('_')[1]
+            register_name, loss_name, loss_devicetype = couple[0].split('_')
             loss_cfg = couple[3]
-            # import ipdb; ipdb.set_trace()
-            loss_dict[loss_name] = LOSS_REGISTRY.get(couple[2])(loss_cfg)
+            # decide the register 
+            if register_name == 'loss':
+                loss_dict[loss_name] = LOSS_REGISTRY.get(couple[2])(loss_cfg)
+            else:
+                raise Exception(f'The name of {register_name} is not supported')
+            
+            # change the device type 
+            if loss_devicetype == 'cuda':
+                loss_dict[loss_name] = loss_dict[loss_name].cuda() 
             loss_coefficient_dict[loss_name] = couple[1]
-            # loss_coefficient_dict[loss_name] = self.loss_coefficient_list[index]
-        # import ipdb; ipdb.set_trace()
         return loss_dict, loss_coefficient_dict
     
     def __call__(self):
-        # loss_dict, loss_lamada = super(LossAPI, self).build()
-        # self.logger.info(f'the loss names:{loss_dict.keys()}')
-        # self.logger.info(f'the loss lamada:{loss_lamada}')
+        
         loss_dict, loss_coefficient_dict = self.build()
-
-        # return loss_dict, loss_lamada
         return loss_dict, loss_coefficient_dict

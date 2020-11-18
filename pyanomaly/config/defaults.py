@@ -203,12 +203,12 @@ config.TRAIN.save_step = 500  # the step to save the model
 config.TRAIN.epochs = 1 
 # config.TRAIN.loss = ['mse', 'cross']  # Will be discarded in the future
 # must be 4-times, the 0-th is name in dict, 1-th is the coefficicent of this loss, 2-th is the model named registered in the registry, 3-th is the params of the loss functions
-# e.g. ['loss_GeneratorLoss', 1.0, 'Adversarial_Loss', 'loss_Discriminiator', 1.0, 'Discriminate_Loss']
-# The 0-th's format is 'registryName_NameInEngine', for example, 'loss_GeneratorLoss' means the registry is 'loss' and the attribute named 'self.GeneratorLoss' refers to it. 
+# e.g. ['loss_GeneratorLoss_cuda', 1.0, 'Adversarial_Loss', [], 'loss_Discriminiator_cuda', 1.0, 'Discriminate_Loss', []]
+# The 0-th's format is 'registryName_NameInEngine_DeviceType', for example, 'loss_GeneratorLoss_cuda' means the registry is 'loss' and the attribute named 'self.GeneratorLoss' refers to it, the device is cuda. 
 # If 3-th is null, the loss will use the default setting. If not null, it will be depended on the designing
-# if 3-th is not null, it will be named as 'loss_cfg' and pass to the Loss class 
-config.TRAIN.losses = ['loss_MSE', 0.5, 'MSELoss', [['size_average', None], ['reduce', None], ['reduction', 'mean']], 
-                       'loss_Cross', 0.5, 'CrossEntropyLoss', []]  
+# if 3-th is not null, it will be named as 'loss_cfg' and pass to the Loss class; each item is the configuration, the first is name of the args, the second is the value of the args. 
+config.TRAIN.losses = ['loss_MSE_cuda', 0.5, 'MSELoss', [['size_average', None], ['reduce', None], ['reduction', 'mean']], 
+                       'loss_Cross_cuda', 0.5, 'CrossEntropyLoss', []]  
                     #    ['weight', None], ['size_average', None], ['ignore_index', -100], ['reduce', None], ['reduction', 'mean']
 # config.TRAIN.loss_coefficients = [0.5, 0.5] # the len must pair with the loss, Will be discarded in the future. 
 config.TRAIN.mode = 'general' # general | adversarial | ....
