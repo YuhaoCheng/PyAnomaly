@@ -9,13 +9,16 @@ import matplotlib.pyplot as plt
 from tsnecuda import TSNE
 from scipy.ndimage import gaussian_filter1d
 
-from .abstract.abstract_hook import HookBase
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from pyanomaly.datatools.evaluate.gtloader import GroundTruthLoader
 from pyanomaly.core.utils import tsne_vis
 
-HOOKS = ['VisScoreHook', 'TSNEHook']
+from .abstract_hook import HookBase
+from ..hook_registry import HOOK_REGISTRY
 
+__all__ = ['VisScoreHook', 'TSNEHook']
+
+@HOOK_REGISTRY.register()
 class VisScoreHook(HookBase):
     def after_step(self, current_step):
         writer = self.trainer.kwargs['writer_dict']['writer']
@@ -76,6 +79,7 @@ class VisScoreHook(HookBase):
         
             self.trainer.logger.info(f'^^^^Finish vis @{current_step}')
 
+@HOOK_REGISTRY.register()
 class TSNEHook(HookBase):
     def after_step(self, current_step):
         writer = self.trainer.kwargs['writer_dict']['writer']
@@ -93,11 +97,11 @@ class TSNEHook(HookBase):
             writer.add_image(str(vis_path), image, global_step=global_steps)
 
 
-def get_base_hooks(name):
-    if name in HOOKS:
-        t = eval(name)()
-    else:
-        raise Exception('The hook is not in amc_hooks')
-    return t
+# def get_base_hooks(name):
+#     if name in HOOKS:
+#         t = eval(name)()
+#     else:
+#         raise Exception('The hook is not in amc_hooks')
+#     return t
 
         

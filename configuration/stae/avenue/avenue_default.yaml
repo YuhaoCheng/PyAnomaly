@@ -116,8 +116,8 @@ MODEL:
   # type: 'stae'
   parts: ['meta_STAE', 'STAutoEncoderCov3D']
   hooks:
-    train: ['stae.STAEEvaluateHook', 'base.VisScoreHook']
-    val: ['stae.STAEEvaluateHook']
+    train: ['STAEEvaluateHook', 'VisScoreHook']
+    val: ['STAEEvaluateHook']
   flow_model_path: ''
   discriminator_channels: []
   pretrain_model: ''
@@ -139,7 +139,9 @@ TRAIN:
   eval_step: 958
   save_step: 958
   epochs: 1
-  # loss: ['rec_loss', 'weighted_pred_loss']
+  losses: ['loss_RecLoss_cuda', 1.0, 'L2Loss', [], 'loss_WeightedPredLoss_cuda', 1.0, WeightedPredLoss, []]
+  # losses: ['loss_RecLoss_cuda', 1.0, 'L2Loss', []]
+  # losses: ['loss_RecLoss_cuda', 1.0, 'GANLoss', []]
   # loss_coefficients: [1,1]
   mode: 'general'
   general:

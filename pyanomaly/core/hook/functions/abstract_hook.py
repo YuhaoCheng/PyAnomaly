@@ -1,4 +1,9 @@
 import torch
+from ..hook_registry import HOOK_REGISTRY
+
+__all__ = ['HookBase', 'EvaluateHook']
+
+@HOOK_REGISTRY.register()
 class HookBase:
     """
     Base class for hooks that can be registered with :class:`TrainerBase`.
@@ -51,6 +56,7 @@ class HookBase:
         """
         pass
 
+@HOOK_REGISTRY.register()
 class EvaluateHook(HookBase):
     def after_step(self, current_step):
         acc = 0.0

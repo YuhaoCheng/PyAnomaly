@@ -1,6 +1,6 @@
 import time
 import weakref
-from pyanomaly.core.hook.abstract.abstract_hook import HookBase
+from pyanomaly.core.hook.functions import HookBase
 
 class AbstractTrainer(object):
     def __init__(self, *args, **kwargs):

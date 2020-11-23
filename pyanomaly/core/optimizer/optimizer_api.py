@@ -76,8 +76,8 @@ class OptimizerAPI(object):
     def __call__(self, model):
         include_parts = self.params.include
         mode = self.params.mode
-        output_names = self.params.output_name
-        assert len(include_parts) >= len(output_names), f'Not support the situation: the number of model part ({len(include_parts)}) > the number of output optimizer ({len(output_names)})'
+        # output_names = self.params.output_name
+        # assert len(include_parts) >= len(output_names), f'Not support the situation: the number of model part ({len(include_parts)}) > the number of output optimizer ({len(output_names)})'
         self.logger.info(f'=> Build the optimizer of {self.train_mode} include {include_parts}')
 
         optimizer_dict = OrderedDict()

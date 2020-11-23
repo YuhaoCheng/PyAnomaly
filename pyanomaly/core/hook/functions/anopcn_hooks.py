@@ -5,10 +5,13 @@ import pickle
 from collections import OrderedDict
 from torch.utils.data import DataLoader
 from pyanomaly.datatools.evaluate.utils import psnr_error
-from .abstract.abstract_hook import EvaluateHook
+from .abstract_hook import EvaluateHook
 from pyanomaly.core.utils import save_results, tensorboard_vis_images
-HOOKS = ['AnoPCNEvaluateHook']
+from ..hook_registry import HOOK_REGISTRY
 
+__all__ = ['AnoPCNEvaluateHook']
+
+@HOOK_REGISTRY.register()
 class AnoPCNEvaluateHook(EvaluateHook):
     def evaluate(self, current_step):
         '''
@@ -89,9 +92,9 @@ class AnoPCNEvaluateHook(EvaluateHook):
         return results.auc
 
         
-def get_anopcn_hooks(name):
-    if name in HOOKS:
-        t = eval(name)()
-    else:
-        raise Exception('The hook is not in amc_hooks')
-    return t
+# def get_anopcn_hooks(name):
+#     if name in HOOKS:
+#         t = eval(name)()
+#     else:
+#         raise Exception('The hook is not in amc_hooks')
+#     return t

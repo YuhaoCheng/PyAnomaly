@@ -10,7 +10,7 @@ from pyanomaly.datatools.evaluate.utils import psnr_error, oc_score
 from pyanomaly.core.utils import multi_obj_grid_crop, frame_gradient, flow_batch_estimate, get_batch_dets, tensorboard_vis_images, save_results
 from pyanomaly.core.other.kmeans import kmeans, kmeans_predict
 # from lib.datatools.evaluate import eval_api
-from .abstract.abstract_hook import HookBase, EvaluateHook
+from .abstract_hook import HookBase, EvaluateHook
 
 # from sklearn.cluster import KMeans
 # from kmeans_pytorch import kmeans, kmeans_predict
@@ -24,8 +24,12 @@ try:
 except:
     import joblib
 
-HOOKS=['ClusterHook', 'OCEvaluateHook']
+# HOOKS=['ClusterHook', 'OCEvaluateHook']
+from ..hook_registry import HOOK_REGISTRY
 
+__all__ = ['ClusterHook', 'OCEvaluateHook']
+
+@HOOK_REGISTRY.register()
 class ClusterHook(HookBase):
     def after_step(self, current_step):
         # import ipdb; ipdb.set_trace()
@@ -235,9 +239,9 @@ class OCEvaluateHook(EvaluateHook):
         return results.auc
 
 
-def get_ocae_hooks(name):
-    if name in HOOKS:
-        t = eval(name)()
-    else:
-        raise Exception('The hook is not in amc_hooks')
-    return t
+# def get_ocae_hooks(name):
+#     if name in HOOKS:
+#         t = eval(name)()
+#     else:
+#         raise Exception('The hook is not in amc_hooks')
+#     return t

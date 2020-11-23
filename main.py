@@ -30,7 +30,6 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     # get the loss function dict
     la = LossAPI(cfg, logger)
     loss_function_dict, loss_lamada = la()
-    import ipdb; ipdb.set_trace()
     
     # get the optimizer
     oa = OptimizerAPI(cfg, logger)
@@ -50,6 +49,8 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
 
     # build the dataAPI, can use the cfg to get the dataloader
     da = DataAPI(cfg)
+    # =========================================Need to change===================================================
+    import ipdb; ipdb.set_trace()
     #  Get the train dataloader
     train_dataloader = da(flag='train', aug=train_augment)
     
@@ -57,11 +58,21 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     valid_dataloder = da(flag='val', aug=val_augment)
 
     # Get the test datasets
-    test_dataset_dict, test_dataset_keys = da(flag='test', aug=val_augment)
-    test_dataset_dict_w, test_dataset_keys_w = da(flag='train_w', aug=val_augment)
+    # test_dataset_dict, test_dataset_keys = da(flag='test', aug=val_augment)
+    # test_dataset_dict_w, test_dataset_keys_w = da(flag='train_w', aug=val_augment)
+    val_dataset = da(flag='test', aug=val_augment)
+    val_dataset_w = da(flag='train_w', aug=val_augment)
     
     # Get the cluster dataset
-    cluster_dataset_dict, cluster_dataset_keys = da(flag='cluster_train', aug=train_augment)
+    # cluster_dataset_dict, cluster_dataset_keys = da(flag='cluster_train', aug=train_augment)
+    train_dataset_cluster = da(flag='cluster_train', aug=train_augment)
+    dataset_dict = OrderedDict()
+    dataset_dict['train_dataloader'] = train_dataloader
+    dataset_dict['valid_dataloder'] = valid_dataloder
+    dataset_dict['val_dataset'] = val_dataset
+    dataset_dict['val_dataset_w'] = val_dataset_w
+    dataset_dict['train_dataset_cluster'] = train_dataset_cluster
+    # ===========================================================================================================
 
     # get the evaluate function
     ea = EvaluateAPI(cfg, logger)
@@ -78,11 +89,20 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     # instance the trainer
     core = importlib.import_module(f'pyanomaly.core.{cfg.MODEL.name}')
     logger.info(f'Build the trainer in {core}')
+    # trainer = core.Trainer(model_dict, train_dataloader, valid_dataloder, optimizer_dict, loss_function_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
+    #                         pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, 
+    #                         loss_lamada=loss_lamada,test_dataset_dict=test_dataset_dict, test_dataset_keys=test_dataset_keys, 
+    #                         test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w,
+    #                         cluster_dataset_dict=cluster_dataset_dict, cluster_dataset_keys=cluster_dataset_keys,
+    #                         hooks=hooks, evaluate_function=evaluate_function,
+    #                         lr_scheduler_dict=lr_scheduler_dict
+    #                         ) 
     trainer = core.Trainer(model_dict, train_dataloader, valid_dataloder, optimizer_dict, loss_function_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
-                            pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, 
-                            loss_lamada=loss_lamada,test_dataset_dict=test_dataset_dict, test_dataset_keys=test_dataset_keys, 
-                            test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w,
-                            cluster_dataset_dict=cluster_dataset_dict, cluster_dataset_keys=cluster_dataset_keys,
+                            pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, loss_lamada=loss_lamada,
+                            # test_dataset_dict=test_dataset_dict, test_dataset_keys=test_dataset_keys, 
+                            # test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w,
+                            # cluster_dataset_dict=cluster_dataset_dict, cluster_dataset_keys=cluster_dataset_keys,
+                            dataset_dict=dataset_dict, 
                             hooks=hooks, evaluate_function=evaluate_function,
                             lr_scheduler_dict=lr_scheduler_dict
                             )

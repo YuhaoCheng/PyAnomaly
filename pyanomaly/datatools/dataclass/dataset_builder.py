@@ -7,6 +7,7 @@ from ..abstract.abstract_datasets_builder import AbstractBuilder
 from ..sampler.inf_sampler import TrainSampler
 from ..sampler.dist_inf_sampler import DistTrainSampler
 from ..dataclass.datacatalog import DatasetCatalog
+
 BUILTIN = ['avenue', 'shanghai', 'vad', 'ped1', 'ped2', 'dota']
 
 class DatasetBuilder(AbstractBuilder):

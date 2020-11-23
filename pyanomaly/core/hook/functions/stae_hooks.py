@@ -9,14 +9,17 @@ import matplotlib.pyplot as plt
 from tsnecuda import TSNE
 from scipy.ndimage import gaussian_filter1d
 
-from .abstract.abstract_hook import EvaluateHook
+from .abstract_hook import EvaluateHook
 from pyanomaly.datatools.evaluate.utils import reconstruction_loss
 from pyanomaly.datatools.evaluate.gtloader import GroundTruthLoader
 # from lib.datatools.evaluate import eval_api
 from pyanomaly.core.utils import tsne_vis, tensorboard_vis_images, save_results
 
-HOOKS = ['STAEEvaluateHook']
+from ..hook_registry import HOOK_REGISTRY
 
+__all__ = ['STAEEvaluateHook']
+
+@HOOK_REGISTRY.register()
 class STAEEvaluateHook(EvaluateHook):
     def evaluate(self, current_step):
         '''
@@ -93,9 +96,9 @@ class STAEEvaluateHook(EvaluateHook):
         return results.auc
 
 
-def get_stae_hooks(name):
-    if name in HOOKS:
-        t = eval(name)()
-    else:
-        raise Exception('The hook is not in amc_hooks')
-    return t
+# def get_stae_hooks(name):
+#     if name in HOOKS:
+#         t = eval(name)()
+#     else:
+#         raise Exception('The hook is not in amc_hooks')
+#     return t

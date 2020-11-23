@@ -50,11 +50,11 @@ class Trainer(DefaultTrainer):
             self.__setattr__(f'{attr_name}_scheduler', self.lr_scheduler_dict[f'{attr_name}_scheduler'])
 
 
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
 
         # get the loss_fucntion
-        self.rec_loss = self.loss_function['rec_loss']
-        self.pred_loss = self.loss_function['weighted_pred_loss']
+        self.rec_loss = self.loss_function['RecLoss']
+        self.pred_loss = self.loss_function['WeightedPredLoss']
         
         # the lr scheduler
         # self.lr_stae = self.lr_scheduler_dict['optimizer_stae_scheduler']
@@ -91,14 +91,19 @@ class Trainer(DefaultTrainer):
         loss_pred = self.pred_loss(output_pred, input_pred)
         # print(f'loss_rec:{loss_rec}')
         # print(f'loss_pred:{loss_pred}')
-        loss_stae_all = self.loss_lamada['rec_loss'] * loss_rec + self.loss_lamada['weighted_pred_loss'] * loss_pred 
-        self.optim_STAE.zero_grad()
+
+        # loss_stae_all = self.loss_lamada['rec_loss'] * loss_rec + self.loss_lamada['weighted_pred_loss'] * loss_pred 
+        loss_stae_all = self.loss_lamada['RecLoss'] * loss_rec + self.loss_lamada['WeightedPredLoss'] * loss_pred 
+        # self.optim_STAE.zero_grad()
+        self.optimizer_STAE.zero_grad()
         loss_stae_all.backward()
-        self.optim_STAE.step()
+        # self.optim_STAE.step()
+        self.optimizer_STAE.step()
         self.loss_meter_STAE.update(loss_stae_all.detach())
         
         if self.config.TRAIN.general.scheduler.use:
-            self.lr_stae.step()
+            # self.lr_stae.step()
+            self.optimizer_STAE_scheduler.step()
         # ======================End==================
 
         self.batch_time.update(time.time() - start)
@@ -124,7 +129,8 @@ class Trainer(DefaultTrainer):
         start = time.time()
         
         self.saved_model = {'STAE':self.STAE}
-        self.saved_optimizer = {'optim_STAE': self.optim_STAE}
+        # self.saved_optimizer = {'optim_STAE': self.optim_STAE}
+        self.saved_optimizer = {'optim_STAE': self.optimizer_STAE}
         self.saved_loss = {'loss_STAE':self.loss_meter_STAE}
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     

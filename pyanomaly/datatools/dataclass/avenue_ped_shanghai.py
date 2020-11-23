@@ -7,8 +7,10 @@ import os
 from torch.utils.data import Dataset
 from pyanomaly.datatools.abstract.anomaly_video_dataset import AbstractVideoAnomalyDataset
 from pyanomaly.datatools.abstract.tools import ImageLoader, VideoLoader
+from ..datasets_registry import DATASET_REGISTRY
 
 
+@DATASET_REGISTRY.register()
 class AvenuePedShanghaiAll(AbstractVideoAnomalyDataset):
     _NAME = 'AvenuePedShanghai'
     def _get_frames(self, video_name):
@@ -41,7 +43,7 @@ def _get_test_dataset(cfg, aug)->(list, list):
     for t_dir in video_dirs:
         _temp_test_folder = os.path.join(cfg.DATASET.test_path, t_dir)
         dataset = AvenuePedShanghaiAll(_temp_test_folder, clip_length=cfg.DATASET.test_clip_length, sampled_clip_length=cfg.DATASET.test_sampled_clip_length, 
-                                       clip_step=cfg.DATASET.test_clip_step, frame_step=cfg.DATASET.test_frame_step,transforms=aug, one_video=True, cfg=cfg)
+                                       clip_step=cfg.DATASET.test_clip_step, frame_step=cfg.DATASET.test_frame_step,transforms=aug, one_video=True, cfg=cfg, phase='val')
         dataset_list[t_dir] = dataset
     video_keys = list(dataset_list.keys())
     return (dataset_list, video_keys)
@@ -54,11 +56,11 @@ def _get_train_w_dataset(cfg, aug)->(list, list):
         _temp_test_folder = os.path.join(cfg.DATASET.train_path, t_dir)
         if cfg.DATASET.name == 'shanghai':
             dataset = AvenuePedShanghaiAll(_temp_test_folder, clip_length=cfg.DATASET.test_clip_length, sampled_clip_length=cfg.DATASET.test_sampled_clip_length, 
-                                           clip_step=cfg.DATASET.test_clip_step, frame_step=cfg.DATASET.test_frame_step, one_video=True, mini=True, transforms=aug, cfg=cfg)
+                                           clip_step=cfg.DATASET.test_clip_step, frame_step=cfg.DATASET.test_frame_step, one_video=True, mini=True, transforms=aug, cfg=cfg, phase='train')
             print(f'\033[1;31mUsing the MINI dataset of {cfg.DATASET.name} for calc the w \033[0m')
         else:
             dataset = AvenuePedShanghaiAll(_temp_test_folder, clip_length=cfg.DATASET.train_clip_length, sampled_clip_length=cfg.DATASET.train_sampled_clip_length, 
-                                           clip_step=cfg.DATASET.train_clip_step, frame_step=cfg.DATASET.train_frame_step,transforms=aug, one_video=True, cfg=cfg)
+                                           clip_step=cfg.DATASET.train_clip_step, frame_step=cfg.DATASET.train_frame_step,transforms=aug, one_video=True, cfg=cfg, phase='train')
         dataset_list[t_dir] = dataset
     video_keys = list(dataset_list.keys())
     return (dataset_list, video_keys)
@@ -71,7 +73,7 @@ def _get_cluster_dataset(cfg, aug)->(list, list):
     for t_dir in video_dirs:
         _temp_train_folder = os.path.join(cfg.DATASET.train_path, t_dir)
         dataset = AvenuePedShanghaiAll(_temp_train_folder, clip_length=cfg.DATASET.train_clip_length, sampled_clip_length=cfg.DATASET.train_sampled_clip_length, 
-                                       clip_step=cfg.DATASET.train_clip_step, frame_step=cfg.DATASET.train_frame_step,is_training=True, transforms=aug, one_video=True, cfg=cfg)
+                                       clip_step=cfg.DATASET.train_clip_step, frame_step=cfg.DATASET.train_frame_step,is_training=True, transforms=aug, one_video=True, cfg=cfg, phase='train')
         dataset_list[t_dir] = dataset
     video_keys = list(dataset_list.keys())
     return (dataset_list, video_keys)
@@ -83,10 +85,10 @@ def get_avenue_ped_shanghai(cfg, flag, aug):
     if flag == 'train':
         # import ipdb; ipdb.set_trace()
         t = AvenuePedShanghaiAll(cfg.DATASET.train_path, clip_length=cfg.DATASET.train_clip_length, sampled_clip_length=cfg.DATASET.train_sampled_clip_length, 
-                                 frame_step=cfg.DATASET.train_frame_step, clip_step=cfg.DATASET.train_clip_step, transforms=aug, cfg=cfg)
+                                 frame_step=cfg.DATASET.train_frame_step, clip_step=cfg.DATASET.train_clip_step, transforms=aug, cfg=cfg, phase='train')
     elif flag == 'val':
         t = AvenuePedShanghaiAll(cfg.DATASET.test_path, clip_length=cfg.DATASET.test_clip_length, sampled_clip_length=cfg.DATASET.test_sampled_clip_length, 
-                                 clip_step=cfg.DATASET.test_clip_step, frame_step=cfg.DATASET.test_frame_step, transforms=aug, mini=True, cfg=cfg)
+                                 clip_step=cfg.DATASET.test_clip_step, frame_step=cfg.DATASET.test_frame_step, transforms=aug, mini=True, cfg=cfg, phase='train')
         print(f'\033[1;31mUsing the MINI dataset of {cfg.DATASET.name} for evaluation in the process of training\033[0m')
     elif flag == 'test':
         t = _get_test_dataset(cfg, aug)

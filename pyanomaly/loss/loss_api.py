@@ -3,27 +3,27 @@ from collections import OrderedDict
 from .functions import *
 from .loss_registry import LOSS_REGISTRY
 
-class LossBuilder(object):
-    def __init__(self, cfg):
-        self.cfg = cfg
-        self.loss_list = self.cfg.TRAIN.loss
-        self.loss_coefficient_list = self.cfg.TRAIN.loss_coefficients
-        assert len(self.loss_list) == len(self.loss_coefficient_list), 'The lengths of the loss and the coefficient are not equal!!'
+# class LossBuilder(object):
+#     def __init__(self, cfg):
+#         self.cfg = cfg
+#         self.loss_list = self.cfg.TRAIN.loss
+#         self.loss_coefficient_list = self.cfg.TRAIN.loss_coefficients
+#         assert len(self.loss_list) == len(self.loss_coefficient_list), 'The lengths of the loss and the coefficient are not equal!!'
     
-    def _get_loss(self, loss_name, cfg):
-        if loss_name in EXPAND_LOSS:
-            return get_expand_loss(loss_name, cfg)
-        else:
-            return get_basic_loss(loss_name, cfg)
+#     def _get_loss(self, loss_name, cfg):
+#         if loss_name in EXPAND_LOSS:
+#             return get_expand_loss(loss_name, cfg)
+#         else:
+#             return get_basic_loss(loss_name, cfg)
 
-    def build(self):
-        loss_dict = OrderedDict()
-        loss_coefficient_dict = OrderedDict()
-        for index,loss_name in enumerate(self.loss_list):
-            loss_dict[loss_name] = self._get_loss(loss_name, self.cfg)
-            loss_coefficient_dict[loss_name] = self.loss_coefficient_list[index]
+#     def build(self):
+#         loss_dict = OrderedDict()
+#         loss_coefficient_dict = OrderedDict()
+#         for index,loss_name in enumerate(self.loss_list):
+#             loss_dict[loss_name] = self._get_loss(loss_name, self.cfg)
+#             loss_coefficient_dict[loss_name] = self.loss_coefficient_list[index]
 
-        return loss_dict, loss_coefficient_dict
+#         return loss_dict, loss_coefficient_dict
 
 # class LossAPI(LossBuilder):
 #     def __init__(self, cfg, logger):
@@ -56,7 +56,11 @@ class LossAPI(object):
             loss_cfg = couple[3]
             # decide the register 
             if register_name == 'loss':
-                loss_dict[loss_name] = LOSS_REGISTRY.get(couple[2])(loss_cfg)
+                # import ipdb; ipdb.set_trace()
+                if len(loss_cfg) != 0:
+                    loss_dict[loss_name] = LOSS_REGISTRY.get(couple[2])(loss_cfg)
+                else:
+                    loss_dict[loss_name] = LOSS_REGISTRY.get(couple[2])()
             else:
                 raise Exception(f'The name of {register_name} is not supported')
             

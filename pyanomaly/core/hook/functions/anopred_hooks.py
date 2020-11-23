@@ -5,13 +5,16 @@ import pickle
 from collections import OrderedDict
 from torch.utils.data import DataLoader
 from pyanomaly.datatools.evaluate.utils import psnr_error
-from .abstract.abstract_hook import EvaluateHook
 from pyanomaly.core.utils import flow_batch_estimate, tensorboard_vis_images, save_results
 from pyanomaly.datatools.evaluate.utils import simple_diff, find_max_patch, amc_score, calc_w
 from pyanomaly.core.utils import save_results, tensorboard_vis_images
 
-HOOKS = ['AnoPredEvaluateHook']
+from .abstract_hook import EvaluateHook
+from ..hook_registry import HOOK_REGISTRY
 
+__all__ = ['AnoPredEvaluateHook']
+
+@HOOK_REGISTRY.register()
 class AnoPredEvaluateHook(EvaluateHook):
     
     def evaluate(self, current_step):
@@ -86,9 +89,9 @@ class AnoPredEvaluateHook(EvaluateHook):
         tb_writer.add_text('anopcn: AUC of ROC curve', f'auc is {results.auc}',global_steps)
         return results.auc
         
-def get_anopred_hooks(name):
-    if name in HOOKS:
-        t = eval(name)()
-    else:
-        raise Exception('The hook is not in amc_hooks')
-    return t
+# def get_anopred_hooks(name):
+#     if name in HOOKS:
+#         t = eval(name)()
+#     else:
+#         raise Exception('The hook is not in amc_hooks')
+#     return t

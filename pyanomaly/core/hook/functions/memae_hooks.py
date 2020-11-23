@@ -12,13 +12,16 @@ import matplotlib.pyplot as plt
 from tsnecuda import TSNE
 from scipy.ndimage import gaussian_filter1d
 
-from .abstract.abstract_hook import EvaluateHook
+from .abstract_hook import EvaluateHook
 from pyanomaly.datatools.evaluate.utils import reconstruction_loss
 from pyanomaly.datatools.evaluate.gtloader import GroundTruthLoader
 from pyanomaly.core.utils import tsne_vis, save_results, tensorboard_vis_images
 
-HOOKS = ['MemAEEvaluateHook']
+from ..hook_registry import HOOK_REGISTRY
 
+__all__ = ['MemAEEvaluateHook']
+
+@HOOK_REGISTRY.register()
 class MemAEEvaluateHook(EvaluateHook):
     def evaluate(self, current_step):
         '''
@@ -93,9 +96,9 @@ class MemAEEvaluateHook(EvaluateHook):
         return results.auc
 
 
-def get_memae_hooks(name):
-    if name in HOOKS:
-        t = eval(name)()
-    else:
-        raise Exception('The hook is not in amc_hooks')
-    return t
+# def get_memae_hooks(name):
+#     if name in HOOKS:
+#         t = eval(name)()
+#     else:
+#         raise Exception('The hook is not in amc_hooks')
+#     return t

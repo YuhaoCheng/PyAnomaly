@@ -5,14 +5,18 @@ import pickle
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 from torch.utils.data import DataLoader
-from .abstract.abstract_hook import EvaluateHook
+from .abstract_hook import EvaluateHook
 
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from pyanomaly.core.utils import flow_batch_estimate, tensorboard_vis_images, save_results, vis_optical_flow
 from pyanomaly.datatools.evaluate.utils import simple_diff, find_max_patch, amc_score, calc_w
 
-HOOKS = ['AMCEvaluateHook']
+from ..hook_registry import HOOK_REGISTRY
 
+# HOOKS = ['AMCEvaluateHook']
+__all__ = ['AMCEvaluateHook']
+
+@HOOK_REGISTRY.register()
 class AMCEvaluateHook(EvaluateHook):
     def evaluate(self, current_step):
         '''
@@ -128,9 +132,9 @@ class AMCEvaluateHook(EvaluateHook):
         return results.auc
 
     
-def get_amc_hooks(name):
-    if name in HOOKS:
-        t = eval(name)()
-    else:
-        raise Exception('The hook is not in amc_hooks')
-    return t
+# def get_amc_hooks(name):
+#     if name in HOOKS:
+#         t = eval(name)()
+#     else:
+#         raise Exception('The hook is not in amc_hooks')
+#     return t
