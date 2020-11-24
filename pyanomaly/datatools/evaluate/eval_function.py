@@ -304,3 +304,14 @@ def evaluate(eval_type, save_file, logger, cfg):
     return optimal_results
 
 
+class EvalutionTool(object):
+    def __init__(self, cfg) -> None:
+        self. cfg = cfg
+        self.dataset_name = self.cfg.DATASET.name
+        self.model_name = self.cfg.MODEL.name
+    
+    def load_gt(self):
+        '''
+        Load the gt 
+        '''
+        

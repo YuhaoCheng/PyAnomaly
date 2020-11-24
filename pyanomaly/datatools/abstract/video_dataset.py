@@ -3,6 +3,7 @@ import os
 from collections import OrderedDict
 from torch.utils.data import Dataset
 from .tools import ImageLoader, VideoLoader
+from ..datasets_registry import DATASET_REGISTRY
 
 class AbstractVideoDataset(Dataset):
     _NAME = 'AbstractVideoDataset'
@@ -90,7 +91,7 @@ class AbstractVideoDataset(Dataset):
     def __len__(self):
         raise Exception(f'No implement at {AbstractVideoDataset._NAME}')
 
-
+@DATASET_REGISTRY.register()
 class FrameLevelVideoDataset(AbstractVideoDataset):
     _NAME = 'FrameLevelVideoDataset'
     def __init__(self, frames_folder, clip_length, sampled_clip_length, frame_step=1, clip_step=1, video_format='.mp4', fps=10, transforms=None, is_training=True, one_video=False, only_frame=True, mini=False, extra=False, cfg=None, **kwargs):
