@@ -1,9 +1,10 @@
 # from .dataclass.dataset_builder import DatasetBuilder
 from .sampler.inf_sampler import TrainSampler
 from .sampler.dist_inf_sampler import DistTrainSampler
-from .dataclass.datacatalog import DatasetCatalog
+# from .dataclass.datacatalog import DatasetCatalog
 from .abstract.abstract_datasets_builder import AbstractBuilder
 from .datasets_registry import DATASET_FACTORY_REGISTRY
+from .augment import AugmentAPI
 import logging
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,9 @@ class DataAPI(AbstractBuilder):
         self.seed = cfg.DATASET.seed
         self.aug = aug
         self.is_training = is_training
-        self.factory = DATASET_FACTORY_REGISTRY.get(self.cfg.DATASET.factory)(self.cfg, self.aug, self.is_training)
+        aug_api = AugmentAPI(cfg)
+        aug_dict = aug_api.build()
+        self.factory = DATASET_FACTORY_REGISTRY.get(self.cfg.DATASET.factory)(self.cfg, aug_dict, self.is_training)
         # print(f'The dataclass register in {DatasetBuilder._name} are: {DatasetCatalog._REGISTERED}')
 
     def build(self):

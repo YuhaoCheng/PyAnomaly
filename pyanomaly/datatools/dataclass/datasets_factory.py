@@ -51,12 +51,12 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
     NORMAL = ['stae', 'amc', 'anopcn', 'anopred']
     NEED_W = ['memae']
     NEED_CLUSTER = ['ocae']
-    def __init__(self, cfg, aug, is_training=True) -> None:
+    def __init__(self, cfg, aug_dict, is_training=True) -> None:
         # self.cfg = cfg
         # self.model_name = cfg.MODEL.name
         # self.aug = aug
-        super(VideoAnomalyDatasetFactory, self).__init__(cfg, aug, is_training)
-        self.aug_dict = 
+        super(VideoAnomalyDatasetFactory, self).__init__(cfg, aug_dict, is_training)
+        self.aug_dict = aug_dict
         self.ingredient = DATASET_REGISTRY.get(self.dataset_name)
         self._jude_need_cluster()
         self._jude_need_w()
@@ -80,7 +80,7 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
         train_dataset = self.ingredient(self.dataset_params.train_path, clip_length=self.dataset_params.train_clip_length, 
                                         sampled_clip_length=self.dataset_params.train_sampled_clip_length, 
                                         frame_step=self.dataset_params.train_frame_step,clip_step=self.dataset_params.train_clip_step, is_training=True,
-                                        transforms=self.aug, cfg=self.cfg)
+                                        transforms=self.aug_dict['train_aug'], cfg=self.cfg)
         train_dataset_dict['video_keys'] = 'all'
         train_dataset_dict['video_datasets'] = train_dataset
         # pass 
@@ -95,7 +95,7 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
             dataset = self.ingredient(_temp_test_folder, clip_length=self.dataset_params.test_clip_length, 
                                       sampled_clip_length=self.dataset_params.test_sampled_clip_length, 
                                       clip_step=self.dataset_params.test_clip_step, frame_step=self.dataset_params.test_frame_step, is_training=False,
-                                      transforms=self.aug, one_video=True, cfg=self.cfg)
+                                      transforms=self.aug_dict['test_aug'], one_video=True, cfg=self.cfg)
             dataset_dict[video_dir] = dataset
         video_keys = list(dataset_dict.keys())
         test_dataset_dict = OrderedDict()
@@ -120,7 +120,7 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
             #                                clip_step=cfg.DATASET.train_clip_step, frame_step=cfg.DATASET.train_frame_step,transforms=aug, one_video=True, cfg=cfg, phase='train')
             dataset = self.ingredient(_temp_folder, clip_length=self.dataset_params.train_clip_length, sampled_clip_length=self.dataset_params.train_clip_length, 
                                         clip_step=self.dataset_params.train_clip_length, frame_step=self.dataset_params.train_clip_length, one_video=True, is_training=True, 
-                                        transforms=self.aug, cfg=self.cfg)
+                                        transforms=self.aug_dict['train_aug'], cfg=self.cfg)
             dataset_dict[video_dir] = dataset
         video_keys = list(dataset_dict.keys())
         # pass
@@ -137,7 +137,7 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
             _temp_folder = os.path.join(self.dataset_params.train_path, video_dir)
             dataset = self.ingredient(_temp_folder, clip_length=self.dataset_params.train_clip_length, sampled_clip_length=self.dataset_params.train_sampled_clip_length, 
                                        clip_step=self.dataset_params.train_clip_step, frame_step=self.dataset_params.train_frame_step, is_training=True, 
-                                       transforms=self.aug, one_video=True, cfg=self.cfg)
+                                       transforms=self.aug_dict['train_aug'], one_video=True, cfg=self.cfg)
             dataset_dict[video_dir] = dataset
         video_keys = list(dataset_dict.keys())
         cluster_dataset_dict = OrderedDict()
