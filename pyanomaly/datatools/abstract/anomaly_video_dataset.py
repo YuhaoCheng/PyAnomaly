@@ -1,6 +1,7 @@
 import torch
 import glob
 import os
+import numpy as np
 from collections import OrderedDict
 from .video_dataset import AbstractVideoDataset
 from pyanomaly.datatools.abstract.tools import ImageLoader, VideoLoader
