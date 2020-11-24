@@ -38,6 +38,8 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     sa = SchedulerAPI(cfg, logger)
     lr_scheduler_dict = sa(optimizer_dict)
     
+    # =========================================Need to change===================================================
+    # embed the augmentAPI into the dataAPI
     # get data augment
     aa = AugmentAPI(cfg, logger)
 
@@ -46,10 +48,11 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     
     # get the val augment 
     val_augment = aa(flag='val')
-
+    aug_dict = OrderedDict()
+    aug_dict['train_augment'] = train_augment
+    aug_dict['val_augment'] = val_augment
     # build the dataAPI, can use the cfg to get the dataloader
     da = DataAPI(cfg)
-    # =========================================Need to change===================================================
     import ipdb; ipdb.set_trace()
     #  Get the train dataloader
     train_dataloader = da(flag='train', aug=train_augment)

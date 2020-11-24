@@ -1,26 +1,32 @@
 import torchvision.transforms as T
 import torchvision.transforms.functional as tf
-from ..abstract.aug_builder import UtilsBuilder
+# from ..abstract.aug_builder import UtilsBuilder
 from collections import OrderedDict
 import imgaug.augmenters as iaa
+import logging
+logger = logging.getLogger(__name__)
 
-
-class AugmentBuilder(UtilsBuilder):
+# class AugmentBuilder(UtilsBuilder):
+class AugmentBuilder(object):
     def __init__(self, cfg, logger):
-        super(AugmentBuilder, self).__init__(cfg)
-        self.logger = logger
+        # super(AugmentBuilder, self).__init__(cfg)
+        self.cfg = cfg
+        # self.logger = logger
         self._default_transform_train = iaa.Sequential([iaa.Identity()])
         self._default_transform_val = iaa.Sequential([iaa.Identity()])
         self.normalize = True
         self._use_default_train = False
         self._use_default_val = False
+        self.train_aug_cfg = self.cfg.get('ARGUMENT')['train']
+        self.test_aug_cfg = self.cfg.get('ARGUMENT')['val']
 
     def _get_node(self, flag):
         self.flag = flag
         if flag == 'train':
             if not self.cfg.ARGUMENT.train.use:
                 self._use_default_train = True
-                self.logger.info(f'Not use the augment in {flag}')
+                # self.logger.info(f'Not use the augment in {flag}')
+                logger.info(f'Not use the augment in {flag}')
             else:
                 self._node = OrderedDict(self.cfg.ARGUMENT.train)
         elif flag == 'val':
@@ -32,7 +38,7 @@ class AugmentBuilder(UtilsBuilder):
         else:
             raise Exception(f'Wrong flag name:{flag}')
 
-    def _build(self):
+    def build(self):
         # not use the augment
         if self._use_default_train:
             self._use_default_train = False # change to the init value, in order multi __call__
@@ -78,10 +84,28 @@ class AugmentBuilder(UtilsBuilder):
                 self.aug_functions.append(iaa.CropToFixedSize(width=self._transforms[transform_name].width, height=self._transforms[transform_name].height, position=self._transforms[transform_name].position))
                 continue
             else:
-                self.logger.info(f'{transform_name} is not support in augment build')
+                logger.info(f'{transform_name} is not support in augment build')
                 self.aug_functions.append(iaa.Noop())
                 continue
         iaa_seq = iaa.Sequential(self.aug_functions, name=f'{self.cfg.DATASET.name}_{self.flag}_iaa_seq')
         
         return iaa_seq
+    
+
+
+class AugmentAPI(AugmentBuilder):
+    def __init__(self,cfg, logger):
+        super(AugmentAPI, self).__init__(cfg, logger)
+    
+    def add(self, extra_aug):
+        '''
+        add the extra aug into the aug
+        '''
+        print('add the extra_aug')
+
+    def __call__(self, flag='train') -> dict:
+        super(AugmentAPI, self)._get_node(flag)
+        # import ipdb; ipdb.set_trace()
+        t = super(AugmentAPI, self)._build()
+        return t
 

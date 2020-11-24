@@ -1,10 +1,10 @@
 from torch.utils.data import DataLoader
 class AbstractBuilder(object):
-    def __init__(self, cfg):
-        '''
-        the init of the builder
-        '''
-        self.cfg = cfg
+    # def __init__(self, cfg):
+    #     '''
+    #     the init of the builder
+    #     '''
+    #     self.cfg = cfg
     
     def build(self)->DataLoader:
         '''

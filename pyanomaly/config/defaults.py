@@ -28,6 +28,7 @@ config.LOG.vis_dir = './output/vis'
 
 # configure the dataset 
 config.DATASET = CN()
+config.DATASET.factory = 'VideoAnomalyDatasetFactory'
 config.DATASET.name = ''
 config.DATASET.seed = 2020
 config.DATASET.read_format = 'opencv'

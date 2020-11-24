@@ -3,18 +3,23 @@ from .sampler.inf_sampler import TrainSampler
 from .sampler.dist_inf_sampler import DistTrainSampler
 from .dataclass.datacatalog import DatasetCatalog
 from .abstract.abstract_datasets_builder import AbstractBuilder
+from .datasets_registry import DATASET_FACTORY_REGISTRY
+import logging
+logger = logging.getLogger(__name__)
 
 BUILTIN = ['avenue', 'shanghai', 'vad', 'ped1', 'ped2', 'dota']
 
-class DatasetBuilder(AbstractBuilder):
-    _name = 'DatasetBuilder'
-    def __init__(self, cfg):
-        super(DatasetBuilder, self).__init__(cfg)
+class DataAPI(AbstractBuilder):
+    _name = 'DatasetAPI'
+    def __init__(self, cfg, aug, is_training):
+        # super(DatasetBuilder, self).__init__(cfg)
         self.seed = cfg.DATASET.seed
-        
+        self.aug = aug
+        self.is_training = is_training
+        self.factory = DATASET_FACTORY_REGISTRY.get(self.cfg.DATASET.factory)(self.cfg, self.aug, self.is_training)
         # print(f'The dataclass register in {DatasetBuilder._name} are: {DatasetCatalog._REGISTERED}')
 
-    def build(self, flag='train',aug=None):
+    def build(self):
         '''
         flag: the type of the dataset
         train--> use to train, all data, inf sampler
@@ -22,8 +27,8 @@ class DatasetBuilder(AbstractBuilder):
         test--> use to test, dataset for each video, no-inf sampler
         '''
         # build the dataset
-        self.flag = flag
-        dataset = self._build_dataset(aug)
+        # self.flag = flag
+        dataset = self._build_dataset()
         
         # build the sampler
         self._data_len = len(dataset)
@@ -42,12 +47,14 @@ class DatasetBuilder(AbstractBuilder):
 
         return dataloader
     
-    def _build_dataset(self, aug):
+    def _build_dataset(self):
         
-        if self.cfg.DATASET.name in BUILTIN:
-            dataset = DatasetCatalog.get(self.cfg.DATASET.name, self.cfg, self.flag, aug)
-        else:
-            raise Exception('no implement')
+        # if self.cfg.DATASET.name in BUILTIN:
+        #     dataset = DatasetCatalog.get(self.cfg.DATASET.name, self.cfg, self.flag, aug)
+        # else:
+        #     raise Exception('no implement')
+        dataset = self.factory()
+
 
         return dataset
     
@@ -59,13 +66,13 @@ class DatasetBuilder(AbstractBuilder):
         return sampler
 
 
-class DataAPI(DatasetBuilder):
-    def __init__(self, cfg):
-        super(DataAPI, self).__init__(cfg)
+# class DataAPI(DatasetBuilder):
+#     def __init__(self, cfg):
+#         super(DataAPI, self).__init__(cfg)
     
-    def information(self):
-        print('no information')
+#     def information(self):
+#         print('no information')
     
-    def __call__(self, flag, aug):
-        data = super(DataAPI, self).build(flag=flag, aug=aug)
-        return data
+#     def __call__(self, flag, aug):
+#         data = super(DataAPI, self).build(flag=flag, aug=aug)
+#         return data

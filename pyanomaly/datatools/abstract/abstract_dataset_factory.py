@@ -10,6 +10,11 @@ class AbstractDatasetFactory(object):
         self.dataset_params = self.cfg.DATASET
         self.aug = aug
         self.is_training = is_training
+
+        if self.is_training:
+            self.phase = 'train'
+        else:
+            self.phase = 'val'
     
     @abc.abstractclassmethod
     def _produce_train_dataset(self):
@@ -32,3 +37,30 @@ class GetWDataset(object):
     @abc.abstractclassmethod
     def _produce_w_dataset(self):
         pass
+
+    @abc.abstractclassmethod
+    def _jude_need_w(self):
+        """
+        base the need of the process to decide whether need the w dataset
+        
+        """
+        pass
+
+
+@six.add_metaclass(abc.ABCMeta)
+class GetClusterDataset(object):
+
+    @abc.abstractclassmethod
+    def _produce_cluster_dataset(self):
+        """
+        Produce the 
+        """
+        pass
+
+    @abc.abstractclassmethod
+    def _jude_need_cluster(self):
+        """
+        base the need of the process to decide whether need the cluster dataset
+        """
+        pass
+
