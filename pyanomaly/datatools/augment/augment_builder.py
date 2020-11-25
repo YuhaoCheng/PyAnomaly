@@ -81,32 +81,55 @@ class AugmentAPI(object):
 
     def _compose_transforms(self, transforms_cfg, phase):
         aug_functions = list()
+        # import ipdb; ipdb.set_trace()
+        used_transforms = []
         for transform_name in transforms_cfg.keys():
             if transform_name == 'resize' and transforms_cfg[transform_name].use:
                 aug_functions.append(iaa.Resize({"height": transforms_cfg[transform_name].height, "width": transforms_cfg[transform_name].width}, interpolation='linear', name='resize'))
+                # logger.info(f'{transform_name} is used in {phase}')
+                used_transforms.append(str(transform_name))
                 continue
             elif transform_name == 'fliplr'and transforms_cfg[transform_name].use:
                 aug_functions.append(iaa.Fliplr(transforms_cfg[transform_name].p, name='fliplr'))
+                # logger.info(f'{transform_name} is used in {phase}')
+                used_transforms.append(str(transform_name))
                 continue
             elif transform_name == 'flipud'and transforms_cfg[transform_name].use:
                 aug_functions.append(iaa.Flipud(transforms_cfg[transform_name].p, name='flipud'))
+                # logger.info(f'{transform_name} is used in {phase}')
+                used_transforms.append(str(transform_name))
                 continue
             elif transform_name == 'rotate'and transforms_cfg[transform_name].use:
                 aug_functions.append(iaa.Rotate(transforms_cfg[transform_name].degrees, name='rotate'))
+                # logger.info(f'{transform_name} is used in {phase}')
+                used_transforms.append(str(transform_name))
                 continue
             elif transform_name == 'JpegCompression'and transforms_cfg[transform_name].use:
                 aug_functions.append(iaa.JpegCompression(compression=(transforms_cfg[transform_name].low, transforms_cfg[transform_name].high)))
+                # logger.info(f'{transform_name} is used in {phase}')
+                used_transforms.append(str(transform_name))
                 continue
             elif transform_name == 'GaussianBlur'and transforms_cfg[transform_name].use:
                 aug_functions.append(iaa.GaussianBlur(sigma=(transforms_cfg[transform_name].low, transforms_cfg[transform_name].high)))
+                # logger.info(f'{transform_name} is used in {phase}')
+                used_transforms.append(str(transform_name))
                 continue
             elif transform_name == 'CropToFixedSize'and transforms_cfg[transform_name].use:
                 aug_functions.append(iaa.CropToFixedSize(width=transforms_cfg[transform_name].width, height=transforms_cfg[transform_name].height, position=transforms_cfg[transform_name].position))
+                # logger.info(f'{transform_name} is used in {phase}')
+                used_transforms.append(str(transform_name))
                 continue
             else:
-                logger.info(f'{transform_name} is not support in augment build')
-                aug_functions.append(iaa.Noop())
+                # logger.info(f'{transform_name} is not support in augment build')
+                # aug_functions.append(iaa.Noop())
                 continue
+        if len(aug_functions) == 0:
+            logger.info(f'Not use any transforms in {phase}')
+            aug_functions.append(iaa.Noop())
+        else:
+            # import ipdb; ipdb.set_trace()
+            message = ','.join(used_transforms)
+            logger.info(f'{message} is used in {phase}')
         iaa_seq = iaa.Sequential(aug_functions, name=f'{self.cfg.DATASET.name}_{phase}_iaa_seq')
         
         return iaa_seq

@@ -14,7 +14,7 @@ from pyanomaly.loss.loss_api import LossAPI
 from pyanomaly.core.optimizer.optimizer_api import OptimizerAPI
 from pyanomaly.core.scheduler.scheduler_api import SchedulerAPI
 from pyanomaly.core.hook.hooks_api import HookAPI
-from pyanomaly.datatools.augment_api import AugmentAPI
+# from pyanomaly.datatools.augment_api import AugmentAPI
 from pyanomaly.datatools.datasets_api import DataAPI
 from pyanomaly.datatools.evaluate_api import EvaluateAPI
 
@@ -41,40 +41,42 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     # =========================================Need to change===================================================
     # embed the augmentAPI into the dataAPI
     # get data augment
-    aa = AugmentAPI(cfg, logger)
+    # aa = AugmentAPI(cfg, logger)
 
     # get the train augment
-    train_augment = aa(flag='train')
+    # train_augment = aa(flag='train')
     
     # get the val augment 
-    val_augment = aa(flag='val')
-    aug_dict = OrderedDict()
-    aug_dict['train_augment'] = train_augment
-    aug_dict['val_augment'] = val_augment
+    # val_augment = aa(flag='val')
+    # aug_dict = OrderedDict()
+    # aug_dict['train_augment'] = train_augment
+    # aug_dict['val_augment'] = val_augment
     # build the dataAPI, can use the cfg to get the dataloader
-    da = DataAPI(cfg)
+    da = DataAPI(cfg, True)
+    dataloaders_dict = da()
     import ipdb; ipdb.set_trace()
     #  Get the train dataloader
-    train_dataloader = da(flag='train', aug=train_augment)
+    # train_dataloader = da(flag='train', aug=train_augment)
     
     # Get the validation dataloader
-    valid_dataloder = da(flag='val', aug=val_augment)
+    # valid_dataloder = da(flag='val', aug=val_augment)
 
     # Get the test datasets
     # test_dataset_dict, test_dataset_keys = da(flag='test', aug=val_augment)
     # test_dataset_dict_w, test_dataset_keys_w = da(flag='train_w', aug=val_augment)
-    val_dataset = da(flag='test', aug=val_augment)
-    val_dataset_w = da(flag='train_w', aug=val_augment)
+    # val_dataset = da(flag='test', aug=val_augment)
+    # val_dataset_w = da(flag='train_w', aug=val_augment)
     
     # Get the cluster dataset
     # cluster_dataset_dict, cluster_dataset_keys = da(flag='cluster_train', aug=train_augment)
-    train_dataset_cluster = da(flag='cluster_train', aug=train_augment)
-    dataset_dict = OrderedDict()
-    dataset_dict['train_dataloader'] = train_dataloader
-    dataset_dict['valid_dataloder'] = valid_dataloder
-    dataset_dict['val_dataset'] = val_dataset
-    dataset_dict['val_dataset_w'] = val_dataset_w
-    dataset_dict['train_dataset_cluster'] = train_dataset_cluster
+    # train_dataset_cluster = da(flag='cluster_train', aug=train_augment)
+    # dataset_dict = OrderedDict()
+    # dataset_dict['train_dataloader'] = train_dataloader
+    # dataset_dict['valid_dataloder'] = valid_dataloder
+    # dataset_dict['val_dataset'] = val_dataset
+    # dataset_dict['val_dataset_w'] = val_dataset_w
+    # dataset_dict['train_dataset_cluster'] = train_dataset_cluster
+    
     # ===========================================================================================================
 
     # get the evaluate function

@@ -14,7 +14,8 @@ LOG:
   vis_dir: './output/vis'
   
 DATASET:
-  name: 'avenue'
+  # name: 'avenue'
+  name: 'AvenuePedShanghaiAll'
   seed: 2020
   read_format: 'opencv'
   channel_num: 1

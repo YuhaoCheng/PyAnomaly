@@ -39,7 +39,7 @@ class AbstractVideoAnomalyDataset(AbstractVideoDataset):
         # self.image_loader = ImageLoader(read_format=self.cfg.DATASET.read_format, channel_num=self.cfg.DATASET.channel_num, channel_name=self.cfg.DATASET.channel_name)
         self.image_loader = ImageLoader(read_format=self.dataset_params.read_format, channel_num=self.dataset_params.channel_num, channel_name=self.dataset_params.channel_name)
         # self.video_loader = VideoLoader(self.image_loader, params=self.aug_params, transforms=self.transforms, normalize=self.normal, mean=self.normal_mean, std=self.normal_std)
-        self.video_loader = VideoLoader(self.image_loader, params=self.aug_params, transforms=self.transforms, normalize=self.aug_params.normal, mean=self.aug_params.normal_mean, std=self.aug_params.normal_std)
+        self.video_loader = VideoLoader(self.image_loader, params=self.aug_params, transforms=self.transforms, normalize=self.aug_params.normal, mean=self.aug_params.normal.mean, std=self.aug_params.normal.std)
         if self.mini:
             self.video_nums = len(self.videos_keys)
             print(f'The read format of MINI dataset is {self.dataset_params.read_format} in {self._NAME}')

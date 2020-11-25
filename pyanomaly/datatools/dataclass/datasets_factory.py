@@ -5,6 +5,7 @@ from .avenue_ped_shanghai import *
 from ..abstract.abstract_dataset_factory import AbstractDatasetFactory, GetWDataset, GetClusterDataset
 from collections import OrderedDict, namedtuple
 import os
+__all__ = ['VideoAnomalyDatasetFactory']
 # @DATASET_FACTORY_REGISTRY.registry()
 # class AvenueFactory(object):
 #     NORMAL = ['stae', 'amc']
@@ -46,7 +47,7 @@ import os
 #         dataset_dict = self._build()
 #         return dataset_dict
 
-@DATASET_FACTORY_REGISTRY.registry()
+@DATASET_FACTORY_REGISTRY.register()
 class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetClusterDataset):
     NORMAL = ['stae', 'amc', 'anopcn', 'anopred']
     NEED_W = ['memae']
@@ -57,6 +58,7 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
         # self.aug = aug
         super(VideoAnomalyDatasetFactory, self).__init__(cfg, aug_dict, is_training)
         self.aug_dict = aug_dict
+        # import ipdb; ipdb.set_trace()
         self.ingredient = DATASET_REGISTRY.get(self.dataset_name)
         self._jude_need_cluster()
         self._jude_need_w()
@@ -163,13 +165,19 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
 
         if self.is_training:
             train_dataset_dict = self._produce_train_dataset()
-            dataset_dict['train_dataset_dcit']  = train_dataset_dict
+            general_dataset_dict = OrderedDict()
+            general_dataset_dict['general_dataset_dict'] = train_dataset_dict
+            dataset_dict['train_dataset_dict']  = general_dataset_dict
         if self.need_w_flag:
-            w_dataset_dict = self._produce_w_dataset
-            dataset_dict['w_dataset_dict'] = w_dataset_dict
+            w_dataset = self._produce_w_dataset
+            w_dataset_dict = OrderedDict()
+            w_dataset_dict['w_dataset_dict'] = w_dataset
+            dataset_dict['train_dataset_dcit'] = w_dataset_dict
         if self.need_cluster_flag:
-            cluster_dataset_dict = self._produce_cluster_dataset()
-            dataset_dict['cluster_dataset_dict'] = cluster_dataset_dict
+            cluster_dataset = self._produce_cluster_dataset()
+            cluster_dataset_dict = OrderedDict()
+            cluster_dataset_dict['cluster_dataset_dict'] = cluster_dataset
+            dataset_dict['train_dataset_dict'] = cluster_dataset_dict
 
         return dataset_dict
 
