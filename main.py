@@ -102,12 +102,12 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     #                         hooks=hooks, evaluate_function=evaluate_function,
     #                         lr_scheduler_dict=lr_scheduler_dict
     #                         ) 
-    trainer = core.Trainer(model_dict, train_dataloader, valid_dataloder, optimizer_dict, loss_function_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
+    trainer = core.Trainer(model_dict, dataloaders_dict, optimizer_dict, loss_function_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
                             pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, loss_lamada=loss_lamada,
                             # test_dataset_dict=test_dataset_dict, test_dataset_keys=test_dataset_keys, 
                             # test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w,
                             # cluster_dataset_dict=cluster_dataset_dict, cluster_dataset_keys=cluster_dataset_keys,
-                            dataset_dict=dataset_dict, 
+                            # dataset_dict=dataset_dict, 
                             hooks=hooks, evaluate_function=evaluate_function,
                             lr_scheduler_dict=lr_scheduler_dict
                             )

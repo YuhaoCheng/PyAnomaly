@@ -1,7 +1,7 @@
 # from .dataclass.dataset_builder import DatasetBuilder
-from collections import OrderedDict
 import torch
 from torch.utils.data import DataLoader
+from collections import OrderedDict
 from .sampler.inf_sampler import TrainSampler
 from .sampler.dist_inf_sampler import DistTrainSampler
 # from .dataclass.datacatalog import DatasetCatalog
@@ -36,7 +36,7 @@ class DataAPI(AbstractBuilder):
         '''
         # build the dataset
         # self.flag = flag
-        dataset = self._build_dataset()
+        dataset_all = self._build_dataset()
         # build the sampler
         # self._data_len = len(dataset)
 
@@ -52,24 +52,51 @@ class DataAPI(AbstractBuilder):
         #     dataloader = dataset
         # else:
         #     raise Exception('No supprot dataset')
+        dataloader_dict = OrderedDict()
+        dataloader_dict['train'] = OrderedDict()
+        dataloader_dict['test'] = OrderedDict()
+
+        # if self.is_training:
+        #     dataset_dict = dataset_all['train_dataset_dict']
+        #     batch_size = self.cfg.TRAIN.batch_size
+        #     # dataloader_dict = OrderedDict()
+        #     # dataloader_dict['train_dataloader_dict'] = OrderedDict
+        # else:
+        #     dataset_dict = dataset_all['test_dataset_dict']
+        #     batch_size = self.cfg.TEST.batch_size
+        #     # dataloader_dict = OrderedDict()
+
+        dataset_dict = dataset_all['test_dataset_dict']
+        batch_size = self.cfg.VAL.batch_size
+        
+        for key in dataset_dict.keys():
+            temp = dataset_dict[key]
+            dataloader_dict['test'][key] = OrderedDict()
+            for dataset_key in temp['video_keys']:
+                # import ipdb; ipdb.set_trace()
+                dataset = dataset_dict[key]['video_datasets'][dataset_key]
+                temp_data_len = len(dataset)
+                sampler = self._build_sampler(temp_data_len)
+                batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, batch_size, drop_last=True)
+                dataloader = DataLoader(dataset, batch_sampler=batch_sampler, pin_memory=True)
+                dataloader_dict['test'][key][dataset_key] = dataloader
+        
         if self.is_training:
-            dataset_dict = dataset['train_dataset_dict']
+            dataset_dict = dataset_all['train_dataset_dict']
             batch_size = self.cfg.TRAIN.batch_size
-        else:
-            dataset_dict = dataset['test_dataset_dict']
-            batch_size = self.cfg.TEST.batch_size
+            for key in dataset_dict.keys():
+                temp = dataset_dict[key]
+                dataloader_dict['train'][key] = OrderedDict()
+                for dataset_key in temp['video_keys']:
+                    # import ipdb; ipdb.set_trace()
+                    dataset = dataset_dict[key]['video_datasets'][dataset_key]
+                    temp_data_len = len(dataset)
+                    sampler = self._build_sampler(temp_data_len)
+                    batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, batch_size, drop_last=True)
+                    dataloader = DataLoader(dataset, batch_sampler=batch_sampler, pin_memory=True)
+                    dataloader_dict['train'][key][dataset_key] = dataloader
         
         import ipdb; ipdb.set_trace()
-        dataloader_dict = OrderedDict()
-
-        for key in dataset_dict:
-            temp = dataset_dict[key]
-            temp_data_len = len(temp)
-            sampler = self._build_sampler(temp_data_len)
-            batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, batch_size, drop_last=True)
-            dataloader = DataLoader(dataset, batch_sampler=batch_sampler, pin_memory=True)
-            dataloader_dict[key] = dataloader
-        
         return dataloader_dict
     
     def _build_dataset(self):
@@ -89,8 +116,8 @@ class DataAPI(AbstractBuilder):
         return sampler
     
     def __call__(self):
-        dataloader = self.build()
-        return dataloader
+        dataloader_dict = self.build()
+        return dataloader_dict
 
 
 # class DataAPI(DatasetBuilder):

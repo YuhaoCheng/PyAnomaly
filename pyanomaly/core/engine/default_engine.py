@@ -9,13 +9,14 @@ class DefaultTrainer(AbstractTrainer):
         '''
         Args:
             defaults(tuple): the default will have:
-                0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
-                1->train_dataloader: the dataloader    # Will be deprecated in the future
-                2->val_dataloader: the dataloader     # Will be deprecated in the future
-                3->optimizer:{'optimizer_g':op_g, 'optimizer_d'}
-                4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
-                5->logger: the logger of the whole training process
-                6->config: the config object of the whole process
+                0 0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
+                - 1->train_dataloader: the dataloader    # Will be deprecated in the future
+                - 2->val_dataloader: the dataloader     # Will be deprecated in the future
+                1 -->dataloader_dict: the dict of all the dataloader will be used in the process
+                2 3->optimizer:{'optimizer_g':op_g, 'optimizer_d'}
+                3 4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
+                4 5->logger: the logger of the whole training process
+                5 6->config: the config object of the whole process
 
             kwargs(dict): the default will have:
                 verbose(str):
@@ -30,25 +31,34 @@ class DefaultTrainer(AbstractTrainer):
         self._eval_hooks = []
         self._register_hooks(kwargs['hooks'])
         # logger & config
-        self.logger = defaults[5]
-        self.config = defaults[6]
+        self.logger = defaults[4]
+        self.config = defaults[5]
 
         self.model = defaults[0]
         
         if kwargs['pretrain']:
             self.load_pretrain()
+        # =============================the old version to get iter of dataloader========================
+        # self.train_dataloader = defaults[1]
+        # self._train_loader_iter = iter(self.train_dataloader)
 
-        self.train_dataloader = defaults[1]
-        self._train_loader_iter = iter(self.train_dataloader)
-
-        self.val_dataloader = defaults[2]
-        self._val_loader_iter = iter(self.val_dataloader)
-
+        # self.val_dataloader = defaults[2]
+        # self._val_loader_iter = iter(self.val_dataloader)
+        # ==============================================================================================
+        dataloaders_dict = defaults[1]
+        self.train_dataloaders_dict = dataloaders_dict['train']
+        # for key in train_dataloaders_dict.keys():
+        #     if str(key) == 'general_dataset_dict':
+        #         self._train_loader_iter = iter()
+        self._train_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['video_datasets']['all'])
+        self.val_dataloaders_dict = dataloaders_dict['val']
+        # temporal, but it is wrong !!!
+        self._val_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['video_datasets']['all'])
         # get the optimizer
-        self.optimizer = defaults[3]
+        self.optimizer = defaults[2]
 
         # get the loss_fucntion
-        self.loss_function = defaults[4]
+        self.loss_function = defaults[3]
 
         # basic meter
         self.batch_time =  AverageMeter(name='batch_time')

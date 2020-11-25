@@ -49,8 +49,10 @@ __all__ = ['VideoAnomalyDatasetFactory']
 
 @DATASET_FACTORY_REGISTRY.register()
 class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetClusterDataset):
-    NORMAL = ['stae', 'amc', 'anopcn', 'anopred']
-    NEED_W = ['memae']
+    # NORMAL = ['stae', 'amc', 'anopcn', 'anopred']
+    NORMAL = ['amc', 'anopcn', 'anopred']
+    NEED_W = ['memae', 'stae']
+    # NEED_W = ['memae']
     NEED_CLUSTER = ['ocae']
     def __init__(self, cfg, aug_dict, is_training=True) -> None:
         # self.cfg = cfg
@@ -83,8 +85,9 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
                                         sampled_clip_length=self.dataset_params.train_sampled_clip_length, 
                                         frame_step=self.dataset_params.train_frame_step,clip_step=self.dataset_params.train_clip_step, is_training=True,
                                         transforms=self.aug_dict['train_aug'], cfg=self.cfg)
-        train_dataset_dict['video_keys'] = 'all'
-        train_dataset_dict['video_datasets'] = train_dataset
+        train_dataset_dict['video_keys'] = ['all']
+        train_dataset_dict['video_datasets'] = OrderedDict()
+        train_dataset_dict['video_datasets']['all'] = train_dataset
         # pass 
         return train_dataset_dict
     
@@ -160,24 +163,26 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
         #     raise Exception('123')
         # return dataloader
         dataset_dict = OrderedDict()
-        test_dataset_dict = self._produce_test_dataset
-        dataset_dict['test_dataset_dict'] = test_dataset_dict
+        test_dataset_dict = self._produce_test_dataset()
+        dataset_dict['test_dataset_dict'] = OrderedDict()
+        dataset_dict['test_dataset_dict']['general_dataset_dict'] = test_dataset_dict
 
         if self.is_training:
             train_dataset_dict = self._produce_train_dataset()
-            general_dataset_dict = OrderedDict()
-            general_dataset_dict['general_dataset_dict'] = train_dataset_dict
-            dataset_dict['train_dataset_dict']  = general_dataset_dict
-        if self.need_w_flag:
-            w_dataset = self._produce_w_dataset
-            w_dataset_dict = OrderedDict()
-            w_dataset_dict['w_dataset_dict'] = w_dataset
-            dataset_dict['train_dataset_dcit'] = w_dataset_dict
-        if self.need_cluster_flag:
-            cluster_dataset = self._produce_cluster_dataset()
-            cluster_dataset_dict = OrderedDict()
-            cluster_dataset_dict['cluster_dataset_dict'] = cluster_dataset
-            dataset_dict['train_dataset_dict'] = cluster_dataset_dict
+            # general_dataset_dict = OrderedDict()
+            # general_dataset_dict['general_dataset_dict'] = train_dataset_dict
+            dataset_dict['train_dataset_dict'] = OrderedDict()
+            dataset_dict['train_dataset_dict']['general_dataset_dict']  = train_dataset_dict
+            if self.need_w_flag:
+                w_dataset = self._produce_w_dataset()
+                # w_dataset_dict = OrderedDict()
+                # w_dataset_dict['w_dataset_dict'] = w_dataset
+                dataset_dict['train_dataset_dict']['w_dataset_dict'] = w_dataset
+            if self.need_cluster_flag:
+                cluster_dataset = self._produce_cluster_dataset()
+                # cluster_dataset_dict = OrderedDict()
+                # cluster_dataset_dict['cluster_dataset_dict'] = cluster_dataset
+                dataset_dict['train_dataset_dict']['cluster_dataset_dict'] = cluster_dataset
 
         return dataset_dict
 

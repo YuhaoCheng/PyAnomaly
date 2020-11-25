@@ -272,13 +272,13 @@ config.TRAIN.pusedo_data_path = ''
 config.TRAIN.cluster = CN()
 config.TRAIN.cluster.k = 10
 
-# configure the val process
+# configure the val process, equals to the TEST. 
 config.VAL = CN()
 config.VAL.name = ''
 config.VAL.path = '' # if not use the data in the TRAIN.test_path
 config.VAL.batch_size = 2
 
-# configure the test process
+# configure the test process, will be deperacted in the future. Only keep the VAL
 config.TEST = CN()
 config.TEST.name = ''
 config.TEST.path = '' # if not use the data in the TRAIN.test_path
