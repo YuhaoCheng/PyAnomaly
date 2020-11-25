@@ -9,7 +9,10 @@ from pathlib import Path
 import torchvision.transforms.functional as tf
 from tqdm import tqdm
 from pyanomaly.utils.image_ops import image_gradient
+import torch 
+from torch.utils.data.dataloader import default_collate
 
+# import ipdb
 
 def make_objects_db(data_path, split='training',det_threshold=0.95, time_file='./training_3.json', verbose='none'):
     """
@@ -284,6 +287,43 @@ def make_objects_box_db(data_path, split='training',det_threshold=0.95, time_fil
         torch.save(final, final_name)
     except Exception as err:
         print(err)         
+
+def collect_fn(batch):
+    """
+    image_b, image_a, image, image_f, label, detection_result = batch
+    """
+    # max_detection = max(list(map(lambda x: len(x[5]), batch)))
+    max_detection = max(list(map(lambda x: len(x), batch)))
+    for i in range(len(batch)):
+        batch[i] = list(batch[i]) # because the element in the batch is a tuple
+        dummy = torch.zeros((1,5), dtype=batch[i][5].dtype)
+        temp = batch[i][5]
+        # make the detection to the same length in order to stack the
+        while temp.size(0) < max_detection:
+            temp = torch.cat((temp, dummy))
+        batch[i][5] = temp
+    
+    return default_collate(batch)
+
+def collect_fn_local(batch):
+    """
+    image_b, image_a, image, image_f, crop_objects = batch
+    """
+    max_detection = max(list(map(lambda x: len(x[4]), batch)))
+    for i in range(len(batch)):
+        batch[i] = list(batch[i]) # because the element in the batch is a tuple
+        dummy = torch.zeros((1,128,64), dtype=batch[i][4][0].dtype)
+        temp = batch[i][4]
+        # make the detection to the same length in order to stack the
+        while temp.size(0) < max_detection:
+        # while len(temp) < max_detection:
+            temp = torch.cat((temp, dummy))
+            # temp.append(dummy)
+        batch[i][4] = temp
+    
+    return default_collate(batch)
+
+
 
 if __name__ == '__main__':
     # path = '/export/home/chengyh/reproduce/objec-centric/data/VAD/testing/frames'

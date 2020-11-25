@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader
 import torchvision.transforms as T
 import torchvision.transforms.functional as tf
 
-from pyanomaly.core.engine.default_engine import DefaultTrainer, DefaultInference
+from ..abstract.default_engine import DefaultTrainer, DefaultInference
 from pyanomaly.core.utils import AverageMeter, multi_obj_grid_crop, frame_gradient, get_batch_dets, tensorboard_vis_images, ParamSet, make_info_message
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from ..engine_registry import ENGINE_REGISTRY

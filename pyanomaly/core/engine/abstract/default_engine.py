@@ -1,7 +1,7 @@
 import torch
 from pyanomaly.core.utils import AverageMeter, ParamSet
-from .utils import engine_save_checkpoint
-from .utils import engine_save_model
+from ..utils import engine_save_checkpoint
+from ..utils import engine_save_model
 from .abstract import AbstractTrainer, AbstractInference
 import abc
 class DefaultTrainer(AbstractTrainer):
@@ -50,10 +50,13 @@ class DefaultTrainer(AbstractTrainer):
         # for key in train_dataloaders_dict.keys():
         #     if str(key) == 'general_dataset_dict':
         #         self._train_loader_iter = iter()
-        self._train_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['video_datasets']['all'])
-        self.val_dataloaders_dict = dataloaders_dict['val']
+        # import ipdb; ipdb.set_trace()
+        # self._train_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['video_datasets']['all'])
+        self._train_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['all'])
+        self.val_dataloaders_dict = dataloaders_dict['test']
         # temporal, but it is wrong !!!
-        self._val_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['video_datasets']['all'])
+        # self._val_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['video_datasets']['all'])
+        self._val_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['all'])
         # get the optimizer
         self.optimizer = defaults[2]
 
@@ -169,6 +172,7 @@ class DefaultTrainer(AbstractTrainer):
         for h in self._hooks:
             h.after_step(current_step)
         
+        # in the future, will be deprecated
         if (current_step % self.steps.param['mini_eval'] == 0) or current_step == 0:
             self.mini_eval(current_step)
             # return

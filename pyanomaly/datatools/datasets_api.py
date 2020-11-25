@@ -1,14 +1,11 @@
-# from .dataclass.dataset_builder import DatasetBuilder
 import torch
 from torch.utils.data import DataLoader
 from collections import OrderedDict
-from .sampler.inf_sampler import TrainSampler
-from .sampler.dist_inf_sampler import DistTrainSampler
-# from .dataclass.datacatalog import DatasetCatalog
+from .dataclass.sampler import TrainSampler, DistTrainSampler
 from .abstract.abstract_datasets_builder import AbstractBuilder
 from .datasets_registry import DATASET_FACTORY_REGISTRY
 from .dataclass import *
-from .augment import AugmentAPI
+from .dataclass.augment import AugmentAPI
 import logging
 logger = logging.getLogger(__name__)
 
@@ -91,12 +88,13 @@ class DataAPI(AbstractBuilder):
                     # import ipdb; ipdb.set_trace()
                     dataset = dataset_dict[key]['video_datasets'][dataset_key]
                     temp_data_len = len(dataset)
+                    # need to change
                     sampler = self._build_sampler(temp_data_len)
                     batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, batch_size, drop_last=True)
                     dataloader = DataLoader(dataset, batch_sampler=batch_sampler, pin_memory=True)
                     dataloader_dict['train'][key][dataset_key] = dataloader
         
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         return dataloader_dict
     
     def _build_dataset(self):

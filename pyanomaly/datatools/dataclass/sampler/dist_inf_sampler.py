@@ -3,7 +3,7 @@ import itertools
 import torch
 import torch.distributed as dist
 import numpy as np
-import pyanomaly.datatools.sampler.common as comm
+from .common import shared_random_seed, get_rank, get_world_size
 # def get_world_size() -> int:
 #     if not dist.is_available():
 #         return 1
@@ -44,12 +44,15 @@ class DistTrainSampler(Sampler):
         self._shuffle = shuffle
         if seed is None:
             # seed = np.random.RandomState(2020)
-            seed = comm.shared_random_seed()
+            # seed = comm.shared_random_seed()
+            seed = shared_random_seed()
         self._seed = int(seed)
         # self._start = start
 
-        self._rank = comm.get_rank()
-        self._world_size = comm.get_world_size()
+        # self._rank = comm.get_rank()
+        self._rank = get_rank()
+        # self._world_size = comm.get_world_size()
+        self._world_size = get_world_size()
 
     def __iter__(self):
         start = self._rank

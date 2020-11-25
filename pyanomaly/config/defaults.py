@@ -276,6 +276,7 @@ config.TRAIN.cluster.k = 10
 # configure the val process, equals to the TEST. 
 config.VAL = CN()
 config.VAL.name = ''
+config.VAL.engine_name = ''
 config.VAL.path = '' # if not use the data in the TRAIN.test_path
 config.VAL.batch_size = 2
 

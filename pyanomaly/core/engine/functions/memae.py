@@ -19,13 +19,13 @@ from torch.utils.data import DataLoader
 from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images, make_info_message, ParamSet
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from pyanomaly.utils.flow_utils import flow2img
-from pyanomaly.core.engine.default_engine import DefaultTrainer, DefaultInference
+from ..abstract.default_engine import DefaultTrainer, DefaultInference
 from ..engine_registry import ENGINE_REGISTRY
 
-__all__ = ['MEMATrainer', 'MEMAInference']
+__all__ = ['MEMAETrainer', 'MEMAEInference']
 
 @ENGINE_REGISTRY.register()
-class MEMATrainer(DefaultTrainer):
+class MEMAETrainer(DefaultTrainer):
     NAME = ["MEMAE.TRAIN"]
     def custom_setup(self):
         if self.kwargs['parallel']:
@@ -120,7 +120,7 @@ class MEMATrainer(DefaultTrainer):
         # return temp_meter.avg
 
 @ENGINE_REGISTRY.register()
-class MEMAInference(DefaultInference):
+class MEMAEInference(DefaultInference):
     NAME = ["MEMAE.INFERENCE"]
     def custom_setup(self):
         if self.kwargs['parallel']:

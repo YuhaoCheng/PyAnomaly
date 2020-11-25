@@ -131,6 +131,7 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
+  engine_name: 'STAETrainer'
   batch_size: 16
   start_step: 0
   max_steps: 20000
@@ -172,6 +173,7 @@ TRAIN:
   cluster:
     k: 10
 VAL:
+  engine_name: 'STAEInference'
   name: ''
   path: ''
   batch_size: 2

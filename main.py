@@ -15,6 +15,7 @@ from pyanomaly.core.optimizer.optimizer_api import OptimizerAPI
 from pyanomaly.core.scheduler.scheduler_api import SchedulerAPI
 from pyanomaly.core.hook.hooks_api import HookAPI
 # from pyanomaly.datatools.augment_api import AugmentAPI
+from pyanomaly.core.engine.engine_api import EngineAPI
 from pyanomaly.datatools.datasets_api import DataAPI
 from pyanomaly.datatools.evaluate_api import EvaluateAPI
 
@@ -54,7 +55,6 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     # build the dataAPI, can use the cfg to get the dataloader
     da = DataAPI(cfg, is_training=True)
     dataloaders_dict = da()
-    import ipdb; ipdb.set_trace()
     #  Get the train dataloader
     # train_dataloader = da(flag='train', aug=train_augment)
     
@@ -91,34 +91,43 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     hooks = ha('train')
 
     # =================================================Need to change to use the registry================================================================================================
-    # instance the trainer
-    core = importlib.import_module(f'pyanomaly.core.{cfg.MODEL.name}')
-    logger.info(f'Build the trainer in {core}')
-    # trainer = core.Trainer(model_dict, train_dataloader, valid_dataloder, optimizer_dict, loss_function_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
-    #                         pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, 
-    #                         loss_lamada=loss_lamada,test_dataset_dict=test_dataset_dict, test_dataset_keys=test_dataset_keys, 
-    #                         test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w,
-    #                         cluster_dataset_dict=cluster_dataset_dict, cluster_dataset_keys=cluster_dataset_keys,
+    # # instance the trainer
+    # core = importlib.import_module(f'pyanomaly.core.{cfg.MODEL.name}')
+    # logger.info(f'Build the trainer in {core}')
+    # # trainer = core.Trainer(model_dict, train_dataloader, valid_dataloder, optimizer_dict, loss_function_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
+    # #                         pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, 
+    # #                         loss_lamada=loss_lamada,test_dataset_dict=test_dataset_dict, test_dataset_keys=test_dataset_keys, 
+    # #                         test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w,
+    # #                         cluster_dataset_dict=cluster_dataset_dict, cluster_dataset_keys=cluster_dataset_keys,
+    # #                         hooks=hooks, evaluate_function=evaluate_function,
+    # #                         lr_scheduler_dict=lr_scheduler_dict
+    # #                         ) 
+    # trainer = core.Trainer(model_dict, dataloaders_dict, optimizer_dict, loss_function_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
+    #                         pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, loss_lamada=loss_lamada,
+    #                         # test_dataset_dict=test_dataset_dict, test_dataset_keys=test_dataset_keys, 
+    #                         # test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w,
+    #                         # cluster_dataset_dict=cluster_dataset_dict, cluster_dataset_keys=cluster_dataset_keys,
+    #                         # dataset_dict=dataset_dict, 
     #                         hooks=hooks, evaluate_function=evaluate_function,
     #                         lr_scheduler_dict=lr_scheduler_dict
-    #                         ) 
-    trainer = core.Trainer(model_dict, dataloaders_dict, optimizer_dict, loss_function_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
-                            pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, loss_lamada=loss_lamada,
-                            # test_dataset_dict=test_dataset_dict, test_dataset_keys=test_dataset_keys, 
-                            # test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w,
-                            # cluster_dataset_dict=cluster_dataset_dict, cluster_dataset_keys=cluster_dataset_keys,
-                            # dataset_dict=dataset_dict, 
-                            hooks=hooks, evaluate_function=evaluate_function,
-                            lr_scheduler_dict=lr_scheduler_dict
-                            )
+    #                         )
+    engine_api = EngineAPI(cfg, True)
+    engine = engine_api.build()
+    trainer = engine(model_dict, dataloaders_dict, optimizer_dict, loss_function_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
+                    pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, loss_lamada=loss_lamada,
+                    hooks=hooks, evaluate_function=evaluate_function,
+                    lr_scheduler_dict=lr_scheduler_dict
+                    )
     # ===================================================================================================================================================================================
-    
+
+    import ipdb; ipdb.set_trace()
     trainer.run(cfg.TRAIN.start_step, cfg.TRAIN.max_steps)
     
     logger.info('Finish Training')
 
     model_result_path = trainer.result_path
-    print(f'The model path is {model_result_path}')
+    # print(f'The model path is {model_result_path}')
+    logger.info(f'The model path is {model_result_path}')
    
 
 def inference(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name):

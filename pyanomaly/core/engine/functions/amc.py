@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 
 from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images, vis_optical_flow, make_info_message, ParamSet
 from pyanomaly.datatools.evaluate.utils import psnr_error
-from pyanomaly.core.engine.default_engine import DefaultTrainer, DefaultInference
+from ..abstract.default_engine import DefaultTrainer, DefaultInference
 
 from ..engine_registry import ENGINE_REGISTRY
 
