@@ -20,7 +20,7 @@ from ..hook_registry import HOOK_REGISTRY
 __all__ = ['STAEEvaluateHook']
 
 @HOOK_REGISTRY.register()
-class STAEEvaluateHook(EvaluateHook):
+class STAEEvaluateHook(EvaluateHook): 
     def evaluate(self, current_step):
         '''
         Evaluate the results of the model

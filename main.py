@@ -28,7 +28,7 @@ from pyanomaly import (
     EvaluateAPI
 )
 
-def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name):
+def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name, is_training=True):
     
     # the system setting
     system_setup(args, cfg, logger)
@@ -96,8 +96,9 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     writer_dict = get_tensorboard(tensorboard_log_dir, time_stamp, cfg.MODEL.name, log_file_name)
 
     # build hook
-    ha = HookAPI(cfg, logger)
-    hooks = ha('train')
+    ha = HookAPI(cfg)
+    # hooks = ha('train')
+    hooks = ha(is_training)
 
     # =================================================Need to change to use the registry================================================================================================
     # # instance the trainer
@@ -129,7 +130,7 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
                     )
     # ===================================================================================================================================================================================
 
-    import ipdb; ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
     trainer.run(cfg.TRAIN.start_step, cfg.TRAIN.max_steps)
     
     logger.info('Finish Training')
@@ -139,7 +140,7 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     logger.info(f'The model path is {model_result_path}')
    
 
-def inference(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name):
+def inference(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name, is_training=False):
     
     # the system setting
     system_setup(args, cfg, logger)
@@ -151,42 +152,51 @@ def inference(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name
     # get the saved model path
     model_path = args.inference_model
     # get data augment
-    aa = AugmentAPI(cfg, logger)
+    # aa = AugmentAPI(cfg, logger)
 
-    # get the val augment 
-    val_augment = aa(flag='val')
+    # # get the val augment 
+    # val_augment = aa(flag='val')
 
     # build the dataAPI, can use the cfg to get the dataloader
     da = DataAPI(cfg)
-    
+    dataloaders_dict = da(cfg, is_training=True)
     # Get the validation dataloader
-    valid_dataloder = da(flag='val', aug=val_augment)
+    # valid_dataloder = da(flag='val', aug=val_augment)
 
-    # Get the test datasets  ?
-    test_dataset_dict, test_dataset_keys = da(flag='test', aug=val_augment)
-    test_dataset_dict_w, test_dataset_keys_w = da(flag='train_w', aug=val_augment)
+    # # Get the test datasets  ?
+    # test_dataset_dict, test_dataset_keys = da(flag='test', aug=val_augment)
+    # test_dataset_dict_w, test_dataset_keys_w = da(flag='train_w', aug=val_augment)
+
 
     # Add the Summary writer
     writer_dict = get_tensorboard(tensorboard_log_dir, time_stamp, cfg.MODEL.name, log_file_name)
 
     # build hook
-    ha = HookAPI(cfg, logger)
-    hooks = ha('val')
+    ha = HookAPI(cfg)
+    # hooks = ha('val')
+    hooks = ha(is_training)
 
     # get the evaluate function
     ea = EvaluateAPI(cfg, logger)
     evaluate_function = ea(cfg.DATASET.evaluate_function_type)
 
     # instance the inference
-    core = importlib.import_module(f'pyanomaly.core.{cfg.MODEL.name}')
-    logger.info(f'Build the inference in {core}')
-    inference = core.Inference(model_dict, model_path, valid_dataloder, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
+    # core = importlib.import_module(f'pyanomaly.core.{cfg.MODEL.name}')
+    # logger.info(f'Build the inference in {core}')
+    # inference = core.Inference(model_dict, model_path, valid_dataloder, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
+    #                         pretrain=False, verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, 
+    #                         test_dataset_dict=test_dataset_dict, test_dataset_keys=test_dataset_keys, 
+    #                         test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w, 
+    #                         hooks=hooks,evaluate_function=evaluate_function
+    #                         )
+    engine_api = EngineAPI(cfg, False)
+    engine = engine_api.build()
+    inference = engine(model_dict, model_path, dataloaders_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
                             pretrain=False, verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, 
-                            test_dataset_dict=test_dataset_dict, test_dataset_keys=test_dataset_keys, 
-                            test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w, 
+                            # test_dataset_dict=test_dataset_dict, test_dataset_keys=test_dataset_keys, 
+                            # test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w, 
                             hooks=hooks,evaluate_function=evaluate_function
                             )
-    
     inference.run()
     
     logger.info('Finish Inference')
@@ -207,7 +217,7 @@ if __name__ == '__main__':
         logger.info(f'^_^==> Use the following tensorboard:{tensorboard_log_dir}')
         logger.info(f'@_@==> Use the following config in path: {cfg_path}')
         logger.info(f'the configure name is {cfg_name}, the content is:\n{cfg}')
-        train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name)
+        train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name, is_training=True)
         logger.info('Finish training the whole process!!!')
     elif args.inference:
         # get the logger
@@ -215,5 +225,5 @@ if __name__ == '__main__':
         logger.info(f'^_^==> Use the following tensorboard:{tensorboard_log_dir}')
         logger.info(f'@_@==> Use the following config in path: {cfg_path}')
         logger.info(f'the configure name is {cfg_name}, the content is:\n{cfg}')
-        inference(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name)
+        inference(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name, is_training=False)
         logger.info('Finish inference the whole process!!!')
