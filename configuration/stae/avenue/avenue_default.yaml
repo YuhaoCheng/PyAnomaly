@@ -15,7 +15,8 @@ LOG:
   
 DATASET:
   # name: 'avenue'
-  name: 'AvenuePedShanghaiAll'
+  name: 'Avenue'
+  # name: 'AvenuePedShanghaiAll'
   seed: 2020
   read_format: 'opencv'
   channel_num: 1

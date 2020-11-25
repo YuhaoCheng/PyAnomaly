@@ -1,3 +1,4 @@
+import abc
 import glob
 import os
 from collections import OrderedDict
@@ -68,7 +69,7 @@ class AbstractVideoDataset(Dataset):
                 self.videos[video_name]['cursor'] = 0
                 self.total_clips += (len(self.videos[video_name]['frames']) - self.clip_length)
             self.videos_keys = self.videos.keys()
-            print(f'\033[1;34m The clip number of {self.cfg.DATASET.name}#{self.flag}is:{self.total_clips} \033[0m')
+            # print(f'\033[1;34m The clip number of {self.cfg.DATASET.name}#{self.flag}is:{self.total_clips} \033[0m')
         else:
             self.total_clips_onevideo = 0
             # the dir is the path of one video
@@ -83,7 +84,7 @@ class AbstractVideoDataset(Dataset):
             self.total_clips_onevideo += (len(self.videos[video_name]['frames']) - self.clip_length)
             self.pics_len = len(self.videos[video_name]['frames'])
             self.videos_keys = self.videos.keys()
-            print(f'\033[1;34m The clip number of one video {video_name}#{self.flag} is:{self.total_clips_onevideo} of {self.cfg.DATASET.name}\033[0m') 
+            # print(f'\033[1;34m The clip number of one video {video_name}#{self.flag} is:{self.total_clips_onevideo} of {self.cfg.DATASET.name}\033[0m') 
     
     def __getitem__(self, indice):
         raise Exception(f'No inplement at {AbstractVideoDataset._NAME}')
@@ -125,18 +126,19 @@ class FrameLevelVideoDataset(AbstractVideoDataset):
         # self.image_loader = ImageLoader(read_format=self.cfg.DATASET.read_format, channel_num=self.cfg.DATASET.channel_num, channel_name=self.cfg.DATASET.channel_name)
         self.image_loader = ImageLoader(read_format=self.dataset_params.read_format, channel_num=self.dataset_params.channel_num, channel_name=self.dataset_params.channel_name)
         # self.video_loader = VideoLoader(self.image_loader, params=self.aug_params, transforms=self.transforms, normalize=self.normal, mean=self.normal_mean, std=self.normal_std)
-        self.video_loader = VideoLoader(self.image_loader, params=self.aug_params, transforms=self.transforms, normalize=self.aug_params.normal, mean=self.aug_params.normal_mean, std=self.aug_params.normal_std)
+        self.video_loader = VideoLoader(self.image_loader, params=self.aug_params, transforms=self.transforms, normalize=self.aug_params.normal, mean=self.aug_params.normal.mean, std=self.aug_params.normal.std)
         if self.mini:
             self.video_nums = len(self.videos_keys)
             print(f'The read format of MINI dataset is {self.dataset_params.read_format} in {self._NAME}')
-        elif self.one_video:
-            print(f'The read format of ONE VIDEO dataset is {self.dataset_params.read_format} in {self._NAME}')
-        else:
-            print(f'The read format of dataset is {self.dataset_params.read_format} in {self._NAME}')
+        # elif self.one_video:
+        #     print(f'The read format of ONE VIDEO dataset is {self.dataset_params.read_format} in {self._NAME}')
+        # else:
+        #     print(f'The read format of dataset is {self.dataset_params.read_format} in {self._NAME}')
     
+    @abc.abstractmethod
     def custom_setup(self):
-        print(f'Not re-implementation of custom setup in {FrameLevelVideoDataset._NAME}')
-        # pass
+        # print(f'Not re-implementation of custom setup in {FrameLevelVideoDataset._NAME}')
+        pass
     
         
     def __getitem__(self, indice):

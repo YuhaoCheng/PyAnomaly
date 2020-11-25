@@ -1,22 +1,9 @@
-# import os
-# import torch
-import importlib
 from pathlib import Path
-# from collections import OrderedDict
-
-# from pyanomaly.config.defaults import update_config
 from pyanomaly.config import update_config
 from pyanomaly.utils.cmd import parse_args
 from pyanomaly.utils.system import system_setup
 from pyanomaly.utils.utils import create_logger, get_tensorboard
 
-# from pyanomaly.networks.model_api import ModelAPI
-# from pyanomaly.loss.loss_api import LossAPI
-# from pyanomaly.core.optimizer.optimizer_api import OptimizerAPI
-# from pyanomaly.core.scheduler.scheduler_api import SchedulerAPI
-# from pyanomaly.core.hook.hooks_api import HookAPI
-# from pyanomaly.core.engine.engine_api import EngineAPI
-# from pyanomaly.datatools.datatools_api import DataAPI, EvaluateAPI
 from pyanomaly import (
     ModelAPI,
     LossAPI,
@@ -36,7 +23,7 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     # get the model structure
     ma = ModelAPI(cfg, logger)
     model_dict = ma()
-    # import ipdb; ipdb.set_trace()
+
     # get the loss function dict
     la = LossAPI(cfg, logger)
     loss_function_dict, loss_lamada = la()
@@ -44,50 +31,15 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     # get the optimizer
     oa = OptimizerAPI(cfg, logger)
     optimizer_dict = oa(model_dict)
+
     # get the the scheduler
     sa = SchedulerAPI(cfg, logger)
     lr_scheduler_dict = sa(optimizer_dict)
     
-    # =========================================Need to change===================================================
-    # embed the augmentAPI into the dataAPI
-    # get data augment
-    # aa = AugmentAPI(cfg, logger)
-
-    # get the train augment
-    # train_augment = aa(flag='train')
-    
-    # get the val augment 
-    # val_augment = aa(flag='val')
-    # aug_dict = OrderedDict()
-    # aug_dict['train_augment'] = train_augment
-    # aug_dict['val_augment'] = val_augment
-    # build the dataAPI, can use the cfg to get the dataloader
-    da = DataAPI(cfg, is_training=True)
+   
+    da = DataAPI(cfg, is_training)
     dataloaders_dict = da()
-    #  Get the train dataloader
-    # train_dataloader = da(flag='train', aug=train_augment)
-    
-    # Get the validation dataloader
-    # valid_dataloder = da(flag='val', aug=val_augment)
-
-    # Get the test datasets
-    # test_dataset_dict, test_dataset_keys = da(flag='test', aug=val_augment)
-    # test_dataset_dict_w, test_dataset_keys_w = da(flag='train_w', aug=val_augment)
-    # val_dataset = da(flag='test', aug=val_augment)
-    # val_dataset_w = da(flag='train_w', aug=val_augment)
-    
-    # Get the cluster dataset
-    # cluster_dataset_dict, cluster_dataset_keys = da(flag='cluster_train', aug=train_augment)
-    # train_dataset_cluster = da(flag='cluster_train', aug=train_augment)
-    # dataset_dict = OrderedDict()
-    # dataset_dict['train_dataloader'] = train_dataloader
-    # dataset_dict['valid_dataloder'] = valid_dataloder
-    # dataset_dict['val_dataset'] = val_dataset
-    # dataset_dict['val_dataset_w'] = val_dataset_w
-    # dataset_dict['train_dataset_cluster'] = train_dataset_cluster
-    
-    # ===========================================================================================================
-
+   
     # get the evaluate function
     ea = EvaluateAPI(cfg, logger)
     evaluate_function = ea(cfg.DATASET.evaluate_function_type)
@@ -97,7 +49,6 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
 
     # build hook
     ha = HookAPI(cfg)
-    # hooks = ha('train')
     hooks = ha(is_training)
 
     # =================================================Need to change to use the registry================================================================================================
@@ -136,7 +87,7 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     logger.info('Finish Training')
 
     model_result_path = trainer.result_path
-    # print(f'The model path is {model_result_path}')
+
     logger.info(f'The model path is {model_result_path}')
    
 
@@ -159,7 +110,7 @@ def inference(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name
 
     # build the dataAPI, can use the cfg to get the dataloader
     da = DataAPI(cfg)
-    dataloaders_dict = da(cfg, is_training=True)
+    dataloaders_dict = da(cfg, is_training)
     # Get the validation dataloader
     # valid_dataloder = da(flag='val', aug=val_augment)
 

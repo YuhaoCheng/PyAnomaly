@@ -10,7 +10,7 @@ class AbstractBuilder(object):
     #     '''
     #     self.cfg = cfg
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def build(self)->DataLoader:
         '''
         the method to build the dataloader
@@ -23,7 +23,7 @@ class AbstractBuilder(object):
         # raise Exception('No implement')
         pass
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def _build_dataset(self):
         '''
         build the dataset
@@ -31,14 +31,14 @@ class AbstractBuilder(object):
         # raise Exception('No implement')
         pass
 
-    @abc.abstractclassmethod
+    @abc.abstractmethod
     def _build_sampler(self):
         '''
         build the sampler
         '''
         pass
 
-    # @abc.abstractclassmethod
+    # @abc.abstractmethod
     def _build_collect_fn(self):
         '''
         build the collect fn
