@@ -3,15 +3,15 @@ from pyanomaly.core.utils import AverageMeter, ParamSet
 from .utils import engine_save_checkpoint
 from .utils import engine_save_model
 from .abstract import AbstractTrainer, AbstractInference
-
+import abc
 class DefaultTrainer(AbstractTrainer):
     def __init__(self, *defaults, **kwargs):
         '''
         Args:
             defaults(tuple): the default will have:
                 0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
-                1->train_dataloader: the dataloader   
-                2->val_dataloader: the dataloader     
+                1->train_dataloader: the dataloader    # Will be deprecated in the future
+                2->val_dataloader: the dataloader     # Will be deprecated in the future
                 3->optimizer:{'optimizer_g':op_g, 'optimizer_d'}
                 4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
                 5->logger: the logger of the whole training process
@@ -21,6 +21,7 @@ class DefaultTrainer(AbstractTrainer):
                 verbose(str):
                 parallel(bool): True-> data parallel
                 pertrain(bool): True-> use the pretarin model
+                dataloaders_dict: will to replace the train_dataloader and test_dataloader
                 extra param:
                     test_dataset_keys: the dataset keys of each video
                     test_dataset_dict: the dataset dict of whole test videos
@@ -84,9 +85,10 @@ class DefaultTrainer(AbstractTrainer):
         if self.config.FINETUNE.flag:
             self.fine_tune()
         
-    
+    @abc.abstractclassmethod
     def custom_setup(self):
-        raise Exception('Not implement the custom setup')
+        # raise Exception('Not implement the custom setup')
+        pass
     
     def load_pretrain(self):
         model_path = self.config.MODEL.pretrain_model
@@ -181,10 +183,12 @@ class DefaultTrainer(AbstractTrainer):
             engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_epoch, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
 
     
-    
+    @abc.abstractclassmethod
     def train(self,current_step):
-        raise Exception('Need to implement the train function!!')
+        # raise Exception('Need to implement the train function!!')
+        pass
     
+    @abc.abstractclassmethod
     def evaluate(self, current_step):
         '''
         Evaluate the results of the model
@@ -194,7 +198,8 @@ class DefaultTrainer(AbstractTrainer):
         Returns:
             metric: the metric 
         '''
-        raise Exception('Need to implement the evaluation function, return the score')
+        # raise Exception('Need to implement the evaluation function, return the score')
+        pass
     
         
  

@@ -52,7 +52,7 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     # aug_dict['train_augment'] = train_augment
     # aug_dict['val_augment'] = val_augment
     # build the dataAPI, can use the cfg to get the dataloader
-    da = DataAPI(cfg, True)
+    da = DataAPI(cfg, is_training=True)
     dataloaders_dict = da()
     import ipdb; ipdb.set_trace()
     #  Get the train dataloader
