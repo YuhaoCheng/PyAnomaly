@@ -1,23 +1,32 @@
-import os
-import torch
+# import os
+# import torch
 import importlib
 from pathlib import Path
-from collections import OrderedDict
+# from collections import OrderedDict
 
-from pyanomaly.config.defaults import update_config
+# from pyanomaly.config.defaults import update_config
+from pyanomaly.config import update_config
 from pyanomaly.utils.cmd import parse_args
 from pyanomaly.utils.system import system_setup
 from pyanomaly.utils.utils import create_logger, get_tensorboard
 
-from pyanomaly.networks.model_api import ModelAPI
-from pyanomaly.loss.loss_api import LossAPI
-from pyanomaly.core.optimizer.optimizer_api import OptimizerAPI
-from pyanomaly.core.scheduler.scheduler_api import SchedulerAPI
-from pyanomaly.core.hook.hooks_api import HookAPI
-# from pyanomaly.datatools.augment_api import AugmentAPI
-from pyanomaly.core.engine.engine_api import EngineAPI
-from pyanomaly.datatools.datasets_api import DataAPI
-from pyanomaly.datatools.evaluate_api import EvaluateAPI
+# from pyanomaly.networks.model_api import ModelAPI
+# from pyanomaly.loss.loss_api import LossAPI
+# from pyanomaly.core.optimizer.optimizer_api import OptimizerAPI
+# from pyanomaly.core.scheduler.scheduler_api import SchedulerAPI
+# from pyanomaly.core.hook.hooks_api import HookAPI
+# from pyanomaly.core.engine.engine_api import EngineAPI
+# from pyanomaly.datatools.datatools_api import DataAPI, EvaluateAPI
+from pyanomaly import (
+    ModelAPI,
+    LossAPI,
+    OptimizerAPI,
+    SchedulerAPI,
+    EngineAPI,
+    HookAPI,
+    DataAPI,
+    EvaluateAPI
+)
 
 def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name):
     

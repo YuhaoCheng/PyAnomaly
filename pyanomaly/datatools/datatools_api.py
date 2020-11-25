@@ -3,65 +3,38 @@ from torch.utils.data import DataLoader
 from collections import OrderedDict
 from .dataclass.sampler import TrainSampler, DistTrainSampler
 from .abstract.abstract_datasets_builder import AbstractBuilder
-from .datasets_registry import DATASET_FACTORY_REGISTRY
+from .datatools_registry import DATASET_FACTORY_REGISTRY
 from .dataclass import *
 from .dataclass.augment import AugmentAPI
+from .evaluate.eval_function import eval_functions
+
 import logging
 logger = logging.getLogger(__name__)
 
-BUILTIN = ['avenue', 'shanghai', 'vad', 'ped1', 'ped2', 'dota']
+# BUILTIN = ['avenue', 'shanghai', 'vad', 'ped1', 'ped2', 'dota']
 
 class DataAPI(AbstractBuilder):
     _name = 'DatasetAPI'
     def __init__(self, cfg, is_training):
-        # super(DatasetBuilder, self).__init__(cfg)
         self.seed = cfg.DATASET.seed
         self.cfg = cfg
-        # self.aug = aug
         self.is_training = is_training
         aug_api = AugmentAPI(cfg)
         aug_dict = aug_api.build()
         self.factory = DATASET_FACTORY_REGISTRY.get(self.cfg.DATASET.factory)(self.cfg, aug_dict, self.is_training)
-        # print(f'The dataclass register in {DatasetBuilder._name} are: {DatasetCatalog._REGISTERED}')
 
     def build(self):
         '''
         flag: the type of the dataset
         train--> use to train, all data, inf sampler
-        val--> use to val, all data, no-inf sampler
-        test--> use to test, dataset for each video, no-inf sampler
+        test--> use to val/test, dataset for each video, no-inf sampler
         '''
         # build the dataset
-        # self.flag = flag
         dataset_all = self._build_dataset()
-        # build the sampler
-        # self._data_len = len(dataset)
-
-        # if flag == 'train' or flag == 'mini':
-        #     sampler = self._build_sampler()
-        #     batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, self.cfg.TRAIN.batch_size, drop_last=True)
-        #     dataloader = DataLoader(dataset, batch_sampler=batch_sampler, pin_memory=True)
-        # elif flag == 'val':
-        #     dataloader = DataLoader(dataset, batch_size=self.cfg.VAL.batch_size, shuffle=False, pin_memory=True)
-        # elif flag == 'test':
-        #     dataloader = dataset    #  the dataset is the dict of dataset, need to imporve in the future
-        # elif flag == 'train_w' or flag == 'cluster_train':
-        #     dataloader = dataset
-        # else:
-        #     raise Exception('No supprot dataset')
+        
         dataloader_dict = OrderedDict()
         dataloader_dict['train'] = OrderedDict()
         dataloader_dict['test'] = OrderedDict()
-
-        # if self.is_training:
-        #     dataset_dict = dataset_all['train_dataset_dict']
-        #     batch_size = self.cfg.TRAIN.batch_size
-        #     # dataloader_dict = OrderedDict()
-        #     # dataloader_dict['train_dataloader_dict'] = OrderedDict
-        # else:
-        #     dataset_dict = dataset_all['test_dataset_dict']
-        #     batch_size = self.cfg.TEST.batch_size
-        #     # dataloader_dict = OrderedDict()
 
         dataset_dict = dataset_all['test_dataset_dict']
         batch_size = self.cfg.VAL.batch_size
@@ -70,7 +43,6 @@ class DataAPI(AbstractBuilder):
             temp = dataset_dict[key]
             dataloader_dict['test'][key] = OrderedDict()
             for dataset_key in temp['video_keys']:
-                # import ipdb; ipdb.set_trace()
                 dataset = dataset_dict[key]['video_datasets'][dataset_key]
                 temp_data_len = len(dataset)
                 sampler = self._build_sampler(temp_data_len)
@@ -99,10 +71,6 @@ class DataAPI(AbstractBuilder):
     
     def _build_dataset(self):
         
-        # if self.cfg.DATASET.name in BUILTIN:
-        #     dataset = DatasetCatalog.get(self.cfg.DATASET.name, self.cfg, self.flag, aug)
-        # else:
-        #     raise Exception('no implement')
         dataset = self.factory()
         return dataset
     
@@ -118,13 +86,13 @@ class DataAPI(AbstractBuilder):
         return dataloader_dict
 
 
-# class DataAPI(DatasetBuilder):
-#     def __init__(self, cfg):
-#         super(DataAPI, self).__init__(cfg)
+class EvaluateAPI(object):
+    def __init__(self, cfg, logger):
+        self.cfg = cfg
+        self.logger = logger
     
-#     def information(self):
-#         print('no information')
-    
-#     def __call__(self, flag, aug):
-#         data = super(DataAPI, self).build(flag=flag, aug=aug)
-#         return data
+    def __call__(self, eval_function_type):
+        assert eval_function_type in eval_functions, f'there is no type of evaluation {eval_function_type}, please check {eval_functions.keys()}'
+        self.logger.info(f'==> Using the eval function: {eval_function_type}')
+        t = eval_functions[eval_function_type]
+        return t

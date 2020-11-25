@@ -1,6 +1,6 @@
 from os import terminal_size
-from ..datasets_registry import DATASET_FACTORY_REGISTRY
-from ..datasets_registry import DATASET_REGISTRY
+from ..datatools_registry import DATASET_FACTORY_REGISTRY
+from ..datatools_registry import DATASET_REGISTRY
 from .avenue_ped_shanghai import *
 from ..abstract.abstract_dataset_factory import AbstractDatasetFactory, GetWDataset, GetClusterDataset
 from collections import OrderedDict, namedtuple

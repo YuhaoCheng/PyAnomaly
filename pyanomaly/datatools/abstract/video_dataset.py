@@ -3,7 +3,7 @@ import os
 from collections import OrderedDict
 from torch.utils.data import Dataset
 from .tools import ImageLoader, VideoLoader
-from ..datasets_registry import DATASET_REGISTRY
+from ..datatools_registry import DATASET_REGISTRY
 
 class AbstractVideoDataset(Dataset):
     _NAME = 'AbstractVideoDataset'

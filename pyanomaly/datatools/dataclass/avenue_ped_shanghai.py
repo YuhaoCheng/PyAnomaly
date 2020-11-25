@@ -7,7 +7,7 @@ import os
 from torch.utils.data import Dataset
 from pyanomaly.datatools.abstract.anomaly_video_dataset import AbstractVideoAnomalyDataset
 from pyanomaly.datatools.abstract.tools import ImageLoader, VideoLoader
-from ..datasets_registry import DATASET_REGISTRY
+from ..datatools_registry import DATASET_REGISTRY
 
 
 @DATASET_REGISTRY.register()
