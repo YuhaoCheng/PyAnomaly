@@ -47,7 +47,7 @@ class DataAPI(AbstractBuilder):
                 temp_data_len = len(dataset)
                 sampler = self._build_sampler(temp_data_len)
                 batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, batch_size, drop_last=True)
-                dataloader = DataLoader(dataset, batch_sampler=batch_sampler, pin_memory=True)
+                dataloader = DataLoader(dataset, batch_sampler=batch_sampler, pin_memory=True, num_workers=self.cfg.DATASET.num_workers)
                 dataloader_dict['test'][key][dataset_key] = dataloader
         
         if self.is_training:

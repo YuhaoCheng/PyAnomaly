@@ -14,7 +14,7 @@ LOG:
   vis_dir: './output/vis'
   
 DATASET:
-  name: 'ped2'
+  name: 'Ped2'
   seed: 2020
   read_format: 'opencv'
   image_format: 'tif'
@@ -113,7 +113,7 @@ ARGUMENT:
       position: 'center'
 MODEL:
   name: 'stae'
-  type: 'stae'
+  type: 'e2e'
   hooks:
     train: ['stae.STAEEvaluateHook', 'base.VisScoreHook']
     val: ['stae.STAEEvaluateHook']
@@ -129,6 +129,7 @@ FINETUNE:
   flag: false
   layer_list: []
 TRAIN:
+  engine_name: 'STAETrainer'
   batch_size: 16
   start_step: 0
   max_steps: 6720
@@ -138,8 +139,9 @@ TRAIN:
   eval_step: 160
   save_step: 160
   epochs: 1
-  loss: ['rec_loss', 'weighted_pred_loss']
-  loss_coefficients: [1,1]
+  losses: ['loss_RecLoss_cuda', 1.0, 'L2Loss', [], 'loss_WeightedPredLoss_cuda', 1.0, WeightedPredLoss, []]
+  # loss: ['rec_loss', 'weighted_pred_loss']
+  # loss_coefficients: [1,1]
   mode: 'general'
   general:
     optimizer:
@@ -149,7 +151,7 @@ TRAIN:
       momentum: 0.9
       weight_decay: 0.0001
       nesterov: false
-      output_name: ['optimizer_stae']
+      # output_name: ['optimizer_stae']
     scheduler:
       use: true
       name: 'stepLR'
@@ -165,9 +167,10 @@ TRAIN:
   model_output: './output/models'
   checkpoint_output: './output/checkpoint'
   pusedo_data_path: ''
-  cluster:
-    k: 10
+  # cluster:
+  #   k: 10
 VAL:
+  engine_name: 'STAEInference'
   name: ''
   path: ''
   batch_size: 2

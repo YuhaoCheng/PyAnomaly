@@ -29,6 +29,7 @@ config.LOG.vis_dir = './output/vis'
 # configure the dataset 
 config.DATASET = CN()
 config.DATASET.factory = 'VideoAnomalyDatasetFactory'
+config.DATASET.num_workers = 16
 config.DATASET.name = ''
 config.DATASET.seed = 2020
 config.DATASET.read_format = 'opencv'
@@ -279,14 +280,16 @@ config.VAL.name = ''
 config.VAL.engine_name = ''
 config.VAL.path = '' # if not use the data in the TRAIN.test_path
 config.VAL.batch_size = 2
+config.VAL.model_file = ''
+config.VAL.result_output = ''
 
-# configure the test process, will be deperacted in the future. Only keep the VAL
-config.TEST = CN()
-config.TEST.name = ''
-config.TEST.path = '' # if not use the data in the TRAIN.test_path
-config.TEST.model_file = ''
-config.TEST.result_output = ''
-config.TEST.label_folder = ''
+# # configure the test process, will be deperacted in the future. Only keep the VAL
+# config.TEST = CN()
+# config.TEST.name = ''
+# config.TEST.path = '' # if not use the data in the TRAIN.test_path
+# config.TEST.model_file = ''
+# config.TEST.result_output = ''
+# config.TEST.label_folder = ''
 
 
 def _get_cfg_defaults():
