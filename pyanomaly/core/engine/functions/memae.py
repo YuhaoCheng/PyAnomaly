@@ -20,8 +20,12 @@ from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from pyanomaly.utils.flow_utils import flow2img
 from pyanomaly.core.engine.default_engine import DefaultTrainer, DefaultInference
+from ..engine_registry import ENGINE_REGISTRY
 
-class Trainer(DefaultTrainer):
+__all__ = ['MEMATrainer', 'MEMAInference']
+
+@ENGINE_REGISTRY.register()
+class MEMATrainer(DefaultTrainer):
     NAME = ["MEMAE.TRAIN"]
     def custom_setup(self):
         if self.kwargs['parallel']:
@@ -115,8 +119,8 @@ class Trainer(DefaultTrainer):
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the frame PSNR is {temp_meter_frame.avg:.3f}')
         # return temp_meter.avg
 
-
-class Inference(DefaultInference):
+@ENGINE_REGISTRY.register()
+class MEMAInference(DefaultInference):
     NAME = ["MEMAE.INFERENCE"]
     def custom_setup(self):
         if self.kwargs['parallel']:

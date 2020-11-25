@@ -20,8 +20,11 @@ from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from pyanomaly.core.engine.default_engine import DefaultTrainer, DefaultInference
 
+from ..engine_registry import ENGINE_REGISTRY
 
-class Trainer(DefaultTrainer):
+__all__ = ['ANOPCNTrainer', 'ANOPCNInference']
+@ENGINE_REGISTRY.register()
+class ANOPCNTrainer(DefaultTrainer):
     _NAME = ["ANOPCN.TRAIN"]
     def custom_setup(self):
         # basic things
@@ -282,8 +285,8 @@ class Trainer(DefaultTrainer):
             temp_meter.update(vaild_psnr.detach())
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the PSNR is {temp_meter.avg:.3f}')
 
-
-class Inference(DefaultInference):
+@ENGINE_REGISTRY.register()
+class ANOPCNInference(DefaultInference):
     _NAME = ["ANOPCN.INFERENCE"]
     def __init__(self, *defaults,**kwargs):
         if kwargs['parallel']:

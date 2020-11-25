@@ -19,13 +19,16 @@ import torchvision.transforms.functional as tf
 from pyanomaly.core.engine.default_engine import DefaultTrainer, DefaultInference
 from pyanomaly.core.utils import AverageMeter, multi_obj_grid_crop, frame_gradient, get_batch_dets, tensorboard_vis_images, ParamSet, make_info_message
 from pyanomaly.datatools.evaluate.utils import psnr_error
-
+from ..engine_registry import ENGINE_REGISTRY
 try:
     from sklearn.externals import joblib
 except:
     import joblib
 
-class Trainer(DefaultTrainer):
+__all__ = ['OCAETrainer', 'OCAEInference']
+
+@ENGINE_REGISTRY.register()
+class OCAETrainer(DefaultTrainer):
     NAME = ["OCAE.TRAIN"]
     def custom_setup(self):
         # basic things
@@ -214,8 +217,8 @@ class Trainer(DefaultTrainer):
 
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the  A PSNR is {temp_meter_A.avg:.2f}, the B PSNR is {temp_meter_B.avg:.2f}, the C PSNR is {temp_meter_C.avg:.2f}')
 
-
-class Inference(DefaultInference):
+@ENGINE_REGISTRY.register()
+class OCAEInference(DefaultInference):
     NAME = ["OCAE.INFERENCE"]
     def custom_setup(self):
         if self.kwargs['parallel']:

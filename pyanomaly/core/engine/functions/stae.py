@@ -22,8 +22,12 @@ from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from pyanomaly.utils.flow_utils import flow2img
 from pyanomaly.core.engine.default_engine import DefaultTrainer, DefaultInference
+from ..engine_registry import ENGINE_REGISTRY
 
-class Trainer(DefaultTrainer):
+__all__ = ['STAETrainer', 'STAEInference']
+
+@ENGINE_REGISTRY.register()
+class STAETrainer(DefaultTrainer):
     NAME = ["STAE.TRAIN"]
     def custom_setup(self):
         # basic things
@@ -151,7 +155,8 @@ class Trainer(DefaultTrainer):
             # temp_meter_pred.update(pred_psnr_mini.detach())
         self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the REC PSNR is {temp_meter_rec.avg:.3f}')
 
-class Inference(DefaultInference):
+@ENGINE_REGISTRY.register()
+class STAEInference(DefaultInference):
     NAME = ["STAE.INFERENCE"]
     def custom_setup(self, *defaults,**kwargs):
         if self.kwargs['parallel']:

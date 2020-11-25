@@ -90,7 +90,7 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     ha = HookAPI(cfg, logger)
     hooks = ha('train')
 
-    
+    # =================================================Need to change to use the registry================================================================================================
     # instance the trainer
     core = importlib.import_module(f'pyanomaly.core.{cfg.MODEL.name}')
     logger.info(f'Build the trainer in {core}')
@@ -111,6 +111,7 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
                             hooks=hooks, evaluate_function=evaluate_function,
                             lr_scheduler_dict=lr_scheduler_dict
                             )
+    # ===================================================================================================================================================================================
     
     trainer.run(cfg.TRAIN.start_step, cfg.TRAIN.max_steps)
     

@@ -192,6 +192,7 @@ config.FINETUNE.layer_list = []
 # configure the training process
 #-----------------basic-----------------
 config.TRAIN = CN()
+config.TRAIN.engine_name = ''
 config.TRAIN.batch_size = 2
 config.TRAIN.start_step = 0
 config.TRAIN.max_steps = 20000  # epoch * len(dataset)
