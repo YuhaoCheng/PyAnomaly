@@ -1,6 +1,8 @@
 from torch.utils.data import Dataset
+__all__ = ['AbstractImageDataset']
+
 class AbstractImageDataset(Dataset):
-    _name = 'AbstractImageDataset'
+    _NAME = 'AbstractImageDataset'
     def __init__(self, dataset_folder, transforms):
         self.dir = dataset_folder
         self.transforms = transforms
@@ -24,10 +26,7 @@ class AbstractImageDataset(Dataset):
         pass
 
     def __getitem__(self, indice):
-        raise Exception(f'No inplement at {AbstractImageDataset._name}')
+        raise Exception(f'No inplement at {AbstractImageDataset._NAME}')
     
     def __len__(self):
-        raise Exception(f'No implement at {AbstractImageDataset._name}')
-
-if __name__ == '__main__':
-    temp = AbstractImageDataset(123, 123)
+        raise Exception(f'No implement at {AbstractImageDataset._NAME}')

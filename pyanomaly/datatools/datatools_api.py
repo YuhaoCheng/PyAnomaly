@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from collections import OrderedDict
 from .dataclass.sampler import TrainSampler, DistTrainSampler
 from .abstract.abstract_datasets_builder import AbstractBuilder
-from .datatools_registry import DATASET_FACTORY_REGISTRY
+from .datatools_registry import DATASET_FACTORY_REGISTRY, EVAL_METHOD_REGISTRY
 from .dataclass import *
 from .dataclass.augment import AugmentAPI
 from .evaluate.eval_function import eval_functions

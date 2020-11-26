@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 from .tools import ImageLoader, VideoLoader
 from ..datatools_registry import DATASET_REGISTRY
 
+__all__ = ['AbstractVideoDataset', 'FrameLevelVideoDataset']
 class AbstractVideoDataset(Dataset):
     _NAME = 'AbstractVideoDataset'
     def __init__(self, frames_folder, clip_length, sampled_clip_length, frame_step=1, clip_step=1, video_format='mp4', fps=10, transforms=None, is_training=True, one_video=False, mini=False, cfg=None, **kwargs):

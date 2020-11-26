@@ -5,6 +5,7 @@ import numpy as np
 import torchvision.transforms.functional as tf
 import imgaug.augmenters as iaa
 
+__all__ = ['ImageLoader', 'VideoLoader']
 class ImageLoader(object):
     _support_format = ['opencv', 'pillow']
     def __init__(self, read_format='pillow', channel_num=3, channel_name='rgb',params=None, transforms=None, normalize=False, mean=None, std=None, deterministic=False):

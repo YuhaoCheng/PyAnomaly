@@ -2,6 +2,9 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 class AnomalyProbabilistic(object):
+    '''
+    The new metric of comparing the anomaly events
+    '''
     def __init__(self,score_type='normal', ignore_frames=1):
         self.score_list = []
         self.score_type = score_type
