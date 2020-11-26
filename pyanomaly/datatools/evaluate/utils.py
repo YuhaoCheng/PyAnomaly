@@ -8,7 +8,7 @@ from scipy.ndimage import gaussian_filter1d
 
 
 def load_pickle_results(loss_file, cfg):
-    with open(loss_file, 'rb') as reader:
+    with open(loss_file, 'rb') as f:
         # results {
         #   'dataset': the name of dataset
         #   'psnr': the psnr of each testing videos,
@@ -25,7 +25,7 @@ def load_pickle_results(loss_file, cfg):
         #               ......
         # psnr_records[n] is np.array   ------>     xx.avi
 
-        results = pickle.load(reader)
+        results = pickle.load(f)
 
     dataset = results['dataset']
     # psnr_records = results['psnr']
@@ -59,7 +59,8 @@ def load_pickle_results(loss_file, cfg):
     # load ground truth
     gt_loader = GroundTruthLoader(cfg)
     # gt = gt_loader(dataset=dataset)
-    gt = gt_loader()
+    # gt = gt_loader()
+    gt = gt_loader.read(cfg.DATASET.name, cfg.DATASET.gt_path, cfg.DATASET.test_path) # because this method is only used for test/val
 
     assert num_videos == len(gt), f'the number of saved videos does not match the ground truth, {num_videos} != {len(gt)}' 
 

@@ -3,10 +3,11 @@ from torch.utils.data import DataLoader
 from collections import OrderedDict
 from .dataclass.sampler import TrainSampler, DistTrainSampler
 from .abstract.abstract_datasets_builder import AbstractBuilder
+from .dataclass.augment import AugmentAPI
 from .datatools_registry import DATASET_FACTORY_REGISTRY, EVAL_METHOD_REGISTRY
 from .dataclass import *
-from .dataclass.augment import AugmentAPI
-from .evaluate.eval_function import eval_functions
+from .evalute import *
+# from .evaluate.eval_function import eval_functions
 
 import logging
 logger = logging.getLogger(__name__)
@@ -87,12 +88,16 @@ class DataAPI(AbstractBuilder):
 
 
 class EvaluateAPI(object):
-    def __init__(self, cfg, logger):
+    def __init__(self, cfg):
         self.cfg = cfg
-        self.logger = logger
+        self.eval_name = cfg.DATASET.evaluate_function_name
+        # self.logger = logger
     
-    def __call__(self, eval_function_type):
-        assert eval_function_type in eval_functions, f'there is no type of evaluation {eval_function_type}, please check {eval_functions.keys()}'
-        self.logger.info(f'==> Using the eval function: {eval_function_type}')
-        t = eval_functions[eval_function_type]
-        return t
+    def __call__(self):
+        # assert eval_function_type in eval_functions, f'there is no type of evaluation {eval_function_type}, please check {eval_functions.keys()}'
+        # self.logger.info(f'==> Using the eval function: {eval_function_type}')
+        # t = eval_functions[eval_function_type]
+        eval_method = EVAL_METHOD_REGISTRY.get(self.eval_name)(self.cfg)
+        logger.info(f'Use the eval method {self.eval_name}')
+
+        return eval_method 

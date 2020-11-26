@@ -7,8 +7,11 @@ import os
 import numpy as np
 import scipy.io as scio
 import imgaug.augmenters as iaa
+import logging
+logger = logging.getLogger(__name__)
 
 __all__ = ['ImageLoader', 'VideoLoader']
+
 class ImageLoader(object):
     _support_format = ['opencv', 'pillow']
     def __init__(self, read_format='pillow', channel_num=3, channel_name='rgb',params=None, transforms=None, normalize=False, mean=None, std=None, deterministic=False):
@@ -251,7 +254,7 @@ class GroundTruthLoader(object):
     Ped1 = 'ped1'
     Ped2 = 'ped2'
 
-    _NAME = [Avenue, Shanghai, Ped1, Ped2]
+    # _NAME = [Avenue, Shanghai, Ped1, Ped2]
 
     _LABEL_FILE = {
         Avenue: 'avenue.mat',
@@ -259,31 +262,60 @@ class GroundTruthLoader(object):
         Ped2:'ped2.mat',
     }
 
-    def __init__(self, cfg, is_training=False):
-        self.cfg = cfg
-        # judge the support the dataset
-        if self.cfg.DATASET.name not in GroundTruthLoader._NAME:
-            raise Exception('Not support the dataste')
-        else:
-            self.name = self.cfg.DATASET.name
+    # def __init__(self, cfg, is_training=False):
+    #     self.cfg = cfg
+    #     # judge the support the dataset
+    #     if self.cfg.DATASET.name not in GroundTruthLoader._NAME:
+    #         raise Exception('Not support the dataste')
+    #     else:
+    #         self.name = self.cfg.DATASET.name
         
-        self.gt_path = self.cfg.DATASET.gt_path
+    #     self.gt_path = self.cfg.DATASET.gt_path
+    def __init__(self) -> None:
+        self.dataset_name = ''
+        self.gt_path = ''
+        self.data_path = ''
     
-    def __call__(self):
-        if self.name == GroundTruthLoader.Shanghai:
+    def set_name(self, dataset_name):
+        self.dataset_name = dataset_name
+    
+    def set_gt_path(self,gt_path):
+        self.gt_path = gt_path
+    
+    def set_data_path(self, data_path):
+        self.data_path = data_path
+
+    # def __call__(self):
+    #     if self.name == GroundTruthLoader.Shanghai:
+    #         gt = self._load_shanghai_gt()
+    #     else:
+    #         gt = self._load_avenue_ped1_ped2_gt()
+        
+    #     return gt
+    
+    def read(self, dataset_name, gt_path, data_path):
+        self.set_name(dataset_name)
+        self.set_gt_path(gt_path)
+        self.set_data_path(data_path)
+        logger.info(f'Read the ground truth of dataset {self.dataset_name} in {self.gt_path} of {self.data_path}')
+        if dataset_name == GroundTruthLoader.Shanghai:
             gt = self._load_shanghai_gt()
-        else:
+        elif dataset_name in [GroundTruthLoader.Avenue, GroundTruthLoader.Ped1, GroundTruthLoader.Ped2]:
             gt = self._load_avenue_ped1_ped2_gt()
-        
+        else:
+            raise Exception(f'Not Support dataset: {self.dataset_name}')
+
+        # pass
         return gt
-    
+
     def _load_avenue_ped1_ped2_gt(self):
-        mat_file = os.path.join(self.gt_path, GroundTruthLoader._LABEL_FILE[self.name])
+        mat_file = os.path.join(self.gt_path, GroundTruthLoader._LABEL_FILE[self.dataset_name])
         abnormal_events = scio.loadmat(mat_file, squeeze_me=True)['gt']
         
         number_videos = abnormal_events.shape[0]
 
-        dataset_video_folder = self.cfg.DATASET.test_path
+        # dataset_video_folder = self.cfg.DATASET.test_path
+        dataset_video_folder = self.data_path
         video_list = sorted(os.listdir(dataset_video_folder))
         
         assert number_videos == len(video_list), f'ground true does not match the number of testing videos. {number_videos} != {len(video_list)}'

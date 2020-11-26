@@ -21,12 +21,12 @@ DATASET:
   read_format: 'opencv'
   channel_num: 1
   channel_name: 'gray'
-  train_path: './data/Avenue/training/frames'
+  train_data_path: './data/Avenue/training/frames'
   train_clip_length: 32
   train_sampled_clip_length: 32
   train_frame_step: 1
   train_clip_step: 1
-  test_path: './data/Avenue/testing/frames'
+  test_data_path: './data/Avenue/testing/frames'
   test_clip_length: 16
   test_sampled_clip_length: 16
   test_frame_step: 1

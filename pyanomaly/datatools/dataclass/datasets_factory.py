@@ -2,57 +2,18 @@ from os import terminal_size
 from ..datatools_registry import DATASET_FACTORY_REGISTRY
 from ..datatools_registry import DATASET_REGISTRY
 from .avenue_ped_shanghai import *
-from ..abstract.abstract_dataset_factory import AbstractDatasetFactory, GetWDataset, GetClusterDataset
+# from ..abstract.abstract_dataset_factory import AbstractDatasetFactory, GetWDataset, GetClusterDataset
+from ..abstract import AbstractDatasetFactory, GetWDataset, GetClusterDataset
 from collections import OrderedDict, namedtuple
 import os
 __all__ = ['VideoAnomalyDatasetFactory']
-# @DATASET_FACTORY_REGISTRY.registry()
-# class AvenueFactory(object):
-#     NORMAL = ['stae', 'amc']
-#     CLASS1 = ['ocae']
-#     CLASS2 = ['memae']
-#     def __init__(self, cfg, aug) -> None:
-#         self.cfg = cfg
-#         self.model_name = cfg.MODEL.name
-#         self.ingredient = DATASET_REGISTRY.get('AvenuePedShanghaiAll')
-#         self.aug = aug
-
-#     def _build_normal(self):
-#         """
-#         """
-#         return 0
-#     def _build_class1(self):
-#         """
-#         """
-#         return 0
-
-#     def _build_class2(self):
-#         """
-#         """
-#         return 0
-
-#     def _build(self):
-#         if self.model_name in AvenueFactory.NORMAL:
-#             dataloader = self._build_normal()
-#         elif self.model_name in AvenueFactory.CLASS1:
-#             dataloader = self._build_class1()
-#         elif self.model_name in AvenueFactory.CLASS2:
-#             dataloader = self._build_class2()
-#         else:
-#             raise Exception('123')
-        
-#         return dataloader
-    
-#     def __call__(self):
-#         dataset_dict = self._build()
-#         return dataset_dict
 
 @DATASET_FACTORY_REGISTRY.register()
 class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetClusterDataset):
-    # NORMAL = ['stae', 'amc', 'anopcn', 'anopred']
-    NORMAL = ['amc', 'anopcn', 'anopred']
-    NEED_W = ['memae', 'stae']
-    # NEED_W = ['memae']
+    NORMAL = ['stae', 'amc', 'anopcn', 'anopred']
+    # NORMAL = ['amc', 'anopcn', 'anopred']
+    # NEED_W = ['memae', 'stae']
+    NEED_W = ['memae']
     NEED_CLUSTER = ['ocae']
     def __init__(self, cfg, aug_dict, is_training=True) -> None:
         # self.cfg = cfg

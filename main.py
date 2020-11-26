@@ -41,8 +41,9 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     dataloaders_dict = da()
    
     # get the evaluate function
-    ea = EvaluateAPI(cfg, logger)
-    evaluate_function = ea(cfg.DATASET.evaluate_function_type)
+    ea = EvaluateAPI(cfg)
+    # ea = EvaluateAPI(cfg, logger)
+    evaluate_function = ea()
 
     # Add the Summary writer 
     writer_dict = get_tensorboard(tensorboard_log_dir, time_stamp, cfg.MODEL.name, log_file_name)
