@@ -70,10 +70,12 @@ config.DATASET.decidable_idx_back = 1 # The back decidable frame idx
 config.DATASET.smooth = CN()
 config.DATASET.smooth.guassian = True
 config.DATASET.smooth.guassian_sigma = [10]
-config.DATASET.mini_dataset = CN()
+config.DATASET.mini_dataset = CN() 
 config.DATASET.mini_dataset.samples = 2
-config.DATASET.evaluate_function_name = 'compute_auc_score'
-
+# config.DATASET.evaluate_function_name = 'compute_auc_score'
+config.DATASET.evaluate_function = CN()
+config.DATASET.evaluate_function.name = ''
+config.DATASET.evaluate_function.result_type = 'score'  # 'score' | 'psnr' | .....
 
 # ****************configure the argument of the data*************************
 config.ARGUMENT = CN()
