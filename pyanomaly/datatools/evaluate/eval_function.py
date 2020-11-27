@@ -308,12 +308,15 @@ eval_functions = {
 
 
 @EVAL_METHOD_REGISTRY.register()
-class ScoreAUC(AbstractEvalMethod):
+class AUCMetrics(AbstractEvalMethod):
     def __init__(self, cfg, is_training) -> None:
-        super(ScoreAUC, self).__init__(cfg)
+        super(AUCMetrics, self).__init__(cfg)
         self.gt_loader = GroundTruthLoader()
         # self.dataset_name = cfg.DATASET.name
         # self.gt_path = cfg.DATASET.gt_path
+        self.optimal_resulst = RecordResult()
+        self.decidable_idx = self.datasets_params.decidable_idx
+        self.decidable_idx_back = self.dataset_params.decidable_idx
         if is_training:
             self.parts = ['train', 'val']
         else:
@@ -327,6 +330,7 @@ class ScoreAUC(AbstractEvalMethod):
             raise Exception(f'Not support the score type:{self.dataset_params.score_type}')
 
         self.gt_dict = self.load_ground_truth()
+        self.result_type = None
 
     def load_ground_truth(self):
         gt_dict = OrderedDict()
@@ -377,8 +381,12 @@ class ScoreAUC(AbstractEvalMethod):
         
 
     def eval_method(self, result, gt):
+        fpr, tpr, thresholds = metrics.roc_curve(gt, result, pos_label=self.pos_label)
+        auc = metrics.auc(fpr, tpr)
+        results = RecordResult(fpr, tpr, thresholds, auc, self.dataset_name, self._result_name, 0, self.pos_label)
 
         pass
+        return results
 
     def compute(self, result_file_dict):
         '''
@@ -387,9 +395,31 @@ class ScoreAUC(AbstractEvalMethod):
         for part in self.parts:
             gt = self.gt_dict[part]
             result_file = result_file_dict[part]
+            self._result_name = result_file
             psnr_records, score_records, num_videos = self.load_results(result_file)
             assert num_videos == len(gt), f'the number of saved videos does not match the ground truth, {num_videos} != {len(gt)}'
-
+            temp_result = self.eval_method(score_records, gt)
+            if temp_result > self.optimal_resulst:
+                self.optimal_resulst = temp_result
         
         pass
+        return self.optimal_resulst
 
+@EVAL_METHOD_REGISTRY.register()
+class ScoreAUC(AUCMetrics):
+    def __init__(self, cfg, is_training) -> None:
+        super(ScoreAUC, self).__init__(cfg, is_training)
+        self.set_result_type_score
+
+    def set_result_type_score(self):
+        self.result_type = 'score'
+
+
+@EVAL_METHOD_REGISTRY.register()
+class PSNRAUC(AUCMetrics):
+    def __init__(self, cfg, is_training) -> None:
+        super(PSNRAUC, self).__init__(cfg, is_training)
+        self.set_result_type_score
+
+    def set_result_type_score(self):
+        self.result_type = 'psnr'

@@ -24,12 +24,12 @@ class AbstractEvalMethod(object):
         pass
     
     @abc.abstractmethod
-    def eval_method(self, result, gt ):
+    def eval_method(self, result, gt):
         '''
         The actual method to get the eval metrics
         '''
         pass
-
+    
     @abc.abstractmethod
     def compute(self, result_file_dict):
         '''
