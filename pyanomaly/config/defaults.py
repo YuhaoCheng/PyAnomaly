@@ -55,6 +55,7 @@ config.DATASET.train.sampled_clip_length = 5 # the real used frame, most time it
 config.DATASET.train.frame_step = 1  # frame sample frequency
 config.DATASET.train.clip_step = 1   # clip sample frequency
 config.DATASET.train.gt_path = ''   # clip sample frequency
+config.DATASET.train.execute_test = False   # Testing the model on the train data
 config.DATASET.test = CN()
 config.DATASET.test.data_path = ''
 config.DATASET.test.clip_length = 5

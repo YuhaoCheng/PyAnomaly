@@ -347,7 +347,7 @@ class AUCMetrics(AbstractEvalMethod):
         results' format:
         {
           'dataset': the name of dataset
-          'psnr': the psnr of each testing videos,
+          'psnr': the psnr of each testing videos,  # will be deprecated in the future, only keep the 'score' key
           'flow': [], 
           'names': [], 
           'diff_mask': [], 
