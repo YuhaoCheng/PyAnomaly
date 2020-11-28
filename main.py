@@ -39,7 +39,7 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
    
     da = DataAPI(cfg, is_training)
     dataloaders_dict = da()
-   
+    import ipdb; ipdb.set_trace()
     # get the evaluate function
     ea = EvaluateAPI(cfg)
     # ea = EvaluateAPI(cfg, logger)

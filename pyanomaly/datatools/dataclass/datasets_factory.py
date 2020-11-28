@@ -42,9 +42,9 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
 
     def _produce_train_dataset(self):
         train_dataset_dict = OrderedDict()
-        train_dataset = self.ingredient(self.dataset_params.train_path, clip_length=self.dataset_params.train_clip_length, 
-                                        sampled_clip_length=self.dataset_params.train_sampled_clip_length, 
-                                        frame_step=self.dataset_params.train_frame_step,clip_step=self.dataset_params.train_clip_step, is_training=True,
+        train_dataset = self.ingredient(self.dataset_params.train.data_path, clip_length=self.dataset_params.train.clip_length, 
+                                        sampled_clip_length=self.dataset_params.train.sampled_clip_length, 
+                                        frame_step=self.dataset_params.train.frame_step,clip_step=self.dataset_params.train.clip_step, is_training=True,
                                         transforms=self.aug_dict['train_aug'], cfg=self.cfg)
         train_dataset_dict['video_keys'] = ['all']
         train_dataset_dict['video_datasets'] = OrderedDict()
@@ -54,13 +54,13 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
     
     def _produce_test_dataset(self):
         dataset_dict = OrderedDict()
-        video_dirs = os.listdir(self.dataset_params.test_path)
+        video_dirs = os.listdir(self.dataset_params.test.data_path)
         video_dirs.sort()
         for video_dir in video_dirs:
-            _temp_test_folder = os.path.join(self.dataset_params.test_path, video_dir)
-            dataset = self.ingredient(_temp_test_folder, clip_length=self.dataset_params.test_clip_length, 
-                                      sampled_clip_length=self.dataset_params.test_sampled_clip_length, 
-                                      clip_step=self.dataset_params.test_clip_step, frame_step=self.dataset_params.test_frame_step, is_training=False,
+            _temp_test_folder = os.path.join(self.dataset_params.test.data_path, video_dir)
+            dataset = self.ingredient(_temp_test_folder, clip_length=self.dataset_params.test.clip_length, 
+                                      sampled_clip_length=self.dataset_params.test.sampled_clip_length, 
+                                      clip_step=self.dataset_params.test.clip_step, frame_step=self.dataset_params.test.frame_step, is_training=False,
                                       transforms=self.aug_dict['test_aug'], one_video=True, cfg=self.cfg)
             dataset_dict[video_dir] = dataset
         video_keys = list(dataset_dict.keys())
@@ -72,10 +72,10 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
     
     def _produce_w_dataset(self):
         dataset_dict = OrderedDict()
-        video_dirs = os.listdir(self.dataset_params.train_path)
+        video_dirs = os.listdir(self.dataset_params.train.data_path)
         video_dirs.sort()
         for video_dir in video_dirs:
-            _temp_folder = os.path.join(self.dataset_params.train_path, video_dir)
+            _temp_folder = os.path.join(self.dataset_params.train.data_path, video_dir)
             # if self.dataset_name == 'shanghai':
             #     dataset = self.ingredient(_temp_test_folder, clip_length=self.dataset_params.test_clip_length, sampled_clip_length=self.dataset_params.test_sampled_clip_length, 
             #                                clip_step=self.dataset_params.test_clip_step, frame_step=self.dataset_params.test_frame_step, one_video=True, mini=True, is_training=True, 
@@ -84,8 +84,8 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
             # else:
             #     dataset = AvenuePedShanghaiAll(_temp_test_folder, clip_length=cfg.DATASET.train_clip_length, sampled_clip_length=cfg.DATASET.train_sampled_clip_length, 
             #                                clip_step=cfg.DATASET.train_clip_step, frame_step=cfg.DATASET.train_frame_step,transforms=aug, one_video=True, cfg=cfg, phase='train')
-            dataset = self.ingredient(_temp_folder, clip_length=self.dataset_params.train_clip_length, sampled_clip_length=self.dataset_params.train_clip_length, 
-                                        clip_step=self.dataset_params.train_clip_length, frame_step=self.dataset_params.train_clip_length, one_video=True, is_training=True, 
+            dataset = self.ingredient(_temp_folder, clip_length=self.dataset_params.train.clip_length, sampled_clip_length=self.dataset_params.train.clip_length, 
+                                        clip_step=self.dataset_params.train.clip_length, frame_step=self.dataset_params.train.clip_length, one_video=True, is_training=True, 
                                         transforms=self.aug_dict['train_aug'], cfg=self.cfg)
             dataset_dict[video_dir] = dataset
         video_keys = list(dataset_dict.keys())
@@ -100,9 +100,9 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
         video_dirs = os.listdir(self.dataset_params.train_path)
         video_dirs.sort()
         for video_dir in video_dirs:
-            _temp_folder = os.path.join(self.dataset_params.train_path, video_dir)
-            dataset = self.ingredient(_temp_folder, clip_length=self.dataset_params.train_clip_length, sampled_clip_length=self.dataset_params.train_sampled_clip_length, 
-                                       clip_step=self.dataset_params.train_clip_step, frame_step=self.dataset_params.train_frame_step, is_training=True, 
+            _temp_folder = os.path.join(self.dataset_params.train.data_path, video_dir)
+            dataset = self.ingredient(_temp_folder, clip_length=self.dataset_params.train.clip_length, sampled_clip_length=self.dataset_params.train.sampled_clip_length, 
+                                       clip_step=self.dataset_params.train.clip_step, frame_step=self.dataset_params.train.frame_step, is_training=True, 
                                        transforms=self.aug_dict['train_aug'], one_video=True, cfg=self.cfg)
             dataset_dict[video_dir] = dataset
         video_keys = list(dataset_dict.keys())

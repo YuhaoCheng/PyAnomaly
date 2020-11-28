@@ -11,7 +11,7 @@ from scipy.ndimage import gaussian_filter1d
 
 from .abstract_hook import EvaluateHook
 from pyanomaly.datatools.evaluate.utils import reconstruction_loss
-from pyanomaly.datatools.evaluate.gtloader import GroundTruthLoader
+from pyanomaly.datatools.abstract.readers import GroundTruthLoader
 # from lib.datatools.evaluate import eval_api
 from pyanomaly.core.utils import tsne_vis, tensorboard_vis_images, save_results
 

@@ -8,7 +8,7 @@ import numpy as np
 from pathlib import Path
 import torchvision.transforms.functional as tf
 from tqdm import tqdm
-from pyanomaly.utils.image_ops import image_gradient
+from pyanomaly.core.utils import image_gradient
 import torch 
 from torch.utils.data.dataloader import default_collate
 

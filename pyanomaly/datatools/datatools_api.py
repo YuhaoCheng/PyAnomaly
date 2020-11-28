@@ -6,7 +6,7 @@ from .abstract.abstract_datasets_builder import AbstractBuilder
 from .dataclass.augment import AugmentAPI
 from .datatools_registry import DATASET_FACTORY_REGISTRY, EVAL_METHOD_REGISTRY
 from .dataclass import *
-from .evalute import *
+from .evaluate import *
 # from .evaluate.eval_function import eval_functions
 
 import logging

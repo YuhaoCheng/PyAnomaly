@@ -21,17 +21,21 @@ DATASET:
   read_format: 'opencv'
   channel_num: 1
   channel_name: 'gray'
-  train_data_path: './data/Avenue/training/frames'
-  train_clip_length: 32
-  train_sampled_clip_length: 32
-  train_frame_step: 1
-  train_clip_step: 1
-  test_data_path: './data/Avenue/testing/frames'
-  test_clip_length: 16
-  test_sampled_clip_length: 16
-  test_frame_step: 1
-  test_clip_step: 1
-  gt_path: './data/Avenue'
+  train:
+    data_path: './data/Avenue/training/frames'
+    clip_length: 32
+    sampled_clip_length: 32
+    frame_step: 1
+    clip_step: 1
+    execute_test: False
+    gt_path: ''
+  test:
+    data_path: './data/Avenue/testing/frames'
+    clip_length: 16
+    sampled_clip_length: 16
+    frame_step: 1
+    clip_step: 1
+    gt_path: './data/Avenue'
   number_of_class: 1
   score_normalize: false
   score_type: 'normal'
@@ -42,7 +46,9 @@ DATASET:
     guassian_sigma: [3,5,15,10,20,30]
   mini_dataset:
     samples: 100
-  evaluate_function_type: 'compute_auc_score'
+  evaluate_function:
+    name: 'AUCMetrics'
+    result_type: 'score'
 ARGUMENT:
   train:
     use: true

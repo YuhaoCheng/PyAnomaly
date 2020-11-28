@@ -19,7 +19,7 @@ from ..abstract import GroundTruthLoader, AbstractEvalMethod
 from ..tools import RecordResult
 from ..datatools_registry import EVAL_METHOD_REGISTRY
 
-
+__all__ = ['AUCMetrics', 'ScoreAUC', 'PSNRAUC']
 def get_scores_labels(loss_file, cfg):
     '''
     base the psnr to get the scores of each videos

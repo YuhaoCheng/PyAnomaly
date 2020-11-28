@@ -10,7 +10,7 @@ import imgaug.augmenters as iaa
 import logging
 logger = logging.getLogger(__name__)
 
-__all__ = ['ImageLoader', 'VideoLoader']
+__all__ = ['ImageLoader', 'VideoLoader', 'GroundTruthLoader']
 
 class ImageLoader(object):
     _support_format = ['opencv', 'pillow']

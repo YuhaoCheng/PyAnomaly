@@ -3,7 +3,7 @@ import os
 import pickle
 import torch
 from collections import OrderedDict
-from .gtloader import GroundTruthLoader
+from ..abstract.readers import GroundTruthLoader
 from scipy.ndimage import gaussian_filter1d
 
 

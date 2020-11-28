@@ -10,7 +10,7 @@ from tsnecuda import TSNE
 from scipy.ndimage import gaussian_filter1d
 
 from pyanomaly.datatools.evaluate.utils import psnr_error
-from pyanomaly.datatools.evaluate.gtloader import GroundTruthLoader
+from pyanomaly.datatools.abstract.readers import GroundTruthLoader
 from pyanomaly.core.utils import tsne_vis
 
 from .abstract_hook import HookBase

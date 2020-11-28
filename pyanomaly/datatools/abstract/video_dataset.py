@@ -3,7 +3,7 @@ import glob
 import os
 from collections import OrderedDict
 from torch.utils.data import Dataset
-from .tools import ImageLoader, VideoLoader
+from .readers import ImageLoader, VideoLoader
 from ..datatools_registry import DATASET_REGISTRY
 
 __all__ = ['AbstractVideoDataset', 'FrameLevelVideoDataset']
