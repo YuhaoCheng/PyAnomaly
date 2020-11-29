@@ -8,8 +8,39 @@ import numpy as np
 from pathlib import Path
 import torchvision.transforms.functional as tf
 from tqdm import tqdm
-from pyanomaly.utils.image_ops import image_gradient
+from pyanomaly.core.utils import image_gradient
+import torch 
+from torch.utils.data.dataloader import default_collate
 
+# import ipdb
+class RecordResult(object):
+    def __init__(self, fpr=None, tpr=None, thresholds=None, auc=-np.inf, dataset=None, loss_file=None, sigma=0):
+        self.fpr = fpr
+        self.tpr = tpr
+        self.thresholds = thresholds
+        self.auc = auc
+        self.dataset = dataset
+        self.loss_file = loss_file
+        self.sigma = sigma
+
+    def __lt__(self, other):
+        return self.auc < other.auc
+
+    def __gt__(self, other):
+        return self.auc > other.auc
+
+    def __str__(self):
+        return f'dataset = {self.dataset}, loss file = {self.loss_file}, auc = {self.auc:.5f}, sigma={self.sigma}'
+    
+    def get_threshold(self):
+        diff_list = list()
+        num_points = len(self.fpr)
+        for i in range(num_points):
+            temp = self.tpr[i] - self.fpr[i]
+            diff_list.append(temp)
+        index = diff_list.index(max(diff_list))
+
+        return self.thresholds[index]
 
 def make_objects_db(data_path, split='training',det_threshold=0.95, time_file='./training_3.json', verbose='none'):
     """
@@ -284,6 +315,43 @@ def make_objects_box_db(data_path, split='training',det_threshold=0.95, time_fil
         torch.save(final, final_name)
     except Exception as err:
         print(err)         
+
+def collect_fn(batch):
+    """
+    image_b, image_a, image, image_f, label, detection_result = batch
+    """
+    # max_detection = max(list(map(lambda x: len(x[5]), batch)))
+    max_detection = max(list(map(lambda x: len(x), batch)))
+    for i in range(len(batch)):
+        batch[i] = list(batch[i]) # because the element in the batch is a tuple
+        dummy = torch.zeros((1,5), dtype=batch[i][5].dtype)
+        temp = batch[i][5]
+        # make the detection to the same length in order to stack the
+        while temp.size(0) < max_detection:
+            temp = torch.cat((temp, dummy))
+        batch[i][5] = temp
+    
+    return default_collate(batch)
+
+def collect_fn_local(batch):
+    """
+    image_b, image_a, image, image_f, crop_objects = batch
+    """
+    max_detection = max(list(map(lambda x: len(x[4]), batch)))
+    for i in range(len(batch)):
+        batch[i] = list(batch[i]) # because the element in the batch is a tuple
+        dummy = torch.zeros((1,128,64), dtype=batch[i][4][0].dtype)
+        temp = batch[i][4]
+        # make the detection to the same length in order to stack the
+        while temp.size(0) < max_detection:
+        # while len(temp) < max_detection:
+            temp = torch.cat((temp, dummy))
+            # temp.append(dummy)
+        batch[i][4] = temp
+    
+    return default_collate(batch)
+
+
 
 if __name__ == '__main__':
     # path = '/export/home/chengyh/reproduce/objec-centric/data/VAD/testing/frames'

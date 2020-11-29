@@ -1,0 +1,15 @@
+SYSTEM:
+  multigpus: false
+  num_gpus: 2
+  gpus: [0,1]
+  cudnn:
+    benchmark: false
+    deterministic: true
+    enable: true
+  distributed:
+    use: false
+  LOG:
+    log_output_dir: './output/log'
+    tb_output_dir: './output/tensorboard'
+    vis_dir: './output/vis'
+    

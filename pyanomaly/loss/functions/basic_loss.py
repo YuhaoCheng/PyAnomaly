@@ -9,7 +9,7 @@ from ..loss_registry import LOSS_REGISTRY
 
 __all__ = ['L2Loss', 'IntensityLoss', 'GradientLoss', 'Adversarial_Loss', 
            'Discriminate_Loss', 'AMCDiscriminateLoss', 'AMCGenerateLoss', 
-           'GANLoss', 'WeightedPredLoss', 'MSELoss', 'CrossEntropyLoss', 'get_basic_loss']
+           'GANLoss', 'WeightedPredLoss', 'MSELoss', 'CrossEntropyLoss']
 
 
 def pad_same(in_dim, ks, stride, dilation=1):
@@ -208,6 +208,7 @@ class GANLoss(nn.Module):
 class WeightedPredLoss(nn.Module):
     def __init__(self):
         super(WeightedPredLoss, self).__init__()
+        # pass
     
     def forward(self, x, target):
         error = 0
@@ -280,6 +281,7 @@ def produce_assign_statement(name, value):
     else:
         statement = f"{name}={value}"
     return statement
+
 # LOSSDICT ={
 #     'mse': nn.MSELoss(reduction='mean').cuda(),
 #     'cross': nn.CrossEntropyLoss(weight=None, size_average=True, reduce=False).cuda(),
@@ -304,9 +306,9 @@ def produce_assign_statement(name, value):
 #     'weighted_pred_loss': WeightedPredLoss().cuda()
 # }
 
-def get_basic_loss(loss_name, cfg):
-    assert loss_name in LOSSDICT.keys(), f'The loss name: {loss_name} is not support'
-    print(f'Using the loss:{loss_name}')
-    loss_function = LOSSDICT[loss_name]
-    return loss_function
+# def get_basic_loss(loss_name, cfg):
+#     assert loss_name in LOSSDICT.keys(), f'The loss name: {loss_name} is not support'
+#     print(f'Using the loss:{loss_name}')
+#     loss_function = LOSSDICT[loss_name]
+#     return loss_function
 

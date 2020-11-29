@@ -12,11 +12,14 @@ import argparse
 import pickle
 from sklearn import metrics
 import json
+from collections import OrderedDict
 
 from .utils import load_pickle_results
-from .gtloader import GroundTruthLoader, RecordResult
+from ..abstract import GroundTruthLoader, AbstractEvalMethod
+from ..tools import RecordResult
+from ..datatools_registry import EVAL_METHOD_REGISTRY
 
-
+__all__ = ['AUCMetrics', 'ScoreAUC', 'PSNRAUC']
 def get_scores_labels(loss_file, cfg):
     '''
     base the psnr to get the scores of each videos
@@ -293,14 +296,130 @@ eval_functions = {
 }
 
 
-'''
-Functions for testing the evaluation functions
-'''
-def evaluate(eval_type, save_file, logger, cfg):
-    assert eval_type in eval_functions, f'there is no type of evaluation {eval_type}, please check {eval_functions.keys()}'
+# '''
+# Functions for testing the evaluation functions
+# '''
+# def evaluate(eval_type, save_file, logger, cfg):
+#     assert eval_type in eval_functions, f'there is no type of evaluation {eval_type}, please check {eval_functions.keys()}'
     
-    eval_func = eval_functions[eval_type]
-    optimal_results = eval_func(save_file, logger, cfg)
-    return optimal_results
+#     eval_func = eval_functions[eval_type]
+#     optimal_results = eval_func(save_file, logger, cfg)
+#     return optimal_results
 
 
+@EVAL_METHOD_REGISTRY.register()
+class AUCMetrics(AbstractEvalMethod):
+    def __init__(self, cfg, is_training) -> None:
+        super(AUCMetrics, self).__init__(cfg)
+        self.gt_loader = GroundTruthLoader()
+        # self.dataset_name = cfg.DATASET.name
+        # self.gt_path = cfg.DATASET.gt_path
+        self.optimal_resulst = RecordResult()
+        self.decidable_idx = self.datasets_params.decidable_idx
+        self.decidable_idx_back = self.dataset_params.decidable_idx
+        if is_training:
+            self.parts = ['train', 'val']
+        else:
+            self.parts = ['val']
+            
+        if self.dataset_params.score_type == 'normal':
+            self.pos_label = 0
+        elif self.dataset_params.score_type == 'abnormal':
+            self.pos_label = 1
+        else:
+            raise Exception(f'Not support the score type:{self.dataset_params.score_type}')
+
+        self.gt_dict = self.load_ground_truth()
+        self.result_type = None
+
+    def load_ground_truth(self):
+        gt_dict = OrderedDict()
+        for part in self.parts:
+            gt_path = self.dataset_params[part]['gt_path']
+            data_path = self.dataset_params[part]['data_path']
+            gt = self.gt_loader.read(self.dataset_name, gt_path, data_path)
+            gt_dict[part] = gt
+        # pass
+        return gt_dict
+    
+    def load_results(self, result_file):
+        '''
+        results' format:
+        {
+          'dataset': the name of dataset
+          'psnr': the psnr of each testing videos,  # will be deprecated in the future, only keep the 'score' key
+          'flow': [], 
+          'names': [], 
+          'diff_mask': [], 
+          'score': the score of each testing videos
+          'num_videos': the number of the videos
+        }
+        '''
+        with open(result_file, 'rb') as f:
+            results = pickle.load(f)
+        
+        dataset_name = results['dataset']
+        num_videos = results['num_videos']
+
+        score_records = list()
+        psnr_records = list()  # need to change, image, if you have another key, you need to change the code here. Not very elegant 
+        if self.dataset_params.smooth.guassian:
+            for sigma in self.dataset_params.smooth.guassian_sigma:
+                score_records.append(results[f'score_smooth_{sigma}']) # need to improve, at present, the guassian process is in the resluts is in the file, 
+                                                                       # and facing the same problem which if you add new key, you will change the code here
+                if len(results['psnr']) == 0:
+                    psnr_records = [results[f'psnr_smooth_{self.dataset_params.smooth.guassian_sigma[0]}']]
+                else:
+                    psnr_records.append(results[f'psnr_smooth_{sigma}'])
+        else:
+            score_records.append(results['score'])
+            psnr_records.append(results['psnr'])
+        
+        assert dataset_name == self.dataset_name, f'The dataset are not match, Result:{dataset_name}, cfg:{self.dataset_name}'
+
+        return psnr_records, score_records, num_videos
+        
+
+    def eval_method(self, result, gt):
+        fpr, tpr, thresholds = metrics.roc_curve(gt, result, pos_label=self.pos_label)
+        auc = metrics.auc(fpr, tpr)
+        results = RecordResult(fpr, tpr, thresholds, auc, self.dataset_name, self._result_name, 0, self.pos_label)
+
+        pass
+        return results
+
+    def compute(self, result_file_dict):
+        '''
+        result_file_dict = {'train':......., 'val':..........}
+        '''
+        for part in self.parts:
+            gt = self.gt_dict[part]
+            result_file = result_file_dict[part]
+            self._result_name = result_file
+            psnr_records, score_records, num_videos = self.load_results(result_file)
+            assert num_videos == len(gt), f'the number of saved videos does not match the ground truth, {num_videos} != {len(gt)}'
+            temp_result = self.eval_method(score_records, gt)
+            if temp_result > self.optimal_resulst:
+                self.optimal_resulst = temp_result
+        
+        pass
+        return self.optimal_resulst
+
+@EVAL_METHOD_REGISTRY.register()
+class ScoreAUC(AUCMetrics):
+    def __init__(self, cfg, is_training) -> None:
+        super(ScoreAUC, self).__init__(cfg, is_training)
+        self.set_result_type_score
+
+    def set_result_type_score(self):
+        self.result_type = 'score'
+
+
+@EVAL_METHOD_REGISTRY.register()
+class PSNRAUC(AUCMetrics):
+    def __init__(self, cfg, is_training) -> None:
+        super(PSNRAUC, self).__init__(cfg, is_training)
+        self.set_result_type_score
+
+    def set_result_type_score(self):
+        self.result_type = 'psnr'

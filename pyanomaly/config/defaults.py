@@ -28,6 +28,8 @@ config.LOG.vis_dir = './output/vis'
 
 # configure the dataset 
 config.DATASET = CN()
+config.DATASET.factory = 'VideoAnomalyDatasetFactory'
+config.DATASET.num_workers = 16
 config.DATASET.name = ''
 config.DATASET.seed = 2020
 config.DATASET.read_format = 'opencv'
@@ -36,17 +38,31 @@ config.DATASET.channel_num = 3 # 1: grayscale image | 2: optical flow | 3: RGB o
 config.DATASET.channel_name = 'rgb' # 'gray' | 'uv' | 'rgb' | ....
 config.DATASET.optical_format = 'Y'
 config.DATASET.optical_size = [384, 512] # the size of image before estimating the optical flow, H*W
-config.DATASET.train_path = ''
-config.DATASET.train_clip_length = 5 # the total clip length, including frames not be sampled
-config.DATASET.train_sampled_clip_length = 5 # the real used frame, most time it equals to clip_length
-config.DATASET.train_frame_step = 1  # frame sample frequency
-config.DATASET.train_clip_step = 1   # clip sample frequency
-config.DATASET.test_path = ''
-config.DATASET.test_clip_length = 5
-config.DATASET.test_sampled_clip_length = 5
-config.DATASET.test_frame_step = 1
-config.DATASET.test_clip_step = 1
-config.DATASET.gt_path = ''
+# config.DATASET.train_path = ''
+# config.DATASET.train_clip_length = 5 # the total clip length, including frames not be sampled
+# config.DATASET.train_sampled_clip_length = 5 # the real used frame, most time it equals to clip_length
+# config.DATASET.train_frame_step = 1  # frame sample frequency
+# config.DATASET.train_clip_step = 1   # clip sample frequency
+# config.DATASET.test_path = ''
+# config.DATASET.test_clip_length = 5
+# config.DATASET.test_sampled_clip_length = 5
+# config.DATASET.test_frame_step = 1
+# config.DATASET.test_clip_step = 1
+config.DATASET.train = CN()
+config.DATASET.train.data_path = ''
+config.DATASET.train.clip_length = 5 # the total clip length, including frames not be sampled
+config.DATASET.train.sampled_clip_length = 5 # the real used frame, most time it equals to clip_length
+config.DATASET.train.frame_step = 1  # frame sample frequency
+config.DATASET.train.clip_step = 1   # clip sample frequency
+config.DATASET.train.gt_path = ''   # clip sample frequency
+config.DATASET.train.execute_test = False   # Testing the model on the train data
+config.DATASET.test = CN()
+config.DATASET.test.data_path = ''
+config.DATASET.test.clip_length = 5
+config.DATASET.test.sampled_clip_length = 5
+config.DATASET.test.frame_step = 1
+config.DATASET.test.clip_step = 1
+config.DATASET.test.gt_path = ''
 config.DATASET.number_of_class = 1 # use in changing the label to one hot
 config.DATASET.score_normalize = True
 config.DATASET.score_type = 'normal' # 'normal' | 'abnormal'
@@ -55,10 +71,12 @@ config.DATASET.decidable_idx_back = 1 # The back decidable frame idx
 config.DATASET.smooth = CN()
 config.DATASET.smooth.guassian = True
 config.DATASET.smooth.guassian_sigma = [10]
-config.DATASET.mini_dataset = CN()
+config.DATASET.mini_dataset = CN() 
 config.DATASET.mini_dataset.samples = 2
-config.DATASET.evaluate_function_type = 'compute_auc_score'
-
+# config.DATASET.evaluate_function_name = 'compute_auc_score'
+config.DATASET.evaluate_function = CN()
+config.DATASET.evaluate_function.name = ''
+config.DATASET.evaluate_function.result_type = 'score'  # 'score' | 'psnr' | .....
 
 # ****************configure the argument of the data*************************
 config.ARGUMENT = CN()
@@ -191,6 +209,7 @@ config.FINETUNE.layer_list = []
 # configure the training process
 #-----------------basic-----------------
 config.TRAIN = CN()
+config.TRAIN.engine_name = ''
 config.TRAIN.batch_size = 2
 config.TRAIN.start_step = 0
 config.TRAIN.max_steps = 20000  # epoch * len(dataset)
@@ -203,12 +222,12 @@ config.TRAIN.save_step = 500  # the step to save the model
 config.TRAIN.epochs = 1 
 # config.TRAIN.loss = ['mse', 'cross']  # Will be discarded in the future
 # must be 4-times, the 0-th is name in dict, 1-th is the coefficicent of this loss, 2-th is the model named registered in the registry, 3-th is the params of the loss functions
-# e.g. ['loss_GeneratorLoss', 1.0, 'Adversarial_Loss', 'loss_Discriminiator', 1.0, 'Discriminate_Loss']
-# The 0-th's format is 'registryName_NameInEngine', for example, 'loss_GeneratorLoss' means the registry is 'loss' and the attribute named 'self.GeneratorLoss' refers to it. 
+# e.g. ['loss_GeneratorLoss_cuda', 1.0, 'Adversarial_Loss', [], 'loss_Discriminiator_cuda', 1.0, 'Discriminate_Loss', []]
+# The 0-th's format is 'registryName_NameInEngine_DeviceType', for example, 'loss_GeneratorLoss_cuda' means the registry is 'loss' and the attribute named 'self.GeneratorLoss' refers to it, the device is cuda. 
 # If 3-th is null, the loss will use the default setting. If not null, it will be depended on the designing
-# if 3-th is not null, it will be named as 'loss_cfg' and pass to the Loss class 
-config.TRAIN.losses = ['loss_MSE', 0.5, 'MSELoss', [['size_average', None], ['reduce', None], ['reduction', 'mean']], 
-                       'loss_Cross', 0.5, 'CrossEntropyLoss', []]  
+# if 3-th is not null, it will be named as 'loss_cfg' and pass to the Loss class; each item is the configuration, the first is name of the args, the second is the value of the args. 
+config.TRAIN.losses = ['loss_MSE_cuda', 0.5, 'MSELoss', [['size_average', None], ['reduce', None], ['reduction', 'mean']], 
+                       'loss_Cross_cuda', 0.5, 'CrossEntropyLoss', []]  
                     #    ['weight', None], ['size_average', None], ['ignore_index', -100], ['reduce', None], ['reduction', 'mean']
 # config.TRAIN.loss_coefficients = [0.5, 0.5] # the len must pair with the loss, Will be discarded in the future. 
 config.TRAIN.mode = 'general' # general | adversarial | ....
@@ -271,19 +290,22 @@ config.TRAIN.pusedo_data_path = ''
 config.TRAIN.cluster = CN()
 config.TRAIN.cluster.k = 10
 
-# configure the val process
+# configure the val process, equals to the TEST. 
 config.VAL = CN()
 config.VAL.name = ''
+config.VAL.engine_name = ''
 config.VAL.path = '' # if not use the data in the TRAIN.test_path
 config.VAL.batch_size = 2
+config.VAL.model_file = ''
+config.VAL.result_output = ''
 
-# configure the test process
-config.TEST = CN()
-config.TEST.name = ''
-config.TEST.path = '' # if not use the data in the TRAIN.test_path
-config.TEST.model_file = ''
-config.TEST.result_output = ''
-config.TEST.label_folder = ''
+# # configure the test process, will be deperacted in the future. Only keep the VAL
+# config.TEST = CN()
+# config.TEST.name = ''
+# config.TEST.path = '' # if not use the data in the TRAIN.test_path
+# config.TEST.model_file = ''
+# config.TEST.result_output = ''
+# config.TEST.label_folder = ''
 
 
 def _get_cfg_defaults():
