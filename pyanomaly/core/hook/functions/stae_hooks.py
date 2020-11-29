@@ -31,8 +31,8 @@ class STAEEvaluateHook(EvaluateHook):
         self.trainer.STAE.eval()
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
-        frame_num = self.trainer.config.DATASET.test_sampled_clip_length
-        clip_step = self.trainer.config.DATASET.test_clip_step
+        frame_num = self.trainer.config.DATASET.test.sampled_clip_length
+        clip_step = self.trainer.config.DATASET.test.clip_step
         psnr_records=[]
         score_records=[]
         # total = 0
@@ -42,19 +42,22 @@ class STAEEvaluateHook(EvaluateHook):
         for sn, video_name in enumerate(self.trainer.test_dataset_keys):
             num_videos += 1
             # need to improve
-            dataset = self.trainer.test_dataset_dict[video_name]
-            len_dataset = dataset.pics_len
+            # dataset = self.trainer.test_dataset_dict[video_name]
+            dataloader = self.trainer.test_dataloaders_dict[video_name]
+            # len_dataset = dataset.pics_len
+            len_dataset = dataloader.dataset.pics_len
             test_iters = len_dataset - frame_num + 1
             # test_iters = len_dataset // clip_step
             test_counter = 0
 
-            data_loader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, num_workers=1)
+            # data_loader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, num_workers=1)
             
             vis_range = range(int(len_dataset*0.5), int(len_dataset*0.5 + 5))
 
             psnrs = np.empty(shape=(len_dataset,),dtype=np.float32)
             scores = np.empty(shape=(len_dataset,),dtype=np.float32)
-            for clip_sn, (test_input, anno, meta) in enumerate(data_loader):
+            # for clip_sn, (test_input, anno, meta) in enumerate(data_loader):
+            for clip_sn, (test_input, anno, meta) in enumerate(dataloader):
                 test_input = data.cuda()
                 # test_target = data[:,:,16:,:,:].cuda()
                 time_len = test_input.shape[2]

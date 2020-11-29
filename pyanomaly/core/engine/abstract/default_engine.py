@@ -46,6 +46,7 @@ class DefaultTrainer(AbstractTrainer):
         # self._val_loader_iter = iter(self.val_dataloader)
         # ==============================================================================================
         dataloaders_dict = defaults[1]
+        self._dataloaders_dict = dataloaders_dict
         self.train_dataloaders_dict = dataloaders_dict['train']
         # for key in train_dataloaders_dict.keys():
         #     if str(key) == 'general_dataset_dict':
@@ -56,7 +57,9 @@ class DefaultTrainer(AbstractTrainer):
         self.val_dataloaders_dict = dataloaders_dict['test']
         # temporal, but it is wrong !!!
         # self._val_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['video_datasets']['all'])
-        self._val_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['all'])
+        # self._val_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['all'])
+        self.test_dataloaders_dict = dataloaders_dict['train']
+        self.test_dataset_keys = list(dataloaders_dict['test']['general_dataset_dict'].keys())
         # get the optimizer
         self.optimizer = defaults[2]
 

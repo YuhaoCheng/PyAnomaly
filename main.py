@@ -1,8 +1,15 @@
 from pathlib import Path
 from pyanomaly.config import update_config
-from pyanomaly.utils.cmd import parse_args
-from pyanomaly.utils.system import system_setup
-from pyanomaly.utils.utils import create_logger, get_tensorboard
+# from pyanomaly.utils.cmd import parse_args
+# from pyanomaly.utils.system import system_setup
+# from pyanomaly.utils.utils import create_logger, get_tensorboard
+
+from pyanomaly.utils import(
+    parse_args,
+    system_setup, 
+    create_logger, 
+    get_tensorboard
+)
 
 from pyanomaly import (
     ModelAPI,
