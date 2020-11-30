@@ -32,7 +32,8 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     model_dict = ma()
 
     # get the loss function dict
-    la = LossAPI(cfg, logger)
+    # la = LossAPI(cfg, logger)
+    la = LossAPI(cfg)
     loss_function_dict, loss_lamada = la()
     
     # get the optimizer
