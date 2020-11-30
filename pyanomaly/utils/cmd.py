@@ -9,7 +9,8 @@ def parse_args():
     parser.add_argument('--gpus', '-g', default='0', help='Set the using gpus e.g. \'0\', \'0,1\'')
     parser.add_argument('--project_path','-p', default='/export/home/chengyh/PyAnomaly')
     parser.add_argument('--mode', type=str, default='train')
-    parser.add_argument('--inference', action='store_true')
+    # parser.add_argument('--inference', action='store_true')
+    parser.add_argument('--train', action='store_true')
     parser.add_argument('--inference_model', default='')
     parser.add_argument('--local_rank', type=int, default=0) # not use at present
     parser.add_argument('--backend', type=str, default='nccl')

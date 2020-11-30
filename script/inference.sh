@@ -97,6 +97,6 @@ echo "Using the verbose:"$verbose
 cd $project_path
 
 
-CUDA_VISIBLE_DEVICES=$GPUS python main.py --project_path $project_path --cfg_folder $cfg_folder --cfg_name $config --verbose $verbose  --inference --inference_model $inference_model\
+CUDA_VISIBLE_DEVICES=$GPUS python main.py --project_path $project_path --cfg_folder $cfg_folder --cfg_name $config --verbose $verbose  --inference_model $inference_model\
                                                 SYSTEM.multigpus $MULTIGPUS \
                                                 SYSTEM.num_gpus $NUM_GPUS 

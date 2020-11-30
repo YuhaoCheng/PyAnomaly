@@ -98,9 +98,9 @@ from pyanomaly import (
 After setting up the system, we can use the APIs like this.
 
 ```python
- # get the model structure
- ma = ModelAPI(cfg)
- model_dict = ma()
+# get the model structure
+ma = ModelAPI(cfg)
+model_dict = ma()
 
 # get the loss function dict and the cofficiences of loss functions
 la = LossAPI(cfg)
