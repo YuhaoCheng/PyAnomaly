@@ -5,7 +5,7 @@ import pickle
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 from torch.utils.data import DataLoader
-from .abstract_hook import EvaluateHook
+from ..abstract import EvaluateHook
 
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from pyanomaly.core.utils import flow_batch_estimate, tensorboard_vis_images, save_results, vis_optical_flow

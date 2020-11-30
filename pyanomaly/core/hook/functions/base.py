@@ -13,7 +13,7 @@ from pyanomaly.datatools.evaluate.utils import psnr_error
 from pyanomaly.datatools.abstract.readers import GroundTruthLoader
 from pyanomaly.core.utils import tsne_vis
 
-from .abstract_hook import HookBase
+from ..abstract import HookBase
 from ..hook_registry import HOOK_REGISTRY
 
 __all__ = ['VisScoreHook', 'TSNEHook']

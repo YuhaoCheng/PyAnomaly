@@ -10,7 +10,7 @@ from pyanomaly.datatools.evaluate.utils import psnr_error, oc_score
 from pyanomaly.core.utils import multi_obj_grid_crop, frame_gradient, flow_batch_estimate, get_batch_dets, tensorboard_vis_images, save_results
 from pyanomaly.core.other.kmeans import kmeans, kmeans_predict
 # from lib.datatools.evaluate import eval_api
-from .abstract_hook import HookBase, EvaluateHook
+from ..abstract import HookBase, EvaluateHook
 
 # from sklearn.cluster import KMeans
 # from kmeans_pytorch import kmeans, kmeans_predict

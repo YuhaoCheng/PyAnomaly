@@ -9,7 +9,7 @@ from pyanomaly.core.utils import flow_batch_estimate, tensorboard_vis_images, sa
 from pyanomaly.datatools.evaluate.utils import simple_diff, find_max_patch, amc_score, calc_w
 from pyanomaly.core.utils import save_results, tensorboard_vis_images
 
-from .abstract_hook import EvaluateHook
+from ..abstract import EvaluateHook
 from ..hook_registry import HOOK_REGISTRY
 
 __all__ = ['AnoPredEvaluateHook']

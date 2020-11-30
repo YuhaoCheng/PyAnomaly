@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from tsnecuda import TSNE
 from scipy.ndimage import gaussian_filter1d
 
-from .abstract_hook import EvaluateHook
+from ..abstract import EvaluateHook
 from pyanomaly.datatools.evaluate.utils import reconstruction_loss
 from pyanomaly.datatools.abstract.readers import GroundTruthLoader
 # from lib.datatools.evaluate import eval_api
