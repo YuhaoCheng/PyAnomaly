@@ -10,12 +10,14 @@ In order to solve these problems and push the development of the video anomaly d
 ![](./structure.png)
 
 #### Function of each packages
-The core packages are in the lib package. We build the packages explicitly inside lib based on the general functions of the ***Anomaly Detection\***, which are `config`, `core`, `datatools`,`loss`, `networks`, and `utils`. Expect these packages in lib. The other folders are not python packages, which are the folder to store user data, such as data folder is to store data, `experiment` folder is to store configurations, and the `output` is to store the log files, models, and so on.
+The core packages are in the lib package. We build the packages explicitly inside ` pyanomaly`based on the general functions of the ***Anomaly Detection***, which are `config`, `core`, `datatools`,`loss`, `networks`, and `utils`.  The other folders are not python packages, which are the folder to store user data, such as `data `folder is to store data, `configuration` folder is to store configurations, the `output` is to store the log files, models and so on, the `Docker` folder contains the `DockerFile` to help researchers and engineers quickly build the application, `docs` folder contains the documents, `pretrained_mode` contains the pretrained models, and `script` folder contains the `shell` files used in this project. 
 
 Not for this project, this kind of project structure can be used in other CV projects, so we also provide a tool to build the project efficiently. Please refer to the [EasyBuildProject](https://github.com/YuhaoCheng/EasyBuildProject) 
 
+And Now, I want to describe the each package in `pyanomaly`
+
 ##### Config
-This package only contains one file `config.py`, which defines default configuration. During the real using process, we merely change this file. We only change the `YAML` files in `experiments`.
+This package only contains one file `defaults.py`, which defines default configuration. During the real using process, we merely change this file. We only change the `YAML` files in `configuration`.
 
 ##### Core
 This package contains the core functions of the whole project, which are the fixed training and inference methods. Each file is the individual trainer or inference for a method, which designs in modular. Not only the individual methods, but this part also contains the `hook` and `optimizer` and `scheduler`, which are used in the training or inference processed. The detail methods to register `hook` are in [USAGE](./usage.md).
@@ -43,6 +45,9 @@ To increase the flexibility of the repo, we make the following APIs to control t
 
 ***Providing the network of each model.*** After registering models in the `model` package, users can get the model based on the name registered in the package. This API will use the model name in the configuration file. 
 
+#### EngineAPI
+***Providing the training and inference for each methods*** There are so many different training and inference manners for video anomaly detection, for example, we can use the discriminative methods to train, while we also can use the adversarial methods to train. This forces us to design a function to call the different pipeline based on their name in the configuration file. So we develop this API.
+
 #### LossAPI
 
 ***Providing loss functions.*** After registering loss functions in the `loss` package, users can get the loss function based on the name which is registered in the package. This API will use the loss name and other parameters related to the loss functions in the configuration file. 
@@ -59,6 +64,8 @@ To increase the flexibility of the repo, we make the following APIs to control t
 
 ***Providing data augmentation.*** This API builds a pipeline to process the data based on the configuration file. Although the OpenCV and Torchvison are good enough to build the general data augmentation, we choose [imgaug](https://github.com/aleju/imgaug), which provides a convenient way to build the augmentation pipeline as the primary augmentation. This API will use the augmentation name and other parameters related to data augmentation in the configuration file.
 
+**!!! Attention: We do NOT use explicitly use this API, and we just call this in the DataAPI implicitly**
+
 #### DataAPI
 
 ***Providing the dataloader based on the dataset class and data augmentation.*** After registering datasets in the `datatools` package, users can get the dataloader based on the name which is registered in the package. This API will use the dataset name and other parameters related to the dataset in the configuration file. The dataloder will contain the data augmentation methods. 
@@ -71,4 +78,51 @@ Providing evaluation functions. The anomaly detection has various score computat
 
 Providing the Hooks. The Hooks are defining the details operations in the process. After registering hooks in the hooks package, users can get the hooks based on the name which is registered in the package. This API will use the hook name in the configuration file. 
 
+#### Example
 
+In the `PyAnomaly/main.py`,  you can find that we just call these APIs by this way:
+
+```python
+from pyanomaly import (
+    ModelAPI,
+    LossAPI,
+    OptimizerAPI,
+    SchedulerAPI,
+    EngineAPI,
+    HookAPI,
+    DataAPI,
+    EvaluateAPI
+)
+```
+
+After setting up the system, we can use the APIs like this.
+
+```python
+ # get the model structure
+ ma = ModelAPI(cfg)
+ model_dict = ma()
+
+# get the loss function dict and the cofficiences of loss functions
+la = LossAPI(cfg)
+loss_function_dict, loss_lamada = la()
+
+# get the optimizer
+oa = OptimizerAPI(cfg)
+optimizer_dict = oa(model_dict)
+
+# get the the scheduler
+sa = SchedulerAPI(cfg)
+lr_scheduler_dict = sa(optimizer_dict)
+
+# get the evaluate function
+ea = EvaluateAPI(cfg)
+evaluate_function = ea()
+
+# build hook
+ha = HookAPI(cfg)
+hooks = ha(is_training)
+
+# Get the engine
+engine_api = EngineAPI(cfg, True)
+engine = engine_api.build()
+```

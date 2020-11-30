@@ -4,19 +4,22 @@ from ..utils import engine_save_checkpoint
 from ..utils import engine_save_model
 from .abstract import AbstractTrainer, AbstractInference
 import abc
+# import logging
+# logger = logging.getLogger(__name__)
+
 class DefaultTrainer(AbstractTrainer):
     def __init__(self, *defaults, **kwargs):
         '''
         Args:
             defaults(tuple): the default will have:
-                0 0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
-                - 1->train_dataloader: the dataloader    # Will be deprecated in the future
-                - 2->val_dataloader: the dataloader     # Will be deprecated in the future
-                1 -->dataloader_dict: the dict of all the dataloader will be used in the process
-                2 3->optimizer:{'optimizer_g':op_g, 'optimizer_d'}
-                3 4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
-                4 5->logger: the logger of the whole training process
-                5 6->config: the config object of the whole process
+                0 0 0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
+                - - 1->train_dataloader: the dataloader    # Will be deprecated in the future
+                - - 2->val_dataloader: the dataloader     # Will be deprecated in the future
+                1 1 -->dataloader_dict: the dict of all the dataloader will be used in the process
+                2 2 3->optimizer:{'optimizer_g':op_g, 'optimizer_d'}
+                3 3 4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
+                - 4 5->logger: the logger of the whole training process
+                4 5 6->config: the config object of the whole process
 
             kwargs(dict): the default will have:
                 verbose(str):
@@ -32,7 +35,7 @@ class DefaultTrainer(AbstractTrainer):
         self._register_hooks(kwargs['hooks'])
         # logger & config
         self.logger = defaults[4]
-        self.config = defaults[5]
+        self.config = defaults[4]
 
         self.model = defaults[0]
         

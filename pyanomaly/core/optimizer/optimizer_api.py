@@ -1,22 +1,16 @@
 import torch
 import torch.optim as optim
 from collections import OrderedDict
+import logging
+logger  = logging.getLogger(__name__)
+
 class OptimizerAPI(object):
     _SUPPROT = ['adam', 'sgd']
     _MODE = ['all', 'individual']
     _NAME = 'OptimizerAPI'
-    def __init__(self, cfg, logger):
+    def __init__(self, cfg):
         self.cfg = cfg
-        self.logger = logger
         self.train_mode = cfg.TRAIN.mode
-        # if self.train_mode == 'general':
-        #     self.type = self.cfg.TRAIN.general.optimizer.name
-        #     self.params = self.cfg.TRAIN.general.optimizer
-        #     self.lr = self.params.lr
-        # elif self.train_mode == 'adversarial':
-        #     self.type = self.cfg.TRAIN.adversarial.optimizer.name
-        #     self.params = self.cfg.TRAIN.adversarial.optimizer
-        #     self.lr = 0
         self.params = self.cfg.get('TRAIN')[self.train_mode]['optimizer']
         self.type = self.params.name
         self.lrs = list(map(float,self.params.lrs))
@@ -33,13 +27,12 @@ class OptimizerAPI(object):
     def update(self, new_lr, verbose='none'):
         old_lr = self.lr
         self.lr = new_lr
-        self.logger.info(f'{verbose} Upate the LR from {old_lr} to {self.lr}')
+        logger.info(f'{verbose} Upate the LR from {old_lr} to {self.lr}')
 
     def _build_one_optimizer(self, model):
         if self.type not in OptimizerAPI._SUPPROT:
             raise Exception(f'Not support: {self.type} in {OptimizerAPI._NAME}')
         elif self.type == 'adam':
-            # import ipdb; ipdb.set_trace()
             t = torch.optim.Adam(model.parameters(), lr=self.lr, betas=self.params.betas, weight_decay=self.params.weight_decay)
         elif self.type == 'sgd':
             t = torch.optim.SGD(model.parameters(), lr=self.lr, momentum=self.params.momentum, weight_decay=self.params.weight_decay,nesterov=self.params.nesterov)
@@ -64,10 +57,10 @@ class OptimizerAPI(object):
     
     def _build(self, model):
         if isinstance(model, torch.nn.Module):
-            self.logger.info('Build the optimizer for one model')
+            logger.info('Build the optimizer for one model')
             opimizer = self._build_one_optimizer(model)
         elif isinstance(model, list):
-            self.logger.info('Build the optimizer for multi models')
+            logger.info('Build the optimizer for multi models')
             opimizer = self._build_multi_optimizers(model)
         else:
             raise Exception('The mode type is not supported!')
@@ -76,32 +69,24 @@ class OptimizerAPI(object):
     def __call__(self, model):
         include_parts = self.params.include
         mode = self.params.mode
-        # output_names = self.params.output_name
-        # assert len(include_parts) >= len(output_names), f'Not support the situation: the number of model part ({len(include_parts)}) > the number of output optimizer ({len(output_names)})'
-        self.logger.info(f'=> Build the optimizer of {self.train_mode} include {include_parts}')
+        logger.info(f'=> Build the optimizer of {self.train_mode} include {include_parts}')
 
         optimizer_dict = OrderedDict()
 
-        # if len(output_names) == 1:
         if mode == OptimizerAPI._MODE[0]:
             optimizer_name = 'optimizer'+'_'.join(include_parts)
             model_combination = []
             for temp in include_parts:
                 model_combination.append(model[temp])
             optimizer_value = self._build(model_combination)
-            # t_dict.update({output_names[0]:t})
             optimizer_dict.update({optimizer_name:optimizer_value})
-            # return t_dict
-        # elif len(output_names) == len(include_parts):
         elif mode == OptimizerAPI._MODE[1]:
-            # optimizer_name = 'optimizer'+'_'.join(include_parts)
             for index, temp in enumerate(include_parts):
                 optimizer_name = f'optimizer_{temp}'
                 self.update(self.lrs[index], str(temp))
                 optimizer_value = self._build(model[temp])
                 optimizer_dict.update({optimizer_name:optimizer_value})
         else:
-            # raise Exception(f'Not support the situation: the number of model part ({len(include_parts)}) and  the number of output optimizer ({len(output_names)})')
             raise Exception(f'Not support the optimizer mode, only support {OptimizerAPI._MODE}')
         
         return optimizer_dict

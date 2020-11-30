@@ -28,7 +28,7 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     system_setup(args, cfg, logger)
     
     # get the model structure
-    ma = ModelAPI(cfg, logger)
+    ma = ModelAPI(cfg)
     model_dict = ma()
 
     # get the loss function dict
@@ -37,50 +37,31 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
     loss_function_dict, loss_lamada = la()
     
     # get the optimizer
-    oa = OptimizerAPI(cfg, logger)
+    oa = OptimizerAPI(cfg)
     optimizer_dict = oa(model_dict)
 
     # get the the scheduler
-    sa = SchedulerAPI(cfg, logger)
+    sa = SchedulerAPI(cfg)
     lr_scheduler_dict = sa(optimizer_dict)
     
-   
+    # get the data loaders
     da = DataAPI(cfg, is_training)
     dataloaders_dict = da()
+
     import ipdb; ipdb.set_trace()
+    
     # get the evaluate function
     ea = EvaluateAPI(cfg)
-    # ea = EvaluateAPI(cfg, logger)
     evaluate_function = ea()
 
     # Add the Summary writer 
     writer_dict = get_tensorboard(tensorboard_log_dir, time_stamp, cfg.MODEL.name, log_file_name)
 
-    # build hook
+    # Build hook
     ha = HookAPI(cfg)
     hooks = ha(is_training)
 
-    # =================================================Need to change to use the registry================================================================================================
-    # # instance the trainer
-    # core = importlib.import_module(f'pyanomaly.core.{cfg.MODEL.name}')
-    # logger.info(f'Build the trainer in {core}')
-    # # trainer = core.Trainer(model_dict, train_dataloader, valid_dataloder, optimizer_dict, loss_function_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
-    # #                         pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, 
-    # #                         loss_lamada=loss_lamada,test_dataset_dict=test_dataset_dict, test_dataset_keys=test_dataset_keys, 
-    # #                         test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w,
-    # #                         cluster_dataset_dict=cluster_dataset_dict, cluster_dataset_keys=cluster_dataset_keys,
-    # #                         hooks=hooks, evaluate_function=evaluate_function,
-    # #                         lr_scheduler_dict=lr_scheduler_dict
-    # #                         ) 
-    # trainer = core.Trainer(model_dict, dataloaders_dict, optimizer_dict, loss_function_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
-    #                         pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, loss_lamada=loss_lamada,
-    #                         # test_dataset_dict=test_dataset_dict, test_dataset_keys=test_dataset_keys, 
-    #                         # test_dataset_dict_w=test_dataset_dict_w, test_dataset_keys_w=test_dataset_keys_w,
-    #                         # cluster_dataset_dict=cluster_dataset_dict, cluster_dataset_keys=cluster_dataset_keys,
-    #                         # dataset_dict=dataset_dict, 
-    #                         hooks=hooks, evaluate_function=evaluate_function,
-    #                         lr_scheduler_dict=lr_scheduler_dict
-    #                         )
+    # Get the engine
     engine_api = EngineAPI(cfg, True)
     engine = engine_api.build()
     trainer = engine(model_dict, dataloaders_dict, optimizer_dict, loss_function_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
@@ -88,9 +69,8 @@ def train(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, ti
                     hooks=hooks, evaluate_function=evaluate_function,
                     lr_scheduler_dict=lr_scheduler_dict
                     )
-    # ===================================================================================================================================================================================
 
-    # import ipdb; ipdb.set_trace()
+    
     trainer.run(cfg.TRAIN.start_step, cfg.TRAIN.max_steps)
     
     logger.info('Finish Training')
@@ -137,7 +117,7 @@ def inference(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name
     hooks = ha(is_training)
 
     # get the evaluate function
-    ea = EvaluateAPI(cfg, logger)
+    ea = EvaluateAPI(cfg)
     evaluate_function = ea(cfg.DATASET.evaluate_function_type)
 
     # instance the inference
