@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import torch
 from .schedulers import WarmupMultiStepLR, WarmupCosineLR
 from collections import OrderedDict

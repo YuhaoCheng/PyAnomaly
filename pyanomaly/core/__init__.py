@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 from .optimizer.optimizer_api import OptimizerAPI
 from .scheduler.scheduler_api import SchedulerAPI
 from .hook.hooks_api import HookAPI
