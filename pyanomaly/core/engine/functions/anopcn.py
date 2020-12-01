@@ -1,6 +1,7 @@
-'''
-this is the core function of the 'AnoPCN: Video Anomaly Detection via Deep Predictive Coding Network'
-'''
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 #!!!!! ignore the warning messages
 import warnings
 warnings.filterwarnings('ignore')

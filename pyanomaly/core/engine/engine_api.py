@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 from .engine_registry import ENGINE_REGISTRY
 from .functions import *
 import logging

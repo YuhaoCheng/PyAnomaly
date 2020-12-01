@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 from .hook_registry import HOOK_REGISTRY
 from .functions import *
 import logging
@@ -20,9 +24,6 @@ class HookAPI(object):
         logger.info(f'{mode}*********use hooks:{hook_names}**********')
         hooks = []
         for name in hook_names:
-            # prefix = name.split('.')[0]
-            # hook_name = name.split('.')[1]
-            # temp = HookCatalog.get(name, hook_name)
             temp = HOOK_REGISTRY.get(name)()
             hooks.append(temp)
         logger.info(f'build:{hooks}')

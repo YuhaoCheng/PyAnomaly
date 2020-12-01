@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import time
 import weakref
 from pyanomaly.core.hook.functions import HookBase

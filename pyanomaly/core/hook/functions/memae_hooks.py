@@ -1,6 +1,7 @@
-'''
-this is the hooks of the 'Memoryizing Normality to detect anomaly: memory-augmented deep Autoencoder for Unsupervised anomaly detection(iccv2019)'
-'''
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import os
 import pickle
 import cv2

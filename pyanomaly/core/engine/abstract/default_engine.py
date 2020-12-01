@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import torch
 from pyanomaly.core.utils import AverageMeter, ParamSet
 from ..utils import engine_save_checkpoint

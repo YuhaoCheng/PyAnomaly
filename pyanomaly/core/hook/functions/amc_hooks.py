@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import numpy as np
 import torch
 import os
@@ -13,7 +17,6 @@ from pyanomaly.datatools.evaluate.utils import simple_diff, find_max_patch, amc_
 
 from ..hook_registry import HOOK_REGISTRY
 
-# HOOKS = ['AMCEvaluateHook']
 __all__ = ['AMCEvaluateHook']
 
 @HOOK_REGISTRY.register()

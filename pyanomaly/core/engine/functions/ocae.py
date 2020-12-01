@@ -1,6 +1,7 @@
-'''
-this is the trainer of the 'Future Frame Prediction for Anomaly Detection - A New Baseline CVPR2018'
-'''
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 #!!!!! ignore the warning messages
 import warnings
 warnings.filterwarnings('ignore')

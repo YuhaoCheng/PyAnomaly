@@ -1,6 +1,7 @@
-'''
-this is the trainer of the 'Spatio-Temporal AutoEncoder for Video Anomaly Detection MM2017'
-'''
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import sys
 sys.path.append('../')
 #!!!!! ignore the warning messages
