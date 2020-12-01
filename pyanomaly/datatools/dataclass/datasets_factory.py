@@ -1,4 +1,3 @@
-from os import terminal_size
 from ..datatools_registry import DATASET_FACTORY_REGISTRY
 from ..datatools_registry import DATASET_REGISTRY
 from .avenue_ped_shanghai import *

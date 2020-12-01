@@ -72,9 +72,3 @@ class STAutoEncoderCov3D(nn.Module):
         out_prediction = self.decoder_prediction(f)
         # import ipdb; ipdb.set_trace()
         return out_reconstruction, out_prediction
-
-def get_model_stae(cfg):
-    model_dict = OrderedDict()
-    stae = STAutoEncoderCov3D(cfg.DATASET.channel_num)
-    model_dict['STAE'] = stae
-    return model_dict

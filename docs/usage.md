@@ -53,7 +53,7 @@ This part  introduces the present supported methods and the datasets in our proj
 
 ### Dataset
 
-| Dataset Name            |  Brief Introduction    | `-d`       |
+| Dataset Name            |  Brief Introduction    | `-d` parameter |
 | ----------------------- | ---- | ---------- |
 | [UCSD Ped2](http://www.svcl.ucsd.edu/projects/anomaly/dataset.html) | Ped2 contains 16 normal training videos and 12 testing videos | `ped2`     |
 | [Avenue](https://dl.acm.org/doi/10.1109/ICCV.2013.338) | It contains 16 training and 21 testing video clips | `avenue`   |
@@ -64,7 +64,7 @@ This part  introduces the present supported methods and the datasets in our proj
 
 ## Build Components
 
-The original intention is to promote the development of anomaly detection, so almost everything in PyAnomaly can be built by researchers and engineers. We will introduce the simple steps to build your own components. For some details, please refer to the codes. 
+The original intention is to promote the development of anomaly detection, so almost everything in [PyAnomaly](https://github.com/YuhaoCheng/PyAnomaly) can be built by researchers and engineers. We will introduce the simple steps to build your own components. For some details, please refer to the codes. 
 
 ### Dataset
 
@@ -72,35 +72,94 @@ We provide the abstract dataset class, and when users want to build the dataset,
 
 For example, if users want to build the dataset named `Example`, they should follow the steps:
 
-1. Make a Python file named`example.py`  in `lib/datatools/dataclass`and contains the following things:
+1. Make a Python file named`example.py`  in `pyanomaly/datatools/dataclass`and contains the following things:
 
    ```python
-   from lib.datatools.abstract.anomaly_video_dataset import AbstractVideoAnomalyDataset
-   from lib.datatools.abstract.tools import ImageLoader, VideoLoader
-   class Example(AbstractVideoAnomalyDataset):
+   from ..abstract.video_dataset import FrameLevelVideoDataset
+   from ..datatools_registry import DATASET_REGISTRY
+   
+   @DATASET_REGISTRY.register()
+   class ExampleDataset(FrameLevelVideoDataset):
        def custom_step(self):
            '''
            Step up the image loader or video loder
            '''
-       def _get_frames(self):
-           '''
-           Step up the functions to get the frames
-           '''
-   ...
-   ...
-   def get_example(cfg, flag, aug):
-       t = Example()
    ```
 
-2. Open the `__init__.py`  in `lib/datatools/dataclass` and write the following things:
+2. Open the `dataset_factory.py`  in `pyanomaly/datatools/dataclass` and write the following things on the top lines:
 
    ```python
-   from .example import get_example
-   def register_builtin_dataset():
-       ...
-   	DatasetCatalog.register('example', lambda cfg, flag, aug: get_example(cfg, flag, aug))
-       ...
+   from .example import ExampleDataset
    ```
+
+### Dataset Factory
+
+As shown in above, we use the Factory Designing Pattern to produce the instance of dataset class. And, specifically, we also allow the developers to use another factory instead of `VideoAnomalyDatasetFactory`. For example, if users want to build a factory named `Example`, they should follow the steps:
+
+1. Make a Python file named `example_factory.py` in `pyanomaly/datatools/dataclass`  which contains the following things:
+
+   ```python
+   from ..datatools_registry import DATASET_FACTORY_REGISTRY
+   from ..datatools_registry import DATASET_REGISTRY
+   from ..abstract import AbstractDatasetFactory
+   from DATASET_CLASS_FILES import *
+   
+   @DATASET_FACTORY_REGISTRY.register()
+   class ExampleFactory(AbstractDatasetFactory):
+       def _produce_train_dataset(self):
+           '''
+           Produce the dataset for training process
+           '''
+           pass
+       def _produce_test_dataset(self):
+           '''
+           Produce the dataset for inference produce
+           '''
+           pass
+       def _buid(self):
+           '''
+           Call the self._produce_train_dataset and self._produce_test_dataset
+           '''
+           pass
+   ```
+
+2. Open `__init__.py` in `pyanomaly/datatools/dataclass` and write the following things:
+
+   ```python
+   from .example_factory import ExampleFactory
+   ```
+
+### Networks
+
+For example, if you want to build a model named `Example`.
+
+1. Make a Python file named `example_networks.py` in `pyanomaly/core/networks/meta`and code the followings:
+
+   ```python
+   import torch
+   import torch.nn as nn
+   from ..model_registry import META_ARCH_REGISTRY
+   
+   @META_ARCH_REGISTRY.register()
+   class ExampleModule(nn.Module):
+       '''
+       the example networks
+       '''
+   ```
+
+2. Open the `__init__.py`  in `pyanomaly/networks/meta` and add the following things:
+
+   ```python
+   from .example_networks import ExampleModule
+   ```
+
+3. Open the `model_api.py`  in `pyanomaly/networks` and add the following things:
+
+   ```python
+   from .meta import ExampleModule
+   ```
+
+   
 
 ### Hooks
 
@@ -149,6 +208,15 @@ For example, users want to make a hook named `Example.ExampleTestHook`
        ...
    ```
 
+### Engine 
+
+ ```
+
+ ```
+
+
+
+
 ### Loss Functions
 
 Please refer to the codes
@@ -157,38 +225,6 @@ Please refer to the codes
 
 Please refer to the codes
 
-### Networks
-
-For example, if you want to build a model named `Example`.
-
-1. Make a Python file named `example_networks.py` in `lib/core/networks/parts`and code the followings:
-
-   ```python
-   ...
-   class Example():
-       '''
-       the example networks
-       '''
-   def get_model_example():
-       ...
-       model_dict['example'] = Example()
-       ...
-       return model_dict
-   ```
-
-   
-
-2. Open the `__init__.py`  in `/lib/networks/build/` and add the following things:
-
-   ```python
-   from ..parts.example_networks import get_model_example
-   def register_model():
-       ...
-       ModelCatalog.register('example', lambda cfg: get_model_example(cfg))
-       ...
-   ```
-
-   
 
 ## Tools
 
