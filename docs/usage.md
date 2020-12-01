@@ -3,6 +3,7 @@
 - [Support](#Support-Method)
 - [Build Components](#build-components)
 - [Tools](#tools)
+- [Handbook](#handbook)
 - [Model Zoo](#model-zoo)
 
 ## Quick Start
@@ -159,62 +160,69 @@ For example, if you want to build a model named `Example`.
    from .meta import ExampleModule
    ```
 
-   
 
 ### Hooks
 
-For example, users want to make a hook named `Example.ExampleTestHook`
+For example, users want to make a hook named `ExampleHook`
 
-1. Make a Python file named `example_hooks.py` in `lib/core/hook`and code the followings:
+1. Make a Python file named `example_hooks.py` in `pyanomaly/core/hook/functions`and code the followings:
 
    ```python
-   from .abstract.abstract_hook import HookBase
-   HOOKS = ['ExampleTestHook']
-   class ExampleTestHook(HookBase):
-       def before_train(self):
-           '''
-           functions
-           '''
-       def after_train(self):
-           '''
-           functions
-           '''
-       def after_step(self):
-           '''
-           functions
-           '''
-       def before_step(self):
-           '''
-           functions
-           '''
+   from ..hook_registry import HOOK_REGISTRY
+   from ..abstract import EvaluateHook
+   __all__ = ['ExampleHook']
    
-   def get_example_hooks(name):
-       if name in HOOKS:
-           t = eval(name)()
-       else:
-           raise Exception('The hook is not in amc_hooks')
-       return t
-   
+   @HOOK_REGISTRY.register()
+   class ExampleHook(EvaluateHook):
+       def evaluate(self, current_step):
+           '''
+           add you own functions
+           '''
+           pass
    ```
-
-2. Open the `__init__.py`  in `lib/core/hook/build` and add the following things:
+   
+2. Open the `__init__.py`  in `pyanomaly/core/hook/functions` and add the following things:
 
    ```python
-   from ..example_hooks import get_example_hooks
-   
-   def register_hooks():
-       ...
-       HookCatalog.register('Example.ExampleTestHook', lambda name:get_example_hooks(name))
-       ...
+   from .example import *
    ```
 
 ### Engine 
 
+The engine means the process of training and inference.  We also allow the user to make their own engine and just following the steps. For example, if you want to create the `ExampleEngine`, you can just follow these steps:
+
+1. Make a Python file named `example.py` in `pyanomaly/core/engine/functions` containing the following statements
+
+ ```python
+from ..engine_registry import ENGINE_REGISTRY
+from ..abstract.default_engine import DefaultTrainer, DefaultInference
+__all__ = ['ExampleTrainer', 'ExampleInference']
+@ENGINE_REGISTRY.register()
+class ExampleTrainer(DefaultTrainer):
+    def custom_setup(self):
+        '''
+        Add you own codes here
+        '''
+        pass
+    
+  	def train(self):
+        '''
+        Define the specific training process
+        '''
+        pass
+@ENGINE_REGISTRY.register()
+class ExampleInference(DefaultInference):
+    def custom_setup(self):
+        pass
+	def inference(self):
+        pass
  ```
 
- ```
+2. Open `__init__.py` in `pyanomaly/core/engine/functions` and add the following codes:
 
-
+```python
+from .example import *
+```
 
 
 ### Loss Functions
@@ -225,6 +233,10 @@ Please refer to the codes
 
 Please refer to the codes
 
+
+## Handbook
+
+In order to help researchers and engineers, we build a Gitbook. And it will come soon.
 
 ## Tools
 
