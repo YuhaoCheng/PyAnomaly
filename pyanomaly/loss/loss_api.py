@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 from collections import OrderedDict
 from .functions import *
 from .loss_registry import LOSS_REGISTRY

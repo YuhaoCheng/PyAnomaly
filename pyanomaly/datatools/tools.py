@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import os
 import sys
 import cv2
@@ -12,7 +16,6 @@ from pyanomaly.core.utils import image_gradient
 import torch 
 from torch.utils.data.dataloader import default_collate
 
-# import ipdb
 class RecordResult(object):
     def __init__(self, fpr=None, tpr=None, thresholds=None, auc=-np.inf, dataset=None, loss_file=None, sigma=0):
         self.fpr = fpr

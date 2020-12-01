@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import torch
 from torch.utils.data import DataLoader
 from collections import OrderedDict
@@ -7,12 +11,10 @@ from .dataclass.augment import AugmentAPI
 from .datatools_registry import DATASET_FACTORY_REGISTRY, EVAL_METHOD_REGISTRY
 from .dataclass import *
 from .evaluate import *
-# from .evaluate.eval_function import eval_functions
 
 import logging
 logger = logging.getLogger(__name__)
 
-# BUILTIN = ['avenue', 'shanghai', 'vad', 'ped1', 'ped2', 'dota']
 
 class DataAPI(AbstractBuilder):
     _name = 'DatasetAPI'
