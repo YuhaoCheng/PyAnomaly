@@ -38,24 +38,26 @@ sh ./script/inference.sh -m amc -d avenue -p PATH/TO/ANOMALY -g 0 -c default.yam
 ```
 
 ## Support
+
+This part  introduces the present supported methods and the datasets in our project. The method's type is based on the taxonomy shown in the [PyAnomaly: A Pytorch-based Toolkit for Video Anomaly Detection](https://dl.acm.org/doi/10.1145/3394171.3414540). 
 ### Methods
 
-| Method Name | `-m`      |
-| ----------- | --------- |
-| [STAE]()    | `stae`    |
-| [AMC]()     | `amc`     |
-| [OCAE]()    | `ocae`    |
-| [AnoPred]() | `anopred` |
-| [AnoPCN]()  | `anopcn`  |
-| [MemAE]()   | `memae`   |
+| Method Name | Method Type | Brief Introduction | `-m` parameter     |
+| ----------- | --------- | --------- | --------- |
+| [STAE](https://dl.acm.org/doi/abs/10.1145/3123266.3123451) | Reconstruction + Prediction | It uses the diﬀerences between the reconstructed and the original to decide whether the frame is an anomaly | `stae`    |
+| [AMC](https://openaccess.thecvf.com/content_ICCV_2019/papers/Nguyen_Anomaly_Detection_in_Video_Sequence_With_Appearance-Motion_Correspondence_ICCV_2019_paper.pdf) | Reconstruction | A method uses GAN to reconstruct the optical ﬂow and image at the same time. | `amc`     |
+| [OCAE](https://openaccess.thecvf.com/content_CVPR_2019/papers/Ionescu_Object-Centric_Auto-Encoders_and_Dummy_Anomalies_for_Abnormal_Event_Detection_in_CVPR_2019_paper.pdf) | Reconstruction | A method mainly uses encoded features from the objects in the scene for construction. | `ocae`    |
+| [AnoPred](https://openaccess.thecvf.com/content_cvpr_2018/papers/Liu_Future_Frame_Prediction_CVPR_2018_paper.pdf) | Prediction | A method predicts the frames based on the historical information, and judges whether anomaly based on the diﬀerences between the predicted frames and the original ones. | `anopred` |
+| [AnoPCN](https://dl.acm.org/doi/10.1145/3343031.3350899) | Reconstruction + Prediction | A method uses the RNN to reconstruct and predict at the same time. | `anopcn`  |
+| [MemAE](https://openaccess.thecvf.com/content_ICCV_2019/papers/Gong_Memorizing_Normality_to_Detect_Anomaly_Memory-Augmented_Deep_Autoencoder_for_Unsupervised_ICCV_2019_paper.pdf) | Reconstruction | A method uses the memory mechanism to reconstruct the frames. | `memae`   |
 
 ### Dataset
 
-| Dataset Name            | `-d`       |
-| ----------------------- | ---------- |
-| [UCSD Ped2]()           | `ped2`     |
-| [Avenue]()              | `avenue`   |
-| [ShanghaiTech Campus]() | `shanghai` |
+| Dataset Name            |  Brief Introduction    | `-d`       |
+| ----------------------- | ---- | ---------- |
+| [UCSD Ped2](http://www.svcl.ucsd.edu/projects/anomaly/dataset.html) | Ped2 contains 16 normal training videos and 12 testing videos | `ped2`     |
+| [Avenue](https://dl.acm.org/doi/10.1109/ICCV.2013.338) | It contains 16 training and 21 testing video clips | `avenue`   |
+| [ShanghaiTech Campus](https://openaccess.thecvf.com/content_ICCV_2017/papers/Luo_A_Revisit_of_ICCV_2017_paper.pdf) | It contains 330 training videos and 107 testing videos, which is captured from 13 diﬀerent scenes. | `shanghai` |
 
 ######  Note: More support will come in the future, if you have the interests, please refer to the [PLAN](./plan.md)
 
@@ -192,6 +194,7 @@ For example, if you want to build a model named `Example`.
 
 During build this tool, we make some code tools to read data, make loggers, and so on. We will introduce these things here and tell the users how to use them. Some of them are referred to other repo with some modification, and we will cite the original version of them. Details are in [TOOLS](./tools.md)
 
+## Model Zoo
 
-## [Model Zoo](./model_zoo.md)
+In order to help researchers and engineers, we put some trained models on the Model Zoo.  For the details information, please refer to the [Model Zoo](./model_zoo.md).
 
