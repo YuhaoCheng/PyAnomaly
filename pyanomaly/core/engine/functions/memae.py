@@ -34,23 +34,23 @@ class MEMAETrainer(DefaultTrainer):
         # else:
         #     self.MemAE = self.model['MemAE'].cuda()
 
-        for item_key in self.model.keys():
-            attr_name = str(item_key)
-            if self.kwargs['parallel']:
-                temp_model = self.data_parallel(self.model[item_key])
-            else:
-                temp_model = self.model[item_key].cuda()
-            self.__setattr__(attr_name, temp_model)
+        # for item_key in self.model.keys():
+        #     attr_name = str(item_key)
+        #     if self.kwargs['parallel']:
+        #         temp_model = self.data_parallel(self.model[item_key])
+        #     else:
+        #         temp_model = self.model[item_key].cuda()
+        #     self.__setattr__(attr_name, temp_model)
         
         # get the optimizer
         # self.optim_MemAE = self.optimizer['optimizer_memae']
 
         # get the loss_fucntion
-        self.rec_loss = self.loss_function['RecLoss']
-        self.mem_loss = self.loss_function['MemLoss']
+        # self.rec_loss = self.loss_function['RecLoss']
+        # self.mem_loss = self.loss_function['MemLoss']
 
         # the lr scheduler
-        self.lr_memae = self.lr_scheduler_dict['optimizer_memae_scheduler']
+        # self.lr_memae = self.lr_scheduler_dict['optimizer_memae_scheduler']
 
         # basic meter
         self.loss_meter_MemAE = AverageMeter(name='loss_memae')
@@ -132,15 +132,15 @@ class MEMAETrainer(DefaultTrainer):
 class MEMAEInference(DefaultInference):
     NAME = ["MEMAE.INFERENCE"]
     def custom_setup(self):
-        if self.kwargs['parallel']:
-            self.MemAE = self.data_parallel(self.model['MemAE']).load_state_dict(self.save_model['MemAE'])
-        else:
-            self.MemAE = self.model['MemAE'].cuda()
-            self.MemAE.load_state_dict(self.save_model['MemAE'])
+        # if self.kwargs['parallel']:
+        #     self.MemAE = self.data_parallel(self.model['MemAE']).load_state_dict(self.save_model['MemAE'])
+        # else:
+        #     self.MemAE = self.model['MemAE'].cuda()
+        #     self.MemAE.load_state_dict(self.save_model['MemAE'])
         
-        self.test_dataset_keys = self.kwargs['test_dataset_keys']
-        self.test_dataset_dict = self.kwargs['test_dataset_dict']
-
+        # self.test_dataset_keys = self.kwargs['test_dataset_keys']
+        # self.test_dataset_dict = self.kwargs['test_dataset_dict']
+        pass
     
     def inference(self):
         for h in self._hooks:

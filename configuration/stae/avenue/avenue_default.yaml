@@ -144,10 +144,8 @@ TRAIN:
       warmup_factor: 0.001
       warmup_iters: 1000
       warmup_method: 'linear'
-  split: ''
   model_output: './output/models'
   checkpoint_output: './output/checkpoint'
-  pusedo_data_path: ''
 VAL:
   engine_name: 'STAEInference'
   name: ''

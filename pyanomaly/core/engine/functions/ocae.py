@@ -16,6 +16,8 @@ from collections import OrderedDict
 from torch.utils.data import DataLoader
 import torchvision.transforms as T
 import torchvision.transforms.functional as tf
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.svm import LinearSVC
 
 from ..abstract.default_engine import DefaultTrainer, DefaultInference
 from pyanomaly.core.utils import AverageMeter, multi_obj_grid_crop, frame_gradient, get_batch_dets, tensorboard_vis_images, ParamSet, make_info_message
@@ -33,38 +35,39 @@ class OCAETrainer(DefaultTrainer):
     NAME = ["OCAE.TRAIN"]
     def custom_setup(self):
         # basic things
-        if self.kwargs['parallel']:
-            self.A = self.data_parallel(self.model['A'])
-            self.B = self.data_parallel(self.model['B'])
-            self.C = self.data_parallel(self.model['C'])
-            self.Detector = self.data_parallel(self.model['Detector'])
-        else:
-            self.A = self.model['A'].cuda()
-            self.B = self.model['B'].cuda()
-            self.C = self.model['C'].cuda()
-            self.Detector = self.model['Detector'].cuda()
+        # if self.kwargs['parallel']:
+        #     self.A = self.data_parallel(self.model['A'])
+        #     self.B = self.data_parallel(self.model['B'])
+        #     self.C = self.data_parallel(self.model['C'])
+        #     self.Detector = self.data_parallel(self.model['Detector'])
+        # else:
+        #     self.A = self.model['A'].cuda()
+        #     self.B = self.model['B'].cuda()
+        #     self.C = self.model['C'].cuda()
+        #     self.Detector = self.model['Detector'].cuda()
         
-        self.ovr_model = self.model['OVR']
+        # self.ovr_model = self.model['OVR']
+        self.ovr_model = OneVsRestClassifier(LinearSVC(random_state = 0), n_jobs=16)
 
         # get the optimizer
-        self.optim_ABC = self.optimizer['optimizer_abc']
+        # self.optim_ABC = self.optimizer['optimizer_abc']
 
         # get the loss_fucntion
-        self.a_loss = self.loss_function['A_loss']
-        self.b_loss = self.loss_function['B_loss']
-        self.c_loss = self.loss_function['C_loss']
+        # self.a_loss = self.loss_function['Aloss']
+        # self.b_loss = self.loss_function['Bloss']
+        # self.c_loss = self.loss_function['Closs']
 
         # the lr scheduler
-        self.lr_abc = self.lr_scheduler_dict['optimizer_abc_scheduler']
+        # self.lr_abc = self.lr_scheduler_dict['optimizer_abc_scheduler']
 
         # basic meter
         self.loss_meter_ABC = AverageMeter(name='loss_ABC')
 
-        self.test_dataset_keys = self.kwargs['test_dataset_keys']
-        self.test_dataset_dict = self.kwargs['test_dataset_dict']
+        # self.test_dataset_keys = self.kwargs['test_dataset_keys']
+        # self.test_dataset_dict = self.kwargs['test_dataset_dict']
 
-        self.cluster_dataset_keys = self.kwargs['cluster_dataset_keys']
-        self.cluster_dataset_dict = self.kwargs['cluster_dataset_dict']
+        # self.cluster_dataset_keys = self.kwargs['cluster_dataset_keys']
+        # self.cluster_dataset_dict = self.kwargs['cluster_dataset_dict']
 
         self.ovr_model_path = os.path.join(self.config.TRAIN.model_output, f'ocae_cfg@{self.config_name}#{self.verbose}.npy') 
 
@@ -128,7 +131,7 @@ class OCAETrainer(DefaultTrainer):
             loss_B = self.b_loss(output_recObject_B, original_B)
             loss_C = self.c_loss(output_recGradient_C, original_C)
 
-            loss_all = self.loss_lamada['A_loss'] * loss_A + self.loss_lamada['B_loss'] * loss_B + self.loss_lamada['C_loss'] * loss_C
+            loss_all = self.loss_lamada['Aloss'] * loss_A + self.loss_lamada['Bloss'] * loss_B + self.loss_lamada['Closs'] * loss_C
             self.optim_ABC.zero_grad()
             loss_all.backward()
             self.optim_ABC.step()
@@ -222,23 +225,23 @@ class OCAETrainer(DefaultTrainer):
 class OCAEInference(DefaultInference):
     NAME = ["OCAE.INFERENCE"]
     def custom_setup(self):
-        if self.kwargs['parallel']:
-            self.A = self.data_parallel(self.model['A'].load_state_dict(self.save_model['A']))
-            self.B = self.data_parallel(self.model['B'].load_state_dict(self.save_model['B']))
-            self.C = self.data_parallel(self.model['C'].load_state_dict(self.save_model['C']))
-            self.Detector = self.data_parallel(self.model['Detector'])
-        else:
-            self.A = self.model['A'].load_state_dict(self.save_model['A']).cuda()
-            self.B = self.model['B'].load_state_dict(self.save_model['B']).cuda()
-            self.C = self.model['C'].load_state_dict(self.save_model['C']).cuda()
-            self.Detector = self.model['Detector'].cuda()
+        # if self.kwargs['parallel']:
+        #     self.A = self.data_parallel(self.model['A'].load_state_dict(self.save_model['A']))
+        #     self.B = self.data_parallel(self.model['B'].load_state_dict(self.save_model['B']))
+        #     self.C = self.data_parallel(self.model['C'].load_state_dict(self.save_model['C']))
+        #     self.Detector = self.data_parallel(self.model['Detector'])
+        # else:
+        #     self.A = self.model['A'].load_state_dict(self.save_model['A']).cuda()
+        #     self.B = self.model['B'].load_state_dict(self.save_model['B']).cuda()
+        #     self.C = self.model['C'].load_state_dict(self.save_model['C']).cuda()
+        #     self.Detector = self.model['Detector'].cuda()
         
         self.ovr_model_path = os.path.join(self.config.TRAIN.model_output, f'ocae_cfg@{self.config_name}#{self.verbose}.npy')
         self.ovr_model = self.model['OVR']
         self.ovr_model = joblib.load(self.ovr_model_path)
 
-        self.test_dataset_keys = self.kwargs['test_dataset_keys']
-        self.test_dataset_dict = self.kwargs['test_dataset_dict']
+        # self.test_dataset_keys = self.kwargs['test_dataset_keys']
+        # self.test_dataset_dict = self.kwargs['test_dataset_dict']
 
     def inference(self):
         for h in self._hooks:

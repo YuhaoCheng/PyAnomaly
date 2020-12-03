@@ -32,7 +32,7 @@ def main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, tim
     # la = LossAPI(cfg, logger)
     la = LossAPI(cfg)
     loss_function_dict, loss_lamada = la()
-    
+    # import ipdb; ipdb.set_trace()
     # get the optimizer
     oa = OptimizerAPI(cfg)
     optimizer_dict = oa(model_dict)

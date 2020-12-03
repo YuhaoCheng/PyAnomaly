@@ -114,6 +114,11 @@ class DefaultTrainer(AbstractTrainer):
             self.__setattr__(attr_name, self.optimizer[item_key])
             # get the lr scheduler
             self.__setattr__(f'{attr_name}_scheduler', self.lr_scheduler_dict[f'{attr_name}_scheduler'])
+        
+        # get the losses
+        for item_key in self.loss_function.keys():
+            attr_name = str(item_key)
+            self.__setattr__(attr_name, self.loss_function[attr_name])
 
         self.custom_setup()
 

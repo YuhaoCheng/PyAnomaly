@@ -3,6 +3,8 @@ import torch.nn as nn
 import torchsnooper
 import torch.nn.functional as F
 import functools
+from pyanomaly.networks.model_registry import META_ARCH_REGISTRY
+
 class BasicConv2d(nn.Module):
     '''
     The basic convaolution with bn
@@ -255,8 +257,8 @@ class Inception(nn.Module):
             return torch.cat([out1, out2, out3, out4], dim=1)
 
         # return x
-        
 
+@META_ARCH_REGISTRY.register()        
 class PixelDiscriminator(nn.Module):
     """Defines a 1x1 PatchGAN discriminator (pixelGAN)"""
 

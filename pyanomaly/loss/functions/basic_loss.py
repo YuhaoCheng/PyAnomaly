@@ -277,6 +277,25 @@ class CrossEntropyLoss(nn.CrossEntropyLoss):
         else:
             super(CrossEntropyLoss, self).__init__(loss_args)
 
+@LOSS_REGISTRY.register()
+class L1Loss(nn.L1Loss):
+    '''
+    loss_cfg = [['size_average', None], ['reduce', None], ['reduction', 'mean']]
+    '''
+    def __init__(self, loss_cfg) -> None:
+        args_name = list()
+        args_value = list()
+        for config in loss_cfg:
+            args_name.append(config[0])
+            args_value.append(config[1])
+        loss_args_template = namedtuple('LossArgs', args_name)
+        loss_args = loss_args_template._make(args_value)
+        # super(CrossEntropyLoss, self).__init__(weight=weight, size_average=size_average, ignore_index=ignore_index, reduce=reduce, reduction=reduction)
+        # import ipdb; ipdb.set_trace()
+        if len(loss_args) == 0:
+            super(L1Loss, self).__init__()
+        else:
+            super(L1Loss, self).__init__(loss_args)
 
 def produce_assign_statement(name, value):
     value_type = type(value)
