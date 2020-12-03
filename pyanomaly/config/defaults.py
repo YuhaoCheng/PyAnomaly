@@ -49,13 +49,13 @@ config.DATASET.train.frame_step = 1  # frame sample frequency
 config.DATASET.train.clip_step = 1   # clip sample frequency
 config.DATASET.train.gt_path = ''   # the path of the label file, not containing the name of the label file such as 'keypoints.json'
 config.DATASET.train.execute_test = False   # Testing the model on the train data
-config.DATASET.test = CN()
-config.DATASET.test.data_path = ''
-config.DATASET.test.clip_length = 5
-config.DATASET.test.sampled_clip_length = 5
-config.DATASET.test.frame_step = 1
-config.DATASET.test.clip_step = 1
-config.DATASET.test.gt_path = ''
+config.DATASET.val = CN()
+config.DATASET.val.data_path = ''
+config.DATASET.val.clip_length = 5
+config.DATASET.val.sampled_clip_length = 5
+config.DATASET.val.frame_step = 1
+config.DATASET.val.clip_step = 1
+config.DATASET.val.gt_path = ''
 config.DATASET.number_of_class = 1 # use in changing the label to one hot
 config.DATASET.score_normalize = True
 config.DATASET.score_type = 'normal' # 'normal' | 'abnormal'
@@ -164,14 +164,6 @@ config.MODEL.hooks.train = []  # determine the hooks use in the training
 config.MODEL.hooks.val = []  # determine the hooks use in the training
 config.MODEL.discriminator_channels = []
 config.MODEL.pretrain_model = ''
-
-# Will be discarded in the future--------------------------------
-config.MODEL.flownet = 'flownet2' # the flownet type 'flownet2' | 'liteflownet'
-config.MODEL.flow_model_path = ''
-config.MODEL.detector = 'detectron2'
-config.MODEL.detector_config = ''
-config.MODEL.detector_model_path = ''
-#--------------------------------------------------------
 
 # This part defines the auxiliary of the whole model, most of time these models are frozen
 config.MODEL.auxiliary = CN()

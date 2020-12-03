@@ -45,10 +45,10 @@ def main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, tim
     da = DataAPI(cfg, is_training)
     dataloaders_dict = da()
 
-    import ipdb; ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
     
     # get the evaluate function
-    ea = EvaluateAPI(cfg)
+    ea = EvaluateAPI(cfg, is_training)
     evaluate_function = ea()
 
     # Add the Summary writer 

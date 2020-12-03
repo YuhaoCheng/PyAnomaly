@@ -16,14 +16,14 @@ class DefaultTrainer(AbstractTrainer):
         '''
         Args:
             defaults(tuple): the default will have:
-                0 0 0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
-                - - 1->train_dataloader: the dataloader    # Will be deprecated in the future
-                - - 2->val_dataloader: the dataloader     # Will be deprecated in the future
-                1 1 -->dataloader_dict: the dict of all the dataloader will be used in the process
-                2 2 3->optimizer:{'optimizer_g':op_g, 'optimizer_d'}
-                3 3 4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
-                - 4 5->logger: the logger of the whole training process
-                4 5 6->config: the config object of the whole process
+                0 0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
+                - 1->train_dataloader: the dataloader    # Will be deprecated in the future
+                - 2->val_dataloader: the dataloader     # Will be deprecated in the future
+                1 -->dataloader_dict: the dict of all the dataloader will be used in the process
+                2 3->optimizer:{'optimizer_g':op_g, 'optimizer_d'}
+                3 4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
+                4 5->logger: the logger of the whole training process
+                5 6->config: the config object of the whole process
 
             kwargs(dict): the default will have:
                 verbose(str):
@@ -39,7 +39,7 @@ class DefaultTrainer(AbstractTrainer):
         self._register_hooks(kwargs['hooks'])
         # logger & config
         self.logger = defaults[4]
-        self.config = defaults[4]
+        self.config = defaults[5]
 
         self.model = defaults[0]
         
@@ -83,7 +83,6 @@ class DefaultTrainer(AbstractTrainer):
         self.config_name = kwargs['config_name']
         self.result_path = ''
         self.kwargs = kwargs
-
         self.normalize = ParamSet(name='normalize', 
                                   train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
                                   val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
@@ -101,11 +100,11 @@ class DefaultTrainer(AbstractTrainer):
         
         self.custom_setup()
 
-        if self.config.RESUME.flag:
+        if self.config.TRAIN.resume.use:
             # self.resume()
             pass
         
-        if self.config.FINETUNE.flag:
+        if self.config.TRAIN.finetune.use:
             self.fine_tune()
         
     @abc.abstractclassmethod

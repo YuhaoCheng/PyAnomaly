@@ -90,16 +90,17 @@ class DataAPI(AbstractBuilder):
 
 
 class EvaluateAPI(object):
-    def __init__(self, cfg):
+    def __init__(self, cfg, is_training):
         self.cfg = cfg
-        self.eval_name = cfg.DATASET.evaluate_function_name
+        self.eval_name = cfg.DATASET.evaluate_function.name
+        self.is_training = is_training
         # self.logger = logger
     
     def __call__(self):
         # assert eval_function_type in eval_functions, f'there is no type of evaluation {eval_function_type}, please check {eval_functions.keys()}'
         # self.logger.info(f'==> Using the eval function: {eval_function_type}')
         # t = eval_functions[eval_function_type]
-        eval_method = EVAL_METHOD_REGISTRY.get(self.eval_name)(self.cfg)
+        eval_method = EVAL_METHOD_REGISTRY.get(self.eval_name)(self.cfg, self.is_training)
         logger.info(f'Use the eval method {self.eval_name}')
 
         return eval_method 
