@@ -1,5 +1,5 @@
 SYSTEM:
-  multigpus: false
+  multigpus: true
   num_gpus: 2
   gpus: [0,1]
   cudnn:
