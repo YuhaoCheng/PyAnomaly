@@ -14,22 +14,25 @@ LOG:
   vis_dir: './output/vis'
   
 DATASET:
-  name: 'ped2'
+  name: 'Ped2'
   seed: 2020
   read_format: 'opencv'
   channel_num: 3
   channel_name: 'rgb'
-  train_path: './data/ped2/training/frames'
-  train_clip_length: 7
-  train_sampled_clip_length: 3
-  train_frame_step: 3
-  train_clip_step: 1
-  test_path: './data/ped2/testing/frames'
-  test_clip_length: 7
-  test_sampled_clip_length: 3
-  test_frame_step: 3
-  test_clip_step: 1
-  gt_path: './data/ped2'
+  train:
+    data_path: './data/ped2/training/frames'
+    clip_length: 7
+    sampled_clip_length: 3
+    frame_step: 3
+    clip_step: 1
+    gt_path: './data/ped2'
+  test:
+    data_path: './data/ped2/testing/frames'
+    clip_length: 7
+    sampled_clip_length: 3
+    frame_step: 3
+    clip_step: 1
+    gt_path: './data/ped2'
   number_of_class: 1
   score_normalize: true
   score_type: 'abnormal'
@@ -40,7 +43,9 @@ DATASET:
     guassian_sigma: [3,5,15,10,20,30]
   mini_dataset:
     samples: 100
-  evaluate_function_type: 'compute_auc_score'
+  evaluate_function:
+    name: 'ScoreAUCMetrics'
+    result_type: 'score'
 ARGUMENT:
   train:
     use: true
@@ -88,46 +93,20 @@ ARGUMENT:
       use: true
       mean: []
       std: []
-    fliplr:
-      use: false
-      p: 0.5
-    flipud:
-      use: false
-      p: 0.5
-    rote:
-      use: false
-      degrees: [10,10]
-    JpegCompression:
-      use: false
-      high: 100
-      low: 80
-    GaussianBlur:
-      use: false
-      high: 0.3
-      low: 0.03
-    CropToFixedSize:
-      use: false
-      height: 256
-      width: 256
-      position: 'center'
 MODEL:
   name: 'ocae'
-  type: 'ocae'
+  type: 'ame2e'
+  parts: ['meta_CAE', 'A', 'meta_CAE', 'B', 'meta_CAE', 'C']
   hooks:
-    train: ['oc.ClusterHook', 'oc.OCEvaluateHook', 'base.VisScoreHook']
-    val: [oc.OCEvaluateHook']
-  detector_config: 'COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml'
-  detector_model_path: "./pretrained_model/faster_rcnn_X_101_FPN_model_final_68b088.pkl"
-  flow_model_path: ''
-  discriminator_channels: []
-  pretrain_model: ''
-RESUME:
-  flag: false
-  checkpoint_path: ''
-FINETUNE:
-  flag: false
-  layer_list: []
+    train: ['ClusterHook', 'OCEvaluateHook', 'VisScoreHook']
+    val: ['OCEvaluateHook']
+  auxiliary:
+    detector:
+      name: 'detectron2'
+      config: 'COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml'
+      model_path: "./pretrained_model/faster_rcnn_X_101_FPN_model_final_68b088.pkl"
 TRAIN:
+  engine_name: 'OCAETrainer'
   batch_size: 64
   start_step: 0
   max_steps: 8000
@@ -137,18 +116,17 @@ TRAIN:
   eval_step: 40
   save_step: 40
   epochs: 1
-  loss: ['A_loss', 'B_loss', 'C_loss']
-  loss_coefficients: [1,1,1]
+  loss: ['loss_ALoss_cuda', 1, 'IntensityLoss', [], 'loss_Bloss_cuda', 2, 'IntensityLoss', [],
+        'loss_Closs_cuda', 1, 'IntensityLoss',[]]
   mode: 'general'
   general:
     optimizer:
       include: ['A', 'B', 'C']
       name: 'adam'
-      lr: 1e-3
+      lrs: [1e-3]
       momentum: 0.9
       weight_decay: 0.0001
       nesterov: false
-      output_name: ['optimizer_abc']
     scheduler:
       use: true
       name: 'MultiStepLR'
@@ -167,11 +145,9 @@ TRAIN:
   cluster:
     k: 10
 VAL:
+  engine_name: 'OCAEInference'
   name: ''
   path: ''
   batch_size: 2
-TEST:
-  name: ''
-  path: ''
   result_output: './output/results'
 

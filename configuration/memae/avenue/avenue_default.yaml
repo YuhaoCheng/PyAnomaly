@@ -8,28 +8,27 @@ SYSTEM:
     enable: true
   distributed:
     use: false
-LOG:
-  log_output_dir: './output/log'
-  tb_output_dir: './output/tensorboard'
-  vis_dir: './output/vis'
-  
+
 DATASET:
-  name: 'avenue'
+  name: 'Avenue'
   seed: 2020
   read_format: 'opencv'
   channel_num: 3
   channel_name: 'rgb'
-  train_path: './data/Avenue/training/frames'
-  train_clip_length: 16
-  train_sampled_clip_length: 16
-  train_frame_step: 1
-  train_clip_step: 1
-  test_path: './data/Avenue/testing/frames'
-  test_clip_length: 16
-  test_sampled_clip_length: 16
-  test_frame_step: 1
-  test_clip_step: 1
-  gt_path: './data/Avenue'
+  train:
+    data_path: './data/Avenue/training/frames'
+    clip_length: 16
+    sampled_clip_length: 16
+    frame_step: 1
+    clip_step: 1
+    gt_path: './data/Avenue'
+  test:
+    data_path: './data/Avenue/testing/frames'
+    clip_length: 16
+    sampled_clip_length: 16
+    frame_step: 1
+    clip_step: 1
+    gt_path: './data/Avenue'
   number_of_class: 1
   score_normalize: true
   score_type: 'normal'
@@ -40,7 +39,9 @@ DATASET:
     guassian_sigma: [3,5,15,10,20,30]
   mini_dataset:
     samples: 100
-  evaluate_function_type: 'compute_auc_score'
+  evaluate_function:
+    name: 'ScoreAUCMetrics'
+    result_type: 'score'
 ARGUMENT:
   train:
     use: true
@@ -88,46 +89,15 @@ ARGUMENT:
       use: true
       mean: [0.5, 0.5, 0.5]
       std: [0.5, 0.5, 0.5]
-    fliplr:
-      use: false
-      p: 0.5
-    flipud:
-      use: false
-      p: 0.5
-    rote:
-      use: false
-      degrees: [10,10]
-    JpegCompression:
-      use: false
-      high: 100
-      low: 80
-    GaussianBlur:
-      use: false
-      high: 0.3
-      low: 0.03
-    CropToFixedSize:
-      use: false
-      height: 256
-      width: 256
-      position: 'center'
 MODEL:
   name: 'memae'
-  type: 'memae'
+  type: 'e2e'
+  parts: ['meta_AutoEncoderCov3DMem', 'MemAE']
   hooks:
-    train: ['memae.MemAEEvaluateHook', 'base.VisScoreHook']
-    val: ['memae.MemAEEvaluateHook']
-  flow_model_path: ''
-  discriminator_channels: []
-  pretrain_model: ''
-  detector_config: ''
-  detector_model_path: ''
-RESUME:
-  flag: false
-  checkpoint_path: ''
-FINETUNE:
-  flag: false
-  layer_list: []
+    train: ['MemAEEvaluateHook', 'VisScoreHook']
+    val: ['MemAEEvaluateHook']
 TRAIN:
+  engine_name: 'MEMAETrainer'
   batch_size: 4
   start_step: 0
   max_steps: 160944
@@ -137,18 +107,16 @@ TRAIN:
   eval_step: 3832
   save_step: 3832
   epochs: 1
-  loss: ['rec_loss', 'mem_loss']
-  loss_coefficients: [1,0.0002]
+  losses: ['loss_RecLoss_cuda', 1, 'L2Loss', [], 'loss_MemLoss_cuda', 0.0002, 'MemLoss', []]
   mode: 'general'
   general:
     optimizer:
       include: ['MemAE']
       name: 'adam'
-      lr: 1e-3
+      lrs: [1e-3]
       momentum: 0.9
       weight_decay: 0.0001
       nesterov: false
-      output_name: ['optimizer_memae']
     scheduler:
       use: false
       name: 'WarmupCosLR'
@@ -160,18 +128,13 @@ TRAIN:
       warmup_factor: 0.01
       warmup_iters: 7664
       warmup_method: 'linear'
-  split: ''
   model_output: './output/models'
   checkpoint_output: './output/checkpoint'
-  pusedo_data_path: ''
-  cluster:
-    k: 10
+
 VAL:
+  engine_name: 'MEMAEInference'
   name: ''
   path: ''
   batch_size: 2
-TEST:
-  name: ''
-  path: ''
   result_output: './output/results'
 

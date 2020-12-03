@@ -1,5 +1,6 @@
 """
-reference to the implementation in the Pytorch
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
 """
 import torch
 import torch.nn as nn

@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import numpy as np
 import torch
 import os
@@ -5,7 +9,7 @@ import pickle
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 from torch.utils.data import DataLoader
-from .abstract_hook import EvaluateHook
+from ..abstract import EvaluateHook
 
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from pyanomaly.core.utils import flow_batch_estimate, tensorboard_vis_images, save_results, vis_optical_flow
@@ -13,7 +17,6 @@ from pyanomaly.datatools.evaluate.utils import simple_diff, find_max_patch, amc_
 
 from ..hook_registry import HOOK_REGISTRY
 
-# HOOKS = ['AMCEvaluateHook']
 __all__ = ['AMCEvaluateHook']
 
 @HOOK_REGISTRY.register()

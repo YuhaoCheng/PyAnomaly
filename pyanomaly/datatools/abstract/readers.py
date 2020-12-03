@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import cv2
 import torch
 from PIL import Image
@@ -249,10 +253,10 @@ class VideoLoader(object):
 
 class GroundTruthLoader(object):
     # give the name of the supported datasets
-    Avenue = 'avenue'
-    Shanghai = 'shanghai'
-    Ped1 = 'ped1'
-    Ped2 = 'ped2'
+    Avenue = 'Avenue'
+    Shanghai = 'Shanghai'
+    Ped1 = 'Ped1'
+    Ped2 = 'Ped2'
 
     # _NAME = [Avenue, Shanghai, Ped1, Ped2]
 

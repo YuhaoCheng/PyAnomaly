@@ -1,21 +1,21 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import torch
 from .schedulers import WarmupMultiStepLR, WarmupCosineLR
 from collections import OrderedDict
+import logging 
+logger = logging.getLogger(__name__)
+
 class SchedulerAPI(object):
     _SUPPORT = ['stepLR', 'cosLR', 'WarmupCosLR', 'WarmupMultiStepLR', 'MultiStepLR']
-    def __init__(self, cfg, logger):
+    def __init__(self, cfg):
         self.cfg = cfg
-        self.logger = logger
+        # self.logger = logger
         self.train_mode = cfg.TRAIN.mode
         self.params = self.cfg.get('TRAIN')[self.train_mode]['scheduler']
         self.type = self.params.name
-
-        # if self.train_mode == 'general':
-        #     self.type = self.cfg.TRAIN.general.scheduler.name
-        #     self.params = self.cfg.TRAIN.general.scheduler
-        # elif self.train_mode == 'adversarial':
-        #     self.type = self.cfg.TRAIN.adversarial.scheduler.name
-        #     self.params = self.cfg.TRAIN.adversarial.scheduler
         
     def _build_scheduler(self, optimizer_param):
         if self.type not in SchedulerAPI._SUPPORT:

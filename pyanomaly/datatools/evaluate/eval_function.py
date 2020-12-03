@@ -19,7 +19,7 @@ from ..abstract import GroundTruthLoader, AbstractEvalMethod
 from ..tools import RecordResult
 from ..datatools_registry import EVAL_METHOD_REGISTRY
 
-__all__ = ['AUCMetrics', 'ScoreAUC', 'PSNRAUC']
+__all__ = ['ScoreAUCMetrics']
 def get_scores_labels(loss_file, cfg):
     '''
     base the psnr to get the scores of each videos
@@ -308,14 +308,14 @@ eval_functions = {
 
 
 @EVAL_METHOD_REGISTRY.register()
-class AUCMetrics(AbstractEvalMethod):
+class ScoreAUCMetrics(AbstractEvalMethod):
     def __init__(self, cfg, is_training) -> None:
-        super(AUCMetrics, self).__init__(cfg)
+        super(ScoreAUCMetrics, self).__init__(cfg)
         self.gt_loader = GroundTruthLoader()
         # self.dataset_name = cfg.DATASET.name
         # self.gt_path = cfg.DATASET.gt_path
         self.optimal_resulst = RecordResult()
-        self.decidable_idx = self.datasets_params.decidable_idx
+        self.decidable_idx = self.dataset_params.decidable_idx
         self.decidable_idx_back = self.dataset_params.decidable_idx
         if is_training:
             self.parts = ['train', 'val']
@@ -335,8 +335,13 @@ class AUCMetrics(AbstractEvalMethod):
     def load_ground_truth(self):
         gt_dict = OrderedDict()
         for part in self.parts:
+            #=====================Need to change, temporal=========================
+            if part == 'train':
+                continue
+            #=======================================================================
             gt_path = self.dataset_params[part]['gt_path']
             data_path = self.dataset_params[part]['data_path']
+            # import ipdb; ipdb.set_trace()
             gt = self.gt_loader.read(self.dataset_name, gt_path, data_path)
             gt_dict[part] = gt
         # pass
@@ -362,64 +367,69 @@ class AUCMetrics(AbstractEvalMethod):
         num_videos = results['num_videos']
 
         score_records = list()
-        psnr_records = list()  # need to change, image, if you have another key, you need to change the code here. Not very elegant 
-        if self.dataset_params.smooth.guassian:
-            for sigma in self.dataset_params.smooth.guassian_sigma:
-                score_records.append(results[f'score_smooth_{sigma}']) # need to improve, at present, the guassian process is in the resluts is in the file, 
-                                                                       # and facing the same problem which if you add new key, you will change the code here
-                if len(results['psnr']) == 0:
-                    psnr_records = [results[f'psnr_smooth_{self.dataset_params.smooth.guassian_sigma[0]}']]
-                else:
-                    psnr_records.append(results[f'psnr_smooth_{sigma}'])
-        else:
-            score_records.append(results['score'])
-            psnr_records.append(results['psnr'])
-        
+        # psnr_records = list()  # need to change, image, if you have another key, you need to change the code here. Not very elegant 
+        # if self.dataset_params.smooth.guassian:
+        #     for sigma in self.dataset_params.smooth.guassian_sigma:
+        #         score_records.append(results[f'score_smooth_{sigma}']) # need to improve, at present, the guassian process is in the resluts is in the file, 
+        #                                                                # and facing the same problem which if you add new key, you will change the code here
+        #         # if len(results['psnr']) == 0:
+        #         #     psnr_records = [results[f'psnr_smooth_{self.dataset_params.smooth.guassian_sigma[0]}']]
+        #         # else:
+        #         #     psnr_records.append(results[f'psnr_smooth_{sigma}'])
+        # else:
+        #     score_records.append(results['score'])
+            # psnr_records.append(results['psnr'])
+        score_records.append(results['score'])
+
         assert dataset_name == self.dataset_name, f'The dataset are not match, Result:{dataset_name}, cfg:{self.dataset_name}'
 
-        return psnr_records, score_records, num_videos
+        # return psnr_records, score_records, num_videos
+        return score_records, num_videos
         
 
-    def eval_method(self, result, gt):
+    def eval_method(self, result, gt, verbose):
         fpr, tpr, thresholds = metrics.roc_curve(gt, result, pos_label=self.pos_label)
         auc = metrics.auc(fpr, tpr)
-        results = RecordResult(fpr, tpr, thresholds, auc, self.dataset_name, self._result_name, 0, self.pos_label)
+        results = RecordResult(fpr, tpr, thresholds, auc, self.dataset_name, self._result_name, verbose)
 
-        pass
         return results
 
     def compute(self, result_file_dict):
         '''
-        result_file_dict = {'train':......., 'val':..........}
+        result_file_dict = {'train':{description1:sigma0_result_file, description2:sigma1_result_file, .....}, 'val':{description1:sigma0_result_file, description2:sigma1_result_file}}
         '''
         for part in self.parts:
+            #=====================Need to change, temporal=========================
+            if part == 'train':
+                continue
+            #=======================================================================
             gt = self.gt_dict[part]
             result_file = result_file_dict[part]
-            self._result_name = result_file
-            psnr_records, score_records, num_videos = self.load_results(result_file)
-            assert num_videos == len(gt), f'the number of saved videos does not match the ground truth, {num_videos} != {len(gt)}'
-            temp_result = self.eval_method(score_records, gt)
-            if temp_result > self.optimal_resulst:
-                self.optimal_resulst = temp_result
+            for key, item in result_file.items():
+                self._result_name = item
+                score_records, num_videos = self.load_results(result_file)
+                assert num_videos == len(gt), f'the number of saved videos does not match the ground truth, {num_videos} != {len(gt)}'
+                temp_result = self.eval_method(score_records, gt, str(key))
+                if temp_result > self.optimal_resulst:
+                    self.optimal_resulst = temp_result
         
-        pass
         return self.optimal_resulst
 
-@EVAL_METHOD_REGISTRY.register()
-class ScoreAUC(AUCMetrics):
-    def __init__(self, cfg, is_training) -> None:
-        super(ScoreAUC, self).__init__(cfg, is_training)
-        self.set_result_type_score
+# @EVAL_METHOD_REGISTRY.register()
+# class ScoreAUC(AUCMetrics):
+#     def __init__(self, cfg, is_training) -> None:
+#         super(ScoreAUC, self).__init__(cfg, is_training)
+#         self.set_result_type_score
 
-    def set_result_type_score(self):
-        self.result_type = 'score'
+#     def set_result_type_score(self):
+#         self.result_type = 'score'
 
 
-@EVAL_METHOD_REGISTRY.register()
-class PSNRAUC(AUCMetrics):
-    def __init__(self, cfg, is_training) -> None:
-        super(PSNRAUC, self).__init__(cfg, is_training)
-        self.set_result_type_score
+# @EVAL_METHOD_REGISTRY.register()
+# class PSNRAUC(AUCMetrics):
+#     def __init__(self, cfg, is_training) -> None:
+#         super(PSNRAUC, self).__init__(cfg, is_training)
+#         self.set_result_type_score
 
-    def set_result_type_score(self):
-        self.result_type = 'psnr'
+#     def set_result_type_score(self):
+#         self.result_type = 'psnr'

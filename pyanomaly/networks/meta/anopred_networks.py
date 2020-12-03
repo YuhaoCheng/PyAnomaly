@@ -1,8 +1,11 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import torch
 import torch.nn as nn
 from collections import OrderedDict
 import torchsnooper
-# from pyanomaly.networks.parts.base.commonness import DoubleConv, Down, Up, OutConv, PixelDiscriminator, BasicConv2d
 from ..model_registry import META_ARCH_REGISTRY
 from pyanomaly.networks.meta.base.commonness import (
     PixelDiscriminator, 

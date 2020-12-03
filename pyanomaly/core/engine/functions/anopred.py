@@ -1,6 +1,7 @@
-'''
-this is the trainer of the 'Future Frame Prediction for Anomaly Detection - A New Baseline CVPR2018'
-'''
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import sys
 sys.path.append('../')
 import warnings

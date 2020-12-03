@@ -1,9 +1,16 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import torch
 from pyanomaly.core.utils import AverageMeter, ParamSet
 from ..utils import engine_save_checkpoint
 from ..utils import engine_save_model
 from .abstract import AbstractTrainer, AbstractInference
 import abc
+# import logging
+# logger = logging.getLogger(__name__)
+
 class DefaultTrainer(AbstractTrainer):
     def __init__(self, *defaults, **kwargs):
         '''
@@ -76,7 +83,6 @@ class DefaultTrainer(AbstractTrainer):
         self.config_name = kwargs['config_name']
         self.result_path = ''
         self.kwargs = kwargs
-
         self.normalize = ParamSet(name='normalize', 
                                   train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
                                   val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
@@ -91,19 +97,36 @@ class DefaultTrainer(AbstractTrainer):
 
         # the lr scheduler
         self.lr_scheduler_dict = kwargs['lr_scheduler_dict']
+
+        # Get the models
+        for item_key in self.model.keys():
+            attr_name = str(item_key)
+            if self.kwargs['parallel']:
+                temp_model = self.data_parallel(self.model[item_key])
+            else:
+                temp_model = self.model[item_key].cuda()
+            self.__setattr__(attr_name, temp_model)
         
+        # get the optimizer
+        for item_key in self.optimizer.keys():
+            attr_name = str(item_key)
+            # get the optimizer
+            self.__setattr__(attr_name, self.optimizer[item_key])
+            # get the lr scheduler
+            self.__setattr__(f'{attr_name}_scheduler', self.lr_scheduler_dict[f'{attr_name}_scheduler'])
+
         self.custom_setup()
 
-        if self.config.RESUME.flag:
-            # self.resume()
-            pass
+        # Continue training a model from a checkpoint
+        if self.config.TRAIN.resume.use:
+            self.resume()
         
-        if self.config.FINETUNE.flag:
+        # Fine-tine a trained model
+        if self.config.TRAIN.finetune.use:
             self.fine_tune()
         
     @abc.abstractclassmethod
     def custom_setup(self):
-        # raise Exception('Not implement the custom setup')
         pass
     
     def load_pretrain(self):
@@ -202,7 +225,6 @@ class DefaultTrainer(AbstractTrainer):
     
     @abc.abstractclassmethod
     def train(self,current_step):
-        # raise Exception('Need to implement the train function!!')
         pass
     
     @abc.abstractclassmethod
@@ -215,7 +237,6 @@ class DefaultTrainer(AbstractTrainer):
         Returns:
             metric: the metric 
         '''
-        # raise Exception('Need to implement the evaluation function, return the score')
         pass
     
         

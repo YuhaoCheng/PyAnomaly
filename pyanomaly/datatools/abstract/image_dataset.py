@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 from torch.utils.data import Dataset
 __all__ = ['AbstractImageDataset']
 

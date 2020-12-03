@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import torch
 import numpy as np
 import torch.nn as nn

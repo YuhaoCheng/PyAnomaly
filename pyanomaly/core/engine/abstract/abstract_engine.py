@@ -1,6 +1,10 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import time
 import weakref
-from pyanomaly.core.hook.functions import HookBase
+from pyanomaly.core.hook.abstract import HookBase
 
 class AbstractTrainer(object):
     def __init__(self, *args, **kwargs):

@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import numpy as np
 import torch
 import os
@@ -5,8 +9,8 @@ import pickle
 from collections import OrderedDict
 from torch.utils.data import DataLoader
 from pyanomaly.datatools.evaluate.utils import psnr_error
-from .abstract_hook import EvaluateHook
 from pyanomaly.core.utils import save_results, tensorboard_vis_images
+from ..abstract import EvaluateHook
 from ..hook_registry import HOOK_REGISTRY
 
 __all__ = ['AnoPCNEvaluateHook']

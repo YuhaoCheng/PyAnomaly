@@ -1,4 +1,7 @@
-# from yacs.config import CfgNode as CN
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 from fvcore.common.config import CfgNode as CN
 
 __all__ = ['update_config'] 
@@ -22,8 +25,8 @@ config.SYSTEM.distributed = CN()
 config.SYSTEM.distributed.use = False
 # configure the log things
 config.LOG = CN()
-config.LOG.log_output_dir = ''
-config.LOG.tb_output_dir = '' # tensorboard log output dir
+config.LOG.log_output_dir = './output/log' # log 
+config.LOG.tb_output_dir = './output/tensorboard' # tensorboard log output dir
 config.LOG.vis_dir = './output/vis'
 
 # configure the dataset 
@@ -36,44 +39,33 @@ config.DATASET.read_format = 'opencv'
 config.DATASET.image_format = 'jpg'
 config.DATASET.channel_num = 3 # 1: grayscale image | 2: optical flow | 3: RGB or other 3 channel image
 config.DATASET.channel_name = 'rgb' # 'gray' | 'uv' | 'rgb' | ....
-config.DATASET.optical_format = 'Y'
+config.DATASET.optical_format = 'Y' # the format of the optical 
 config.DATASET.optical_size = [384, 512] # the size of image before estimating the optical flow, H*W
-# config.DATASET.train_path = ''
-# config.DATASET.train_clip_length = 5 # the total clip length, including frames not be sampled
-# config.DATASET.train_sampled_clip_length = 5 # the real used frame, most time it equals to clip_length
-# config.DATASET.train_frame_step = 1  # frame sample frequency
-# config.DATASET.train_clip_step = 1   # clip sample frequency
-# config.DATASET.test_path = ''
-# config.DATASET.test_clip_length = 5
-# config.DATASET.test_sampled_clip_length = 5
-# config.DATASET.test_frame_step = 1
-# config.DATASET.test_clip_step = 1
 config.DATASET.train = CN()
 config.DATASET.train.data_path = ''
 config.DATASET.train.clip_length = 5 # the total clip length, including frames not be sampled
 config.DATASET.train.sampled_clip_length = 5 # the real used frame, most time it equals to clip_length
 config.DATASET.train.frame_step = 1  # frame sample frequency
 config.DATASET.train.clip_step = 1   # clip sample frequency
-config.DATASET.train.gt_path = ''   # clip sample frequency
+config.DATASET.train.gt_path = ''   # the path of the label file, not containing the name of the label file such as 'keypoints.json'
 config.DATASET.train.execute_test = False   # Testing the model on the train data
-config.DATASET.test = CN()
-config.DATASET.test.data_path = ''
-config.DATASET.test.clip_length = 5
-config.DATASET.test.sampled_clip_length = 5
-config.DATASET.test.frame_step = 1
-config.DATASET.test.clip_step = 1
-config.DATASET.test.gt_path = ''
+config.DATASET.val = CN()
+config.DATASET.val.data_path = ''
+config.DATASET.val.clip_length = 5
+config.DATASET.val.sampled_clip_length = 5
+config.DATASET.val.frame_step = 1
+config.DATASET.val.clip_step = 1
+config.DATASET.val.gt_path = ''
 config.DATASET.number_of_class = 1 # use in changing the label to one hot
-config.DATASET.score_normalize = True
+config.DATASET.score_normalize = False
 config.DATASET.score_type = 'normal' # 'normal' | 'abnormal'
 config.DATASET.decidable_idx = 1 # The front decidable frame idx
 config.DATASET.decidable_idx_back = 1 # The back decidable frame idx
 config.DATASET.smooth = CN()
-config.DATASET.smooth.guassian = True
+config.DATASET.smooth.guassian = False
 config.DATASET.smooth.guassian_sigma = [10]
 config.DATASET.mini_dataset = CN() 
 config.DATASET.mini_dataset.samples = 2
-# config.DATASET.evaluate_function_name = 'compute_auc_score'
 config.DATASET.evaluate_function = CN()
 config.DATASET.evaluate_function.name = ''
 config.DATASET.evaluate_function.result_type = 'score'  # 'score' | 'psnr' | .....
@@ -157,7 +149,6 @@ config.ARGUMENT.val.normal.std = [0.229, 0.224, 0.225]
 # configure the model related things
 config.MODEL = CN()
 config.MODEL.name = ''   # the name of the network, such as resnet
-# config.MODEL.type1 = ''   # the type of the network, such as resnet50, resnet101 or resnet152, only for test
 
 # a. trainable one model(e2e); b. trainable multi models(me2e); c. trainable one model + auxiliary(ae2e); d. trainable multi models  + auxiliary(ame2e)
 config.MODEL.type = 'e2e'
@@ -174,17 +165,8 @@ config.MODEL.hooks.val = []  # determine the hooks use in the training
 config.MODEL.discriminator_channels = []
 config.MODEL.pretrain_model = ''
 
-# Will be discarded in the future--------------------------------
-config.MODEL.flownet = 'flownet2' # the flownet type 'flownet2' | 'liteflownet'
-config.MODEL.flow_model_path = ''
-config.MODEL.detector = 'detectron2'
-config.MODEL.detector_config = ''
-config.MODEL.detector_model_path = ''
-#--------------------------------------------------------
-
 # This part defines the auxiliary of the whole model, most of time these models are frozen
 config.MODEL.auxiliary = CN()
-# config.MODEL.auxiliary.parts = ['optical_flow', 'detector']
 config.MODEL.auxiliary.optical_flow = CN()
 config.MODEL.auxiliary.optical_flow.require_grad = False
 config.MODEL.auxiliary.optical_flow.name = 'flownet2' # the flownet type 'flownet2' | 'liteflownet'
@@ -194,17 +176,6 @@ config.MODEL.auxiliary.detector.require_grad = False
 config.MODEL.auxiliary.detector.name = 'detectron2'
 config.MODEL.auxiliary.detector.config = ''
 config.MODEL.auxiliary.detector.model_path = ''
-
-
-# configure the resume
-config.RESUME = CN()
-config.RESUME.flag = False
-config.RESUME.checkpoint_path = ''
-
-# configure the freezing layers
-config.FINETUNE = CN()
-config.FINETUNE.flag = False
-config.FINETUNE.layer_list = []
 
 # configure the training process
 #-----------------basic-----------------
@@ -219,8 +190,16 @@ config.TRAIN.vis_step = 100  # the step to vis of the training results
 config.TRAIN.mini_eval_step = 10 # the step to exec the light-weight eval
 config.TRAIN.eval_step = 100 # the step to use the evaluate function
 config.TRAIN.save_step = 500  # the step to save the model
-config.TRAIN.epochs = 1 
-# config.TRAIN.loss = ['mse', 'cross']  # Will be discarded in the future
+config.TRAIN.epochs = 1
+# configure the resume
+config.TRAIN.resume = CN()
+config.TRAIN.resume.use = False
+config.TRAIN.resume.checkpoint_path = ''
+# configure the freezing layers
+config.TRAIN.finetune = CN()
+config.TRAIN.finetune.use = False
+config.TRAIN.finetune.layer_list = []
+
 # must be 4-times, the 0-th is name in dict, 1-th is the coefficicent of this loss, 2-th is the model named registered in the registry, 3-th is the params of the loss functions
 # e.g. ['loss_GeneratorLoss_cuda', 1.0, 'Adversarial_Loss', [], 'loss_Discriminiator_cuda', 1.0, 'Discriminate_Loss', []]
 # The 0-th's format is 'registryName_NameInEngine_DeviceType', for example, 'loss_GeneratorLoss_cuda' means the registry is 'loss' and the attribute named 'self.GeneratorLoss' refers to it, the device is cuda. 
@@ -229,7 +208,7 @@ config.TRAIN.epochs = 1
 config.TRAIN.losses = ['loss_MSE_cuda', 0.5, 'MSELoss', [['size_average', None], ['reduce', None], ['reduction', 'mean']], 
                        'loss_Cross_cuda', 0.5, 'CrossEntropyLoss', []]  
                     #    ['weight', None], ['size_average', None], ['ignore_index', -100], ['reduce', None], ['reduction', 'mean']
-# config.TRAIN.loss_coefficients = [0.5, 0.5] # the len must pair with the loss, Will be discarded in the future. 
+
 config.TRAIN.mode = 'general' # general | adversarial | ....
 #===============General Mode Settings==============
 config.TRAIN.general = CN()
@@ -246,7 +225,7 @@ config.TRAIN.general.optimizer.mode = 'all'  # all | individual
 # config.TRAIN.general.optimizer.output_name = ['optimizer_abc'] # Will be discarded in the future
 #-----------------Scheduler configure--------------
 config.TRAIN.general.scheduler = CN()
-config.TRAIN.general.scheduler.use = True
+config.TRAIN.general.scheduler.use = False
 config.TRAIN.general.scheduler.name = 'none'
 config.TRAIN.general.scheduler.step_size = 30 # the numebr of the iter, should be len(dataset) * want_epochs
 config.TRAIN.general.scheduler.steps = [10000, 20000] # the numebr of the iter, should be len(dataset) * want_epochs
@@ -262,16 +241,13 @@ config.TRAIN.adversarial = CN()
 config.TRAIN.adversarial.optimizer = CN()
 config.TRAIN.adversarial.optimizer.include = ['Generator', 'Discriminator']
 config.TRAIN.adversarial.optimizer.name = 'adam'
-# config.TRAIN.adversarial.optimizer.g_lr = 1e-2  # Will discard in the future
-# config.TRAIN.adversarial.optimizer.d_lr = 1e-2  # Will discard in the future 
 config.TRAIN.adversarial.optimizer.lrs = [1e-2, 1e-2]
 config.TRAIN.adversarial.optimizer.betas = [0.9, 0.999]
 config.TRAIN.adversarial.optimizer.weight_decay = 0.0001
 config.TRAIN.general.optimizer.mode = 'individual'  # all: all the model parts use one optimizer | individual: each model part uses one optimizer 
-# config.TRAIN.adversarial.optimizer.output_name = ['optimizer_g', 'optimizer_d'] # Will be discarded in the future
 #-----------------Scheduler configure--------------
 config.TRAIN.adversarial.scheduler = CN()
-config.TRAIN.adversarial.scheduler.use = True
+config.TRAIN.adversarial.scheduler.use = False
 config.TRAIN.adversarial.scheduler.name = 'none'
 config.TRAIN.adversarial.scheduler.step_size = 30 # the numebr of the iter, should be len(dataset) * want_epochs
 config.TRAIN.adversarial.scheduler.steps = [1000,2000] # the numebr of the iter, should be len(dataset) * want_epochs
@@ -282,7 +258,7 @@ config.TRAIN.adversarial.scheduler.warmup_factor = 0.001
 config.TRAIN.adversarial.scheduler.warmup_iters = 5000
 config.TRAIN.adversarial.scheduler.warmup_method = 'linear' # 'linear' | 'constant'
 #----------------Train save configure------------
-config.TRAIN.split = ''
+# config.TRAIN.split = ''
 config.TRAIN.model_output = '' # use save the final model
 config.TRAIN.checkpoint_output = '' # use to save the intermediate results, including lr, optimizer, state_dict...
 config.TRAIN.pusedo_data_path = ''
@@ -298,14 +274,6 @@ config.VAL.path = '' # if not use the data in the TRAIN.test_path
 config.VAL.batch_size = 2
 config.VAL.model_file = ''
 config.VAL.result_output = ''
-
-# # configure the test process, will be deperacted in the future. Only keep the VAL
-# config.TEST = CN()
-# config.TEST.name = ''
-# config.TEST.path = '' # if not use the data in the TRAIN.test_path
-# config.TEST.model_file = ''
-# config.TEST.result_output = ''
-# config.TEST.label_folder = ''
 
 
 def _get_cfg_defaults():
@@ -327,12 +295,3 @@ def update_config(yaml_path, opts):
     cfg.freeze()
 
     return cfg
-
-def create_debug_yaml():
-    import yaml
-    with open( './debug.yaml', 'w') as f:
-        yaml.dump(config, f)
-
-if __name__ == '__main__':
-    create_debug_yaml()
-    

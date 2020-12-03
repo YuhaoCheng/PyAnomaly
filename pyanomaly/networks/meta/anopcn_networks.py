@@ -1,11 +1,11 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import torch
 import torch.nn as nn
 import torchsnooper
 from collections import OrderedDict, namedtuple
-# from pyanomaly.networks.parts.pcn_parts.pcm import PCM
-# from pyanomaly.networks.parts.pcn_parts.erm import ERM
-# from pyanomaly.networks.parts.base.commonness import PixelDiscriminator, NLayerDiscriminator
-# from pyanomaly.networks.parts.base.commonness import DoubleConv, Down, Up, OutConv,  BasicConv2d
 from pyanomaly.networks.meta.base.commonness import (
     PixelDiscriminator, 
     NLayerDiscriminator,

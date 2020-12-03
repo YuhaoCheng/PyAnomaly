@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import os
 import pickle
 import cv2
@@ -9,7 +13,7 @@ import matplotlib.pyplot as plt
 from tsnecuda import TSNE
 from scipy.ndimage import gaussian_filter1d
 
-from .abstract_hook import EvaluateHook
+from ..abstract import EvaluateHook
 from pyanomaly.datatools.evaluate.utils import reconstruction_loss
 from pyanomaly.datatools.abstract.readers import GroundTruthLoader
 # from lib.datatools.evaluate import eval_api
@@ -31,13 +35,14 @@ class STAEEvaluateHook(EvaluateHook):
         self.trainer.STAE.eval()
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
-        frame_num = self.trainer.config.DATASET.test.sampled_clip_length
-        clip_step = self.trainer.config.DATASET.test.clip_step
+        frame_num = self.trainer.config.DATASET.val.sampled_clip_length
+        clip_step = self.trainer.config.DATASET.val.clip_step
         psnr_records=[]
         score_records=[]
         # total = 0
         num_videos = 0
         random_video_sn = torch.randint(0, len(self.trainer.test_dataset_keys), (1,))
+        import ipdb; ipdb.set_trace()
         # calc the score for the test dataset
         for sn, video_name in enumerate(self.trainer.test_dataset_keys):
             num_videos += 1

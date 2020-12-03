@@ -1,6 +1,7 @@
-'''
-this is the trainer of the 'Anomaly Detection in Video Sequence with Appearance-Motion Correspondence(ICCV2019)'
-'''
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 #!!!!! ignore the warning messages
 import warnings
 warnings.filterwarnings('ignore')

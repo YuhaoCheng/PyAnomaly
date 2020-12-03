@@ -1,3 +1,7 @@
+"""
+@author:  Yuhao Cheng
+@contact: yuhao.cheng[at]outlook.com
+"""
 import torch
 import torch.nn as nn
 from ..loss_registry import LOSS_REGISTRY
