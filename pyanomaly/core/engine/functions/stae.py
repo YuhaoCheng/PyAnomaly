@@ -31,12 +31,7 @@ __all__ = ['STAETrainer', 'STAEInference']
 class STAETrainer(DefaultTrainer):
     NAME = ["STAE.TRAIN"]
     def custom_setup(self):
-        # basic things
-        # if self.kwargs['parallel']:
-        #     self.STAE = self.data_parallel(self.model['STAE'])
-        # else:
-        #     self.STAE = self.model['STAE'].cuda()
-        
+
         for item_key in self.model.keys():
             attr_name = str(item_key)
             if self.kwargs['parallel']:
@@ -46,7 +41,6 @@ class STAETrainer(DefaultTrainer):
             self.__setattr__(attr_name, temp_model)
         
         # get the optimizer
-        # self.optim_STAE = self.optimizer['optimizer_stae']
         for item_key in self.optimizer.keys():
             attr_name = str(item_key)
             # get the optimizer
@@ -61,15 +55,11 @@ class STAETrainer(DefaultTrainer):
         self.rec_loss = self.loss_function['RecLoss']
         self.pred_loss = self.loss_function['WeightedPredLoss']
         
-        # the lr scheduler
-        # self.lr_stae = self.lr_scheduler_dict['optimizer_stae_scheduler']
         
 
         # basic meter
         self.loss_meter_STAE = AverageMeter(name='loss_STAE')
 
-        # self.test_dataset_keys = self.kwargs['test_dataset_keys']
-        # self.test_dataset_dict = self.kwargs['test_dataset_dict']
 
     def train(self,current_step):
         # Pytorch [N, C, D, H, W]

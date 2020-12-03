@@ -29,17 +29,25 @@ __all__ = ['MEMAETrainer', 'MEMAEInference']
 class MEMAETrainer(DefaultTrainer):
     NAME = ["MEMAE.TRAIN"]
     def custom_setup(self):
-        if self.kwargs['parallel']:
-            self.MemAE = self.data_parallel(self.model['MemAE'])
-        else:
-            self.MemAE = self.model['MemAE'].cuda()
+        # if self.kwargs['parallel']:
+        #     self.MemAE = self.data_parallel(self.model['MemAE'])
+        # else:
+        #     self.MemAE = self.model['MemAE'].cuda()
+
+        for item_key in self.model.keys():
+            attr_name = str(item_key)
+            if self.kwargs['parallel']:
+                temp_model = self.data_parallel(self.model[item_key])
+            else:
+                temp_model = self.model[item_key].cuda()
+            self.__setattr__(attr_name, temp_model)
         
         # get the optimizer
-        self.optim_MemAE = self.optimizer['optimizer_memae']
+        # self.optim_MemAE = self.optimizer['optimizer_memae']
 
         # get the loss_fucntion
-        self.rec_loss = self.loss_function['rec_loss']
-        self.mem_loss = self.loss_function['mem_loss']
+        self.rec_loss = self.loss_function['RecLoss']
+        self.mem_loss = self.loss_function['MemLoss']
 
         # the lr scheduler
         self.lr_memae = self.lr_scheduler_dict['optimizer_memae_scheduler']
@@ -47,8 +55,8 @@ class MEMAETrainer(DefaultTrainer):
         # basic meter
         self.loss_meter_MemAE = AverageMeter(name='loss_memae')
         
-        self.test_dataset_keys = self.kwargs['test_dataset_keys']
-        self.test_dataset_dict = self.kwargs['test_dataset_dict']
+        # self.test_dataset_keys = self.kwargs['test_dataset_keys']
+        # self.test_dataset_dict = self.kwargs['test_dataset_dict']
 
     
     def train(self,current_step):

@@ -97,19 +97,36 @@ class DefaultTrainer(AbstractTrainer):
 
         # the lr scheduler
         self.lr_scheduler_dict = kwargs['lr_scheduler_dict']
+
+        # Get the models
+        for item_key in self.model.keys():
+            attr_name = str(item_key)
+            if self.kwargs['parallel']:
+                temp_model = self.data_parallel(self.model[item_key])
+            else:
+                temp_model = self.model[item_key].cuda()
+            self.__setattr__(attr_name, temp_model)
         
+        # get the optimizer
+        for item_key in self.optimizer.keys():
+            attr_name = str(item_key)
+            # get the optimizer
+            self.__setattr__(attr_name, self.optimizer[item_key])
+            # get the lr scheduler
+            self.__setattr__(f'{attr_name}_scheduler', self.lr_scheduler_dict[f'{attr_name}_scheduler'])
+
         self.custom_setup()
 
+        # Continue training a model from a checkpoint
         if self.config.TRAIN.resume.use:
-            # self.resume()
-            pass
+            self.resume()
         
+        # Fine-tine a trained model
         if self.config.TRAIN.finetune.use:
             self.fine_tune()
         
     @abc.abstractclassmethod
     def custom_setup(self):
-        # raise Exception('Not implement the custom setup')
         pass
     
     def load_pretrain(self):
@@ -208,7 +225,6 @@ class DefaultTrainer(AbstractTrainer):
     
     @abc.abstractclassmethod
     def train(self,current_step):
-        # raise Exception('Need to implement the train function!!')
         pass
     
     @abc.abstractclassmethod
@@ -221,7 +237,6 @@ class DefaultTrainer(AbstractTrainer):
         Returns:
             metric: the metric 
         '''
-        # raise Exception('Need to implement the evaluation function, return the score')
         pass
     
         

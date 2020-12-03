@@ -61,7 +61,6 @@ class MemoryModule3D(nn.Module):
 class AutoEncoderCov3DMem(nn.Module):
     def __init__(self, chnum_in, mem_dim, shrink_thres=0.0025):
         super(AutoEncoderCov3DMem, self).__init__()
-        print('AutoEncoderCov3DMem')
         self.chnum_in = chnum_in
         self.mem_dim = mem_dim
         channel_size = 32

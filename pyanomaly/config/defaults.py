@@ -25,8 +25,8 @@ config.SYSTEM.distributed = CN()
 config.SYSTEM.distributed.use = False
 # configure the log things
 config.LOG = CN()
-config.LOG.log_output_dir = ''
-config.LOG.tb_output_dir = '' # tensorboard log output dir
+config.LOG.log_output_dir = './output/log' # log 
+config.LOG.tb_output_dir = './output/tensorboard' # tensorboard log output dir
 config.LOG.vis_dir = './output/vis'
 
 # configure the dataset 
@@ -57,12 +57,12 @@ config.DATASET.val.frame_step = 1
 config.DATASET.val.clip_step = 1
 config.DATASET.val.gt_path = ''
 config.DATASET.number_of_class = 1 # use in changing the label to one hot
-config.DATASET.score_normalize = True
+config.DATASET.score_normalize = False
 config.DATASET.score_type = 'normal' # 'normal' | 'abnormal'
 config.DATASET.decidable_idx = 1 # The front decidable frame idx
 config.DATASET.decidable_idx_back = 1 # The back decidable frame idx
 config.DATASET.smooth = CN()
-config.DATASET.smooth.guassian = True
+config.DATASET.smooth.guassian = False
 config.DATASET.smooth.guassian_sigma = [10]
 config.DATASET.mini_dataset = CN() 
 config.DATASET.mini_dataset.samples = 2
@@ -225,7 +225,7 @@ config.TRAIN.general.optimizer.mode = 'all'  # all | individual
 # config.TRAIN.general.optimizer.output_name = ['optimizer_abc'] # Will be discarded in the future
 #-----------------Scheduler configure--------------
 config.TRAIN.general.scheduler = CN()
-config.TRAIN.general.scheduler.use = True
+config.TRAIN.general.scheduler.use = False
 config.TRAIN.general.scheduler.name = 'none'
 config.TRAIN.general.scheduler.step_size = 30 # the numebr of the iter, should be len(dataset) * want_epochs
 config.TRAIN.general.scheduler.steps = [10000, 20000] # the numebr of the iter, should be len(dataset) * want_epochs
@@ -247,7 +247,7 @@ config.TRAIN.adversarial.optimizer.weight_decay = 0.0001
 config.TRAIN.general.optimizer.mode = 'individual'  # all: all the model parts use one optimizer | individual: each model part uses one optimizer 
 #-----------------Scheduler configure--------------
 config.TRAIN.adversarial.scheduler = CN()
-config.TRAIN.adversarial.scheduler.use = True
+config.TRAIN.adversarial.scheduler.use = False
 config.TRAIN.adversarial.scheduler.name = 'none'
 config.TRAIN.adversarial.scheduler.step_size = 30 # the numebr of the iter, should be len(dataset) * want_epochs
 config.TRAIN.adversarial.scheduler.steps = [1000,2000] # the numebr of the iter, should be len(dataset) * want_epochs
@@ -258,7 +258,7 @@ config.TRAIN.adversarial.scheduler.warmup_factor = 0.001
 config.TRAIN.adversarial.scheduler.warmup_iters = 5000
 config.TRAIN.adversarial.scheduler.warmup_method = 'linear' # 'linear' | 'constant'
 #----------------Train save configure------------
-config.TRAIN.split = ''
+# config.TRAIN.split = ''
 config.TRAIN.model_output = '' # use save the final model
 config.TRAIN.checkpoint_output = '' # use to save the intermediate results, including lr, optimizer, state_dict...
 config.TRAIN.pusedo_data_path = ''
