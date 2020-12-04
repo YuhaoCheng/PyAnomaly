@@ -121,8 +121,7 @@ TRAIN:
     optimizer:
       include: ['Generator', 'Discriminator']
       name: 'adam'
-      g_lr: 0.0001
-      d_lr: 0.00001
+      lrs: [0.0001, 0.00001]
       weight_decay: 0.0001
     scheduler:
       use: false

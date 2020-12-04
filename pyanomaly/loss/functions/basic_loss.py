@@ -109,15 +109,6 @@ class Discriminate_Loss(nn.Module):
     def forward(self,real_outputs,fake_outputs):
         return torch.mean((real_outputs-1)**2/2)+torch.mean(fake_outputs**2/2)
 
-# class AMCDiscriminateLoss1(nn.Module):
-#     def __init__(self):
-#         super(AMCDiscriminateLoss1, self).__init__()
-#         self.t1 = nn.BCELoss()
-        
-#     def forward(self, outputs, labels):
-#         loss  = self.t1(outputs, labels) 
-#         return loss
-
 @LOSS_REGISTRY.register()
 class AMCDiscriminateLoss(nn.Module):
     def __init__(self, cfg):
@@ -329,9 +320,4 @@ def produce_assign_statement(name, value):
 #     'weighted_pred_loss': WeightedPredLoss().cuda()
 # }
 
-# def get_basic_loss(loss_name, cfg):
-#     assert loss_name in LOSSDICT.keys(), f'The loss name: {loss_name} is not support'
-#     print(f'Using the loss:{loss_name}')
-#     loss_function = LOSSDICT[loss_name]
-#     return loss_function
 
