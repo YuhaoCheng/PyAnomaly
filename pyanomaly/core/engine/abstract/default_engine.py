@@ -132,11 +132,7 @@ class DefaultTrainer(AbstractTrainer):
         # Fine-tine a trained model
         if self.config.TRAIN.finetune.use:
             self.fine_tune()
-        
-    @abc.abstractclassmethod
-    def custom_setup(self):
-        pass
-    
+     
     def load_pretrain(self):
         model_path = self.config.MODEL.pretrain_model
         if  model_path is '':
@@ -154,7 +150,7 @@ class DefaultTrainer(AbstractTrainer):
     
     def resume(self):
         self.logger.info('=> Resume the previous training')
-        checkpoint_path = self.config.RESUME.checkpoint_path
+        checkpoint_path = self.config.TRAIN.resume.checkpoint_path
         self.logger.info('=> Load the checkpoint from {}'.format(checkpoint_path))
         checkpoint = torch.load(checkpoint_path)
         self.model.load_state_dict(checkpoint['model_state_dict'])
@@ -162,7 +158,7 @@ class DefaultTrainer(AbstractTrainer):
 
     
     def fine_tune(self):
-        layer_list = self.config.FINETUNE.layer_list
+        layer_list = self.config.TRAIN.finetune.layer_list
         self.logger.info('=> Freeze layers except start with:{}'.format(layer_list))
         for n, p in self.model.named_parameters():
             parts = n.split('.')
@@ -229,7 +225,10 @@ class DefaultTrainer(AbstractTrainer):
         else:
             engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_epoch, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
 
-    
+    @abc.abstractclassmethod
+    def custom_setup(self):
+        pass
+
     @abc.abstractclassmethod
     def train(self,current_step):
         pass

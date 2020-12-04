@@ -107,7 +107,7 @@ TRAIN:
   max_steps: 38320
   log_step: 10
   vis_step: 958
-  mini_eval_step: 400
+  # mini_eval_step: 400
   eval_step: 958
   save_step: 958
   losses: ['loss_GANLoss_cuda', 0.25, 'GANLoss', [['gan_mode', 'vanilla']], 'loss_GradientLoss_cuda', 1.0, 'GradientLoss', [], 

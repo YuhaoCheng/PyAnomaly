@@ -137,8 +137,4 @@ TRAIN:
 
 VAL:
   engine_name: 'AMCInference'
-  name: ''
-  path: ''
-  batch_size: 2
-  result_output: './output/results'
 
