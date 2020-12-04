@@ -42,6 +42,7 @@ DATASET:
   evaluate_function:
     name: 'ScoreAUCMetrics'
     result_type: 'score'
+
 ARGUMENT:
   train:
     use: true

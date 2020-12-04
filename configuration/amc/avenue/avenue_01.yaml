@@ -8,10 +8,6 @@ SYSTEM:
     enable: true
   distributed:
     use: false
-LOG:
-  log_output_dir: './output/log'
-  tb_output_dir: './output/tensorboard'
-  vis_dir: './output/vis'
   
 DATASET:
   name: 'avenue'

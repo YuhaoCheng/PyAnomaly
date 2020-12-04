@@ -40,6 +40,7 @@ DATASET:
   evaluate_function:
     name: 'ScoreAUCMetrics'
     result_type: 'score'
+
 ARGUMENT:
   train:
     use: true
@@ -85,6 +86,7 @@ ARGUMENT:
       use: true
       mean: [0.5, 0.5, 0.5]
       std: [0.5, 0.5, 0.5]
+
 MODEL:
   name: 'anopred'
   type: 'ame2e'
