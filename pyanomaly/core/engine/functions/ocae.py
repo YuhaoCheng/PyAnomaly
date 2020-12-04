@@ -168,58 +168,58 @@ class OCAETrainer(DefaultTrainer):
         self.saved_loss = {'loss_ABC':self.loss_meter_ABC.val}
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
-    def mini_eval(self, current_step):
-        if current_step % self.steps.param['mini_eval'] != 0:
-            return
-        temp_meter_A = AverageMeter()
-        temp_meter_B = AverageMeter()
-        temp_meter_C = AverageMeter()
+    # def mini_eval(self, current_step):
+    #     if current_step % self.steps.param['mini_eval'] != 0:
+    #         return
+    #     temp_meter_A = AverageMeter()
+    #     temp_meter_B = AverageMeter()
+    #     temp_meter_C = AverageMeter()
         
-        self.set_requires_grad(self.A, False)
-        self.set_requires_grad(self.B, False)
-        self.set_requires_grad(self.C, False)
-        self.set_requires_grad(self.Detector, False)
-        self.A.eval()
-        self.B.eval()
-        self.C.eval()
-        self.Detector.eval()
+    #     self.set_requires_grad(self.A, False)
+    #     self.set_requires_grad(self.B, False)
+    #     self.set_requires_grad(self.C, False)
+    #     self.set_requires_grad(self.Detector, False)
+    #     self.A.eval()
+    #     self.B.eval()
+    #     self.C.eval()
+    #     self.Detector.eval()
 
-        for data, _ in self.val_dataloader:
-            # base on the D to get each frame
-            # in this method, D = 3 and not change
-            future_mini = data[:, :, -1, :, :].cuda() # t+1 frame 
-            current_mini = data[:, :, 1, :, :].cuda() # t frame
-            past_mini = data[:, :, 0, :, :].cuda() # t-1 frame
+    #     for data, _ in self.val_dataloader:
+    #         # base on the D to get each frame
+    #         # in this method, D = 3 and not change
+    #         future_mini = data[:, :, -1, :, :].cuda() # t+1 frame 
+    #         current_mini = data[:, :, 1, :, :].cuda() # t frame
+    #         past_mini = data[:, :, 0, :, :].cuda() # t-1 frame
 
-            bboxs_mini = get_batch_dets(self.Detector, current_mini)
+    #         bboxs_mini = get_batch_dets(self.Detector, current_mini)
 
-            for index, bbox in enumerate(bboxs_mini):
-                if bbox.numel() == 0:
-                    bbox = bbox.new_zeros([1, 4])
-                # get the crop objects
-                input_currentObject_B, _ = multi_obj_grid_crop(current_mini[index], bbox)
-                future_object, _ = multi_obj_grid_crop(future_mini[index], bbox)
-                future2current = torch.stack([future_object, input_currentObject_B], dim=1)
-                past_object, _ = multi_obj_grid_crop(past_mini[index], bbox)
-                current2past = torch.stack([input_currentObject_B, past_object], dim=1)
+    #         for index, bbox in enumerate(bboxs_mini):
+    #             if bbox.numel() == 0:
+    #                 bbox = bbox.new_zeros([1, 4])
+    #             # get the crop objects
+    #             input_currentObject_B, _ = multi_obj_grid_crop(current_mini[index], bbox)
+    #             future_object, _ = multi_obj_grid_crop(future_mini[index], bbox)
+    #             future2current = torch.stack([future_object, input_currentObject_B], dim=1)
+    #             past_object, _ = multi_obj_grid_crop(past_mini[index], bbox)
+    #             current2past = torch.stack([input_currentObject_B, past_object], dim=1)
 
-                _, _, input_objectGradient_A = frame_gradient(future2current)
-                input_objectGradient_A = input_objectGradient_A.sum(1)
-                _, _, input_objectGradient_C = frame_gradient(current2past)
-                input_objectGradient_C = input_objectGradient_C.sum(1)
+    #             _, _, input_objectGradient_A = frame_gradient(future2current)
+    #             input_objectGradient_A = input_objectGradient_A.sum(1)
+    #             _, _, input_objectGradient_C = frame_gradient(current2past)
+    #             input_objectGradient_C = input_objectGradient_C.sum(1)
             
-                _, output_recGradient_A, _ = self.A(input_objectGradient_A)
-                _, output_recObject_B, _ = self.B(input_currentObject_B)
-                _, output_recGradient_C, _ = self.C(input_objectGradient_C)
+    #             _, output_recGradient_A, _ = self.A(input_objectGradient_A)
+    #             _, output_recObject_B, _ = self.B(input_currentObject_B)
+    #             _, output_recGradient_C, _ = self.C(input_objectGradient_C)
 
-                psnr_A = psnr_error(output_recGradient_A.detach(), input_objectGradient_A)
-                psnr_B = psnr_error(output_recObject_B.detach(), input_currentObject_B)
-                psnr_C = psnr_error(output_recGradient_C.detach(), input_objectGradient_C)
-                temp_meter_A.update(psnr_A.detach())
-                temp_meter_B.update(psnr_B.detach())
-                temp_meter_C.update(psnr_C.detach())
+    #             psnr_A = psnr_error(output_recGradient_A.detach(), input_objectGradient_A)
+    #             psnr_B = psnr_error(output_recObject_B.detach(), input_currentObject_B)
+    #             psnr_C = psnr_error(output_recGradient_C.detach(), input_objectGradient_C)
+    #             temp_meter_A.update(psnr_A.detach())
+    #             temp_meter_B.update(psnr_B.detach())
+    #             temp_meter_C.update(psnr_C.detach())
 
-        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the  A PSNR is {temp_meter_A.avg:.2f}, the B PSNR is {temp_meter_B.avg:.2f}, the C PSNR is {temp_meter_C.avg:.2f}')
+    #     self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the  A PSNR is {temp_meter_A.avg:.2f}, the B PSNR is {temp_meter_B.avg:.2f}, the C PSNR is {temp_meter_C.avg:.2f}')
 
 @ENGINE_REGISTRY.register()
 class OCAEInference(DefaultInference):

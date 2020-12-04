@@ -267,24 +267,24 @@ class ANOPCNTrainer(DefaultTrainer):
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
 
 
-    def mini_eval(self, current_step):
-        if current_step % self.steps.param['mini_eval'] != 0:
-            return
-        temp_meter = AverageMeter(name='temp')
-        self.set_requires_grad(self.F, False)
-        self.set_requires_grad(self.D, False)
-        self.set_requires_grad(self.G, False)
-        self.G.eval()
-        self.D.eval()
-        self.F.eval()
-        for data, _ in self.val_dataloader:
-            # get the data
-            target_mini = data[:, :, -1, :, :].cuda() # t frame
-            input_data_mini = data[:, :, :-1, :, :].cuda() # 0 ~ t-1 frame
-            _, output_refineframe_G_mini = self.G(input_data_mini, target_mini)
-            vaild_psnr = psnr_error(output_refineframe_G_mini.detach(), target_mini, hat=False)
-            temp_meter.update(vaild_psnr.detach())
-        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the PSNR is {temp_meter.avg:.3f}')
+    # def mini_eval(self, current_step):
+    #     if current_step % self.steps.param['mini_eval'] != 0:
+    #         return
+    #     temp_meter = AverageMeter(name='temp')
+    #     self.set_requires_grad(self.F, False)
+    #     self.set_requires_grad(self.D, False)
+    #     self.set_requires_grad(self.G, False)
+    #     self.G.eval()
+    #     self.D.eval()
+    #     self.F.eval()
+    #     for data, _ in self.val_dataloader:
+    #         # get the data
+    #         target_mini = data[:, :, -1, :, :].cuda() # t frame
+    #         input_data_mini = data[:, :, :-1, :, :].cuda() # 0 ~ t-1 frame
+    #         _, output_refineframe_G_mini = self.G(input_data_mini, target_mini)
+    #         vaild_psnr = psnr_error(output_refineframe_G_mini.detach(), target_mini, hat=False)
+    #         temp_meter.update(vaild_psnr.detach())
+    #     self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the PSNR is {temp_meter.avg:.3f}')
 
 @ENGINE_REGISTRY.register()
 class ANOPCNInference(DefaultInference):

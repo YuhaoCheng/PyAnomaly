@@ -22,7 +22,7 @@ from pyanomaly import (
 def main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name, is_training):
     
     # the system setting
-    system_setup(args, cfg)
+    parallel_flag = system_setup(args, cfg)
     
     # get the model structure
     ma = ModelAPI(cfg)
@@ -61,7 +61,7 @@ def main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, tim
     # Get the engine
     engine_api = EngineAPI(cfg, True)
     engine = engine_api.build()
-    trainer = engine(model_dict, dataloaders_dict, optimizer_dict, loss_function_dict, logger, cfg, parallel=cfg.SYSTEM.multigpus, 
+    trainer = engine(model_dict, dataloaders_dict, optimizer_dict, loss_function_dict, logger, cfg, parallel=parallel_flag, 
                     pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, loss_lamada=loss_lamada,
                     hooks=hooks, evaluate_function=evaluate_function,
                     lr_scheduler_dict=lr_scheduler_dict

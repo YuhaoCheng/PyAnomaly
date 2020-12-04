@@ -1,13 +1,11 @@
 SYSTEM:
-  multigpus: false
-  num_gpus: 2
+  # multigpus: false
+  # num_gpus: 2
   gpus: [0,1]
   cudnn:
     benchmark: false
     deterministic: true
     enable: true
-  distributed:
-    use: false
   
 DATASET:
   name: 'Avenue'
@@ -132,13 +130,7 @@ TRAIN:
       warmup_factor: 0.01
       warmup_iters: 958
       warmup_method: 'linear'
-  model_output: './output/models'
-  checkpoint_output: './output/checkpoint'
 
 VAL:
   engine_name: 'AMCInference'
-  name: ''
-  path: ''
-  batch_size: 2
-  result_output: './output/results'
 

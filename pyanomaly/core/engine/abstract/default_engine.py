@@ -87,8 +87,11 @@ class DefaultTrainer(AbstractTrainer):
                                   train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
                                   val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
 
+        # self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
+        #                       max=self.config.TRAIN.max_steps, mini_eval=self.config.TRAIN.mini_eval_step, dynamic_steps=self.config.TRAIN.dynamic_steps)
+
         self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
-                              max=self.config.TRAIN.max_steps, mini_eval=self.config.TRAIN.mini_eval_step, dynamic_steps=self.config.TRAIN.dynamic_steps)
+                              max=self.config.TRAIN.max_steps, dynamic_steps=self.config.TRAIN.dynamic_steps)
 
         self.evaluate_function = kwargs['evaluate_function']
         
@@ -203,12 +206,11 @@ class DefaultTrainer(AbstractTrainer):
         for h in self._hooks:
             h.after_step(current_step)
         
-        # in the future, will be deprecated
-        if (current_step % self.steps.param['mini_eval'] == 0) or current_step == 0:
-            self.mini_eval(current_step)
-            # return
+        # # in the future, will be deprecated
+        # if (current_step % self.steps.param['mini_eval'] == 0) or current_step == 0:
+        #     self.mini_eval(current_step)
+        #     # return
 
-    
     def after_train(self):
         for h in self._hooks:
             h.after_train()

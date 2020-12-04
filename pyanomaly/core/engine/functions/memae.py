@@ -115,18 +115,18 @@ class MEMAETrainer(DefaultTrainer):
         self.saved_loss = {'loss_MemAE':self.loss_meter_MemAE.val}
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
-    def mini_eval(self, current_step):
-        temp_meter_frame = AverageMeter()
-        self.set_requires_grad(self.MemAE, False)
-        self.MemAE.eval()
-        for data, _, _ in self.val_dataloader:
-            # get the data
-            input_data_mini = data.cuda()
-            output_rec, _ = self.MemAE(input_data_mini)
-            frame_psnr_mini = psnr_error(output_rec.detach(), input_data_mini)
-            temp_meter_frame.update(frame_psnr_mini.detach())
-        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the frame PSNR is {temp_meter_frame.avg:.3f}')
-        # return temp_meter.avg
+    # def mini_eval(self, current_step):
+    #     temp_meter_frame = AverageMeter()
+    #     self.set_requires_grad(self.MemAE, False)
+    #     self.MemAE.eval()
+    #     for data, _, _ in self.val_dataloader:
+    #         # get the data
+    #         input_data_mini = data.cuda()
+    #         output_rec, _ = self.MemAE(input_data_mini)
+    #         frame_psnr_mini = psnr_error(output_rec.detach(), input_data_mini)
+    #         temp_meter_frame.update(frame_psnr_mini.detach())
+    #     self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the frame PSNR is {temp_meter_frame.avg:.3f}')
+    #     # return temp_meter.avg
 
 @ENGINE_REGISTRY.register()
 class MEMAEInference(DefaultInference):

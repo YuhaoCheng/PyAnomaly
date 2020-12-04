@@ -161,33 +161,33 @@ class ANOPREDTrainer(DefaultTrainer):
         self.saved_loss = {'loss_G':self.loss_meter_G.val, 'loss_D':self.loss_meter_D.val}
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
-    def mini_eval(self, current_step):
-        if current_step % self.config.TRAIN.mini_eval_step != 0:
-            return
-        temp_meter_frame = AverageMeter()
-        temp_meter_flow = AverageMeter()
-        self.set_requires_grad(self.G, False)
-        self.set_requires_grad(self.D, False)
-        self.set_requires_grad(self.F, False)
-        self.G.eval()
-        self.D.eval()
-        self.F.eval()
-        for data, _ in self.val_dataloader:
-            # base on the D to get each frame
-            target_mini = data[:, :, -1, :, :].cuda() # t+1 frame 
-            input_data = data[:, :, :-1, :, :] # 0 ~ t frame
-            input_last_mini = input_data[:, :, -1, :, :].cuda() # t frame
+    # def mini_eval(self, current_step):
+    #     if current_step % self.config.TRAIN.mini_eval_step != 0:
+    #         return
+    #     temp_meter_frame = AverageMeter()
+    #     temp_meter_flow = AverageMeter()
+    #     self.set_requires_grad(self.G, False)
+    #     self.set_requires_grad(self.D, False)
+    #     self.set_requires_grad(self.F, False)
+    #     self.G.eval()
+    #     self.D.eval()
+    #     self.F.eval()
+    #     for data, _ in self.val_dataloader:
+    #         # base on the D to get each frame
+    #         target_mini = data[:, :, -1, :, :].cuda() # t+1 frame 
+    #         input_data = data[:, :, :-1, :, :] # 0 ~ t frame
+    #         input_last_mini = input_data[:, :, -1, :, :].cuda() # t frame
 
-            # squeeze the D dimension to C dimension, shape comes to [N, C, H, W]
-            input_data_mini = input_data.reshape(input_data.shape[0], -1, input_data.shape[-2], input_data.shape[-1]).cuda()
-            output_pred_G = self.G(input_data_mini)
-            gtFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, target_mini], 1), self.normalize.param['train'])
-            predFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, output_pred_G], 1), self.normalize.param['train'])
-            frame_psnr_mini = psnr_error(output_pred_G.detach(), target_mini, hat=True)
-            flow_psnr_mini = psnr_error(predFlow, gtFlow)
-            temp_meter_frame.update(frame_psnr_mini.detach())
-            temp_meter_flow.update(flow_psnr_mini.detach())
-        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the frame PSNR is {temp_meter_frame.avg:.2f}, the flow PSNR is {temp_meter_flow.avg:.2f}')
+    #         # squeeze the D dimension to C dimension, shape comes to [N, C, H, W]
+    #         input_data_mini = input_data.reshape(input_data.shape[0], -1, input_data.shape[-2], input_data.shape[-1]).cuda()
+    #         output_pred_G = self.G(input_data_mini)
+    #         gtFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, target_mini], 1), self.normalize.param['train'])
+    #         predFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, output_pred_G], 1), self.normalize.param['train'])
+    #         frame_psnr_mini = psnr_error(output_pred_G.detach(), target_mini, hat=True)
+    #         flow_psnr_mini = psnr_error(predFlow, gtFlow)
+    #         temp_meter_frame.update(frame_psnr_mini.detach())
+    #         temp_meter_flow.update(flow_psnr_mini.detach())
+    #     self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the frame PSNR is {temp_meter_frame.avg:.2f}, the flow PSNR is {temp_meter_flow.avg:.2f}')
 
     
 @ENGINE_REGISTRY.register()
