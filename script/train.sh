@@ -87,6 +87,4 @@ echo "Using the verbose:"$verbose
 # Go to the main file location
 cd $project_path
 
-CUDA_VISIBLE_DEVICES=$GPUS python main.py --project_path $project_path --cfg_folder $cfg_folder --cfg_name $config --train --verbose $verbose  \
-                                                SYSTEM.multigpus $MULTIGPUS \
-                                                SYSTEM.num_gpus $NUM_GPUS 
+CUDA_VISIBLE_DEVICES=$GPUS python main.py --project_path $project_path --cfg_folder $cfg_folder --cfg_name $config --train --verbose $verbose 

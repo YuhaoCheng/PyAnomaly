@@ -16,7 +16,7 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 import torchvision.transforms.functional as tf
 from tsnecuda import TSNE
-from pyanomaly.utils.flow_utils import flow2img
+from pyanomaly.utils import flow2img
 from skimage.measure import compare_ssim as ssim
 from collections import OrderedDict
 import matplotlib.pyplot as plt

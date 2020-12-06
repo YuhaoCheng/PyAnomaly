@@ -17,7 +17,7 @@ from ..abstract import EvaluateHook
 from pyanomaly.datatools.evaluate.utils import reconstruction_loss
 from pyanomaly.datatools.abstract.readers import GroundTruthLoader
 # from lib.datatools.evaluate import eval_api
-from pyanomaly.core.utils import tsne_vis, tensorboard_vis_images, save_results
+from pyanomaly.core.utils import tsne_vis, tensorboard_vis_images, save_score_results
 
 from ..hook_registry import HOOK_REGISTRY
 
@@ -97,7 +97,7 @@ class STAEEvaluateHook(EvaluateHook):
                     print(f'finish test video set {video_name}')
                     break
         
-        self.trainer.pkl_path = save_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records)
+        self.trainer.pkl_path = save_score_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records)
         # results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
         for result_path in self.trainer.pkl_path:
             results = self.evaluate_function.compute({'val':result_path})
@@ -105,10 +105,3 @@ class STAEEvaluateHook(EvaluateHook):
         tb_writer.add_text('amc: AUC of ROC curve', f'auc is {results.auc}',global_steps)
         return results.auc
 
-
-# def get_stae_hooks(name):
-#     if name in HOOKS:
-#         t = eval(name)()
-#     else:
-#         raise Exception('The hook is not in amc_hooks')
-#     return t

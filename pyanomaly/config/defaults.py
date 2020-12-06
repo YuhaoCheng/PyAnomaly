@@ -154,8 +154,8 @@ config.MODEL.name = ''   # the name of the network, such as resnet
 # a. trainable one model(e2e); b. trainable multi models(me2e); c. trainable one model + auxiliary(ae2e); d. trainable multi models  + auxiliary(ame2e)
 config.MODEL.type = 'e2e'
 
-# must be even, the 0-th is name in dict, 1-th is the model named registered in the registry; e.g. ['meta_Backbone', 'resnet18', 'meta_Head', 'ps'], 
-#                                                                                                  ['meta_Generator', 'AMCGenerator', 'meta_Discriminiator', 'AMCDiscriminiator', 'auxiliary_Flownet', 'flownet2']
+# must be even, the 0-th is name in dict, 1-th is the model named registered in the registry; e.g. ['meta_Backbone', 'Resnet18', 'meta_Head', 'ps'], 
+#                                                                                                  ['meta_Generator', 'AMCGenerator', 'meta_Discriminiator', 'AMCDiscriminiator', 'auxiliary_Flownet', 'FlowNet2']
 # The 0-th's format is 'registryName_NameInEngine', for example, 'meta_Generator' means the registry is 'meta' and the attribute named 'self.Generator' refers to it. 
 # if the model type is e2e, the 0-th is ''(None)
 config.MODEL.parts = ['','resnet18']

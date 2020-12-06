@@ -1,6 +1,4 @@
 SYSTEM:
-  # multigpus: false
-  # num_gpus: 2
   gpus: [0,1]
   cudnn:
     benchmark: false
@@ -17,7 +15,7 @@ DATASET:
   train:
     data_path: './data/Avenue/training/frames'
     clip_length: 2
-    sampled_length: 2
+    sampled_clip_length: 2
     frame_step: 1
     clip_step: 1
     gt_path: './data/Avenue'
@@ -93,14 +91,15 @@ ARGUMENT:
 MODEL:
   name: 'amc'
   type: 'ame2e'
-  parts: ['meta_AMCGenerator', 'G', 'meta_AMCDiscriminiator', 'D', 'auxiliary_FlowNet2', 'F']
+  parts: ['meta_G', 'AMCGenerator', 'meta_AMCDiscriminiator', 'D', 'auxiliary_FlowNet2', 'F']
   hooks:
     train: ['AMCEvaluateHook', 'VisScoreHook']
     val: ['AMCEvaluateHook']
   discriminator_channels: [128,256,512,512]
-  optical_flow:
-    name: 'flownet2'
-    model_path: './pretrained_model/FlowNet2_checkpoint.pth.tar'
+  auxiliary:
+    optical_flow:
+      name: 'flownet2'
+      model_path: './pretrained_model/FlowNet2_checkpoint.pth.tar'
 
 TRAIN:
   engine_name: 'AMCTrainer'

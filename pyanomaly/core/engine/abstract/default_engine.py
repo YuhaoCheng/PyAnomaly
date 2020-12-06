@@ -6,7 +6,7 @@ import torch
 from pyanomaly.core.utils import AverageMeter, ParamSet
 from ..utils import engine_save_checkpoint
 from ..utils import engine_save_model
-from .abstract import AbstractTrainer, AbstractInference
+from .abstract_engine import AbstractTrainer, AbstractInference
 import abc
 # import logging
 # logger = logging.getLogger(__name__)
