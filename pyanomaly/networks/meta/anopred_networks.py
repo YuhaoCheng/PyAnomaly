@@ -16,7 +16,7 @@ from pyanomaly.networks.meta.base.commonness import (
     BasicConv2d
 )
 
-__all__ = ['AnoPredGeneratorUnet', 'get_model_ano_pred']
+__all__ = ['AnoPredGeneratorUnet']
 
 
 @META_ARCH_REGISTRY.register()
@@ -51,39 +51,3 @@ class AnoPredGeneratorUnet(nn.Module):
         x = self.output(x)
         # return x
         return torch.tanh(x)
-
-
-def get_model_ano_pred(cfg):
-    if cfg.ARGUMENT.train.normal.use:
-        rgb_max = 1.0
-    else:
-        rgb_max = 255.0
-    if cfg.MODEL.flownet == 'flownet2':
-        from collections import namedtuple
-        from pyanomaly.networks.auxiliary.flownet2.models import FlowNet2
-        temp = namedtuple('Args', ['fp16', 'rgb_max'])
-        args = temp(False, rgb_max)
-        flow_model = FlowNet2(args)
-        flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path)['state_dict'])
-    elif cfg.MODEL.flownet == 'liteflownet':
-        from pyanomaly.networks.auxiliary.liteflownet.models import LiteFlowNet
-        flow_model = LiteFlowNet()
-        flow_model.load_state_dict({strKey.replace('module', 'net'): weight for strKey, weight in torch.load(cfg.MODEL.flow_model_path).items()})
-    else:
-        raise Exception('Not support optical flow methods')
-    
-
-    generator_model = AnoPredGeneratorUnet(12,3) # 4*3 =12
-    discriminator_model = PixelDiscriminator(3, cfg.MODEL.discriminator_channels, use_norm=False)
-    model_dict = OrderedDict()
-    model_dict['Generator'] = generator_model
-    model_dict['Discriminator'] = discriminator_model
-    model_dict['FlowNet'] = flow_model
-
-    return model_dict
-
-
-if __name__ == '__main__':
-    model = GeneratorUnet(3,3)
-    temp = torch.rand((2,3,256,256))
-    output = model(temp)
