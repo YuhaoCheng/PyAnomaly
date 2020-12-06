@@ -13,7 +13,7 @@ from collections import OrderedDict
 import torchsnooper
 from ..model_registry import META_ARCH_REGISTRY
 
-__all__ = ['AutoEncoderCov3DMem', 'get_model_memae']
+__all__ = ['AutoEncoderCov3DMem']
 
 class MemoryModule3D(nn.Module):
     def __init__(self, mem_dim, fea_dim, hard_shrink=True, lam=1.0):
@@ -108,8 +108,3 @@ class AutoEncoderCov3DMem(nn.Module):
 
         output = self.decoder(z_hat)
         return output, w_hat
-
-def get_model_memae(cfg):
-    model_dict = OrderedDict()
-    model_dict['MemAE'] = AutoEncoderCov3DMem(cfg.DATASET.channel_num, 2000)
-    return model_dict

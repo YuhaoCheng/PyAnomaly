@@ -34,23 +34,23 @@ class MEMAETrainer(DefaultTrainer):
         # else:
         #     self.MemAE = self.model['MemAE'].cuda()
 
-        for item_key in self.model.keys():
-            attr_name = str(item_key)
-            if self.kwargs['parallel']:
-                temp_model = self.data_parallel(self.model[item_key])
-            else:
-                temp_model = self.model[item_key].cuda()
-            self.__setattr__(attr_name, temp_model)
+        # for item_key in self.model.keys():
+        #     attr_name = str(item_key)
+        #     if self.kwargs['parallel']:
+        #         temp_model = self.data_parallel(self.model[item_key])
+        #     else:
+        #         temp_model = self.model[item_key].cuda()
+        #     self.__setattr__(attr_name, temp_model)
         
         # get the optimizer
         # self.optim_MemAE = self.optimizer['optimizer_memae']
 
         # get the loss_fucntion
-        self.rec_loss = self.loss_function['RecLoss']
-        self.mem_loss = self.loss_function['MemLoss']
+        # self.rec_loss = self.loss_function['RecLoss']
+        # self.mem_loss = self.loss_function['MemLoss']
 
         # the lr scheduler
-        self.lr_memae = self.lr_scheduler_dict['optimizer_memae_scheduler']
+        # self.lr_memae = self.lr_scheduler_dict['optimizer_memae_scheduler']
 
         # basic meter
         self.loss_meter_MemAE = AverageMeter(name='loss_memae')
@@ -115,32 +115,32 @@ class MEMAETrainer(DefaultTrainer):
         self.saved_loss = {'loss_MemAE':self.loss_meter_MemAE.val}
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
-    def mini_eval(self, current_step):
-        temp_meter_frame = AverageMeter()
-        self.set_requires_grad(self.MemAE, False)
-        self.MemAE.eval()
-        for data, _, _ in self.val_dataloader:
-            # get the data
-            input_data_mini = data.cuda()
-            output_rec, _ = self.MemAE(input_data_mini)
-            frame_psnr_mini = psnr_error(output_rec.detach(), input_data_mini)
-            temp_meter_frame.update(frame_psnr_mini.detach())
-        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the frame PSNR is {temp_meter_frame.avg:.3f}')
-        # return temp_meter.avg
+    # def mini_eval(self, current_step):
+    #     temp_meter_frame = AverageMeter()
+    #     self.set_requires_grad(self.MemAE, False)
+    #     self.MemAE.eval()
+    #     for data, _, _ in self.val_dataloader:
+    #         # get the data
+    #         input_data_mini = data.cuda()
+    #         output_rec, _ = self.MemAE(input_data_mini)
+    #         frame_psnr_mini = psnr_error(output_rec.detach(), input_data_mini)
+    #         temp_meter_frame.update(frame_psnr_mini.detach())
+    #     self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the frame PSNR is {temp_meter_frame.avg:.3f}')
+    #     # return temp_meter.avg
 
 @ENGINE_REGISTRY.register()
 class MEMAEInference(DefaultInference):
     NAME = ["MEMAE.INFERENCE"]
     def custom_setup(self):
-        if self.kwargs['parallel']:
-            self.MemAE = self.data_parallel(self.model['MemAE']).load_state_dict(self.save_model['MemAE'])
-        else:
-            self.MemAE = self.model['MemAE'].cuda()
-            self.MemAE.load_state_dict(self.save_model['MemAE'])
+        # if self.kwargs['parallel']:
+        #     self.MemAE = self.data_parallel(self.model['MemAE']).load_state_dict(self.save_model['MemAE'])
+        # else:
+        #     self.MemAE = self.model['MemAE'].cuda()
+        #     self.MemAE.load_state_dict(self.save_model['MemAE'])
         
-        self.test_dataset_keys = self.kwargs['test_dataset_keys']
-        self.test_dataset_dict = self.kwargs['test_dataset_dict']
-
+        # self.test_dataset_keys = self.kwargs['test_dataset_keys']
+        # self.test_dataset_dict = self.kwargs['test_dataset_dict']
+        pass
     
     def inference(self):
         for h in self._hooks:

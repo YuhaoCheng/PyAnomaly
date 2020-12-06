@@ -30,29 +30,29 @@ __all__ = ['ANOPREDTrainer', 'ANOPREDInference']
 class ANOPREDTrainer(DefaultTrainer):
     NAME = ["ANOPRED.TRAIN"]
     def custom_setup(self):
-        # basic things
-        if self.kwargs['parallel']:
-            self.G = self.data_parallel(self.model['Generator'])
-            self.D = self.data_parallel(self.model['Discriminator'])
-            self.F = self.data_parallel(self.model['FlowNet'])
-        else:
-            self.G = self.model['Generator'].cuda()
-            self.D = self.model['Discriminator'].cuda()
-            self.F = self.model['FlowNet'].cuda() # lite flownet
+        # # basic things
+        # if self.kwargs['parallel']:
+        #     self.G = self.data_parallel(self.model['Generator'])
+        #     self.D = self.data_parallel(self.model['Discriminator'])
+        #     self.F = self.data_parallel(self.model['FlowNet'])
+        # else:
+        #     self.G = self.model['Generator'].cuda()
+        #     self.D = self.model['Discriminator'].cuda()
+        #     self.F = self.model['FlowNet'].cuda() # lite flownet
         
-        # get the optimizer
-        self.optim_G = self.optimizer['optimizer_g']
-        self.optim_D = self.optimizer['optimizer_d']
+        # # get the optimizer
+        # self.optim_G = self.optimizer['optimizer_g']
+        # self.optim_D = self.optimizer['optimizer_d']
 
         # get the loss_fucntion
-        self.gan_loss = self.loss_function['gan_loss_mse']
-        self.gd_loss = self.loss_function['gradient_loss']
-        self.int_loss = self.loss_function['intentsity_loss']
-        self.op_loss = self.loss_function['opticalflow_loss']
+        # self.gan_loss = self.loss_function['gan_loss_mse'] #'GANLoss'
+        # self.gd_loss = self.loss_function['gradient_loss'] #GradientLoss
+        # self.int_loss = self.loss_function['intentsity_loss']
+        # self.op_loss = self.loss_function['opticalflow_loss']
 
         # the lr scheduler
-        self.lr_g = self.lr_scheduler_dict['optimizer_g_scheduler']
-        self.lr_d = self.lr_scheduler_dict['optimizer_d_scheduler']
+        # self.lr_g = self.lr_scheduler_dict['optimizer_g_scheduler']
+        # self.lr_d = self.lr_scheduler_dict['optimizer_d_scheduler']
 
         # basic meter
         self.loss_meter_G = AverageMeter(name='Loss_G')
@@ -62,8 +62,8 @@ class ANOPREDTrainer(DefaultTrainer):
         # others
         self.optical = ParamSet(name='optical', size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format)
 
-        self.test_dataset_keys = self.kwargs['test_dataset_keys']
-        self.test_dataset_dict = self.kwargs['test_dataset_dict']
+        # self.test_dataset_keys = self.kwargs['test_dataset_keys']
+        # self.test_dataset_dict = self.kwargs['test_dataset_dict']
 
     
     def train(self,current_step):
@@ -161,33 +161,33 @@ class ANOPREDTrainer(DefaultTrainer):
         self.saved_loss = {'loss_G':self.loss_meter_G.val, 'loss_D':self.loss_meter_D.val}
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
-    def mini_eval(self, current_step):
-        if current_step % self.config.TRAIN.mini_eval_step != 0:
-            return
-        temp_meter_frame = AverageMeter()
-        temp_meter_flow = AverageMeter()
-        self.set_requires_grad(self.G, False)
-        self.set_requires_grad(self.D, False)
-        self.set_requires_grad(self.F, False)
-        self.G.eval()
-        self.D.eval()
-        self.F.eval()
-        for data, _ in self.val_dataloader:
-            # base on the D to get each frame
-            target_mini = data[:, :, -1, :, :].cuda() # t+1 frame 
-            input_data = data[:, :, :-1, :, :] # 0 ~ t frame
-            input_last_mini = input_data[:, :, -1, :, :].cuda() # t frame
+    # def mini_eval(self, current_step):
+    #     if current_step % self.config.TRAIN.mini_eval_step != 0:
+    #         return
+    #     temp_meter_frame = AverageMeter()
+    #     temp_meter_flow = AverageMeter()
+    #     self.set_requires_grad(self.G, False)
+    #     self.set_requires_grad(self.D, False)
+    #     self.set_requires_grad(self.F, False)
+    #     self.G.eval()
+    #     self.D.eval()
+    #     self.F.eval()
+    #     for data, _ in self.val_dataloader:
+    #         # base on the D to get each frame
+    #         target_mini = data[:, :, -1, :, :].cuda() # t+1 frame 
+    #         input_data = data[:, :, :-1, :, :] # 0 ~ t frame
+    #         input_last_mini = input_data[:, :, -1, :, :].cuda() # t frame
 
-            # squeeze the D dimension to C dimension, shape comes to [N, C, H, W]
-            input_data_mini = input_data.reshape(input_data.shape[0], -1, input_data.shape[-2], input_data.shape[-1]).cuda()
-            output_pred_G = self.G(input_data_mini)
-            gtFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, target_mini], 1), self.normalize.param['train'])
-            predFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, output_pred_G], 1), self.normalize.param['train'])
-            frame_psnr_mini = psnr_error(output_pred_G.detach(), target_mini, hat=True)
-            flow_psnr_mini = psnr_error(predFlow, gtFlow)
-            temp_meter_frame.update(frame_psnr_mini.detach())
-            temp_meter_flow.update(flow_psnr_mini.detach())
-        self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the frame PSNR is {temp_meter_frame.avg:.2f}, the flow PSNR is {temp_meter_flow.avg:.2f}')
+    #         # squeeze the D dimension to C dimension, shape comes to [N, C, H, W]
+    #         input_data_mini = input_data.reshape(input_data.shape[0], -1, input_data.shape[-2], input_data.shape[-1]).cuda()
+    #         output_pred_G = self.G(input_data_mini)
+    #         gtFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, target_mini], 1), self.normalize.param['train'])
+    #         predFlow, _ = flow_batch_estimate(self.F, torch.cat([input_last_mini, output_pred_G], 1), self.normalize.param['train'])
+    #         frame_psnr_mini = psnr_error(output_pred_G.detach(), target_mini, hat=True)
+    #         flow_psnr_mini = psnr_error(predFlow, gtFlow)
+    #         temp_meter_frame.update(frame_psnr_mini.detach())
+    #         temp_meter_flow.update(flow_psnr_mini.detach())
+    #     self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the frame PSNR is {temp_meter_frame.avg:.2f}, the flow PSNR is {temp_meter_flow.avg:.2f}')
 
     
 @ENGINE_REGISTRY.register()

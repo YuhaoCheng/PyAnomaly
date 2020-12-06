@@ -8,7 +8,7 @@ from collections import OrderedDict
 import torchsnooper
 from ..model_registry import META_ARCH_REGISTRY
 
-__all__=['STAutoEncoderCov3D', 'get_model_stae']
+__all__=['STAutoEncoderCov3D']
 
 @META_ARCH_REGISTRY.register()
 class STAutoEncoderCov3D(nn.Module):

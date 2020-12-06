@@ -11,7 +11,7 @@ from pyanomaly.networks.meta.base.commonness import Conv2dLeakly, ConcatDeconv2d
 
 from ..model_registry import META_ARCH_REGISTRY
 
-__all__ = ['AMCGenerator', 'AMCDiscriminiator', 'get_model_amc']
+__all__ = ['AMCGenerator', 'AMCDiscriminiator']
 
 @META_ARCH_REGISTRY.register()
 class AMCGenerator(nn.Module):
@@ -107,30 +107,3 @@ class AMCDiscriminiator(nn.Module):
         x_sigmod = F.sigmoid(x)
         
         return x_sigmod
-
-def get_model_amc(cfg):
-    if cfg.ARGUMENT.train.normal.use:
-        rgb_max = 1.0
-    else:
-        rgb_max = 255.0
-    if cfg.MODEL.flownet == 'flownet2':
-        from collections import namedtuple
-        from pyanomaly.networks.auxiliary.flownet2.models import FlowNet2
-        temp = namedtuple('Args', ['fp16', 'rgb_max'])
-        args = temp(False, rgb_max)
-        flow_model = FlowNet2(args)
-        flow_model.load_state_dict(torch.load(cfg.MODEL.flow_model_path)['state_dict'])
-    elif cfg.MODEL.flownet == 'liteflownet':
-        from pyanomaly.networks.auxiliary.liteflownet.models import LiteFlowNet
-        flow_model = LiteFlowNet()
-        flow_model.load_state_dict({strKey.replace('module', 'net'): weight for strKey, weight in torch.load(cfg.MODEL.flow_model_path).items()})
-    else:
-        raise Exception('Not support optical flow methods')
-    
-    generator_model = AMCGenerator(c_in=3, opticalflow_channel_num=2, image_channel_num=cfg.DATASET.channel_num, dropout_prob=0.7)
-    discriminator_model = AMCDiscriminiator(c_in=5, filters=64)
-    model_dict = OrderedDict()
-    model_dict['Generator'] = generator_model
-    model_dict['Discriminator'] = discriminator_model
-    model_dict['FlowNet'] = flow_model
-    return model_dict

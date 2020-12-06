@@ -1,2 +1,2 @@
-PyAnomlay='ver 1.0'
-PyTorch='1.3'
+PyAnomlay='ver 2.0'
+PyTorch='1.6'

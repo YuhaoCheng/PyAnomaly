@@ -8,26 +8,25 @@ SYSTEM:
     enable: true
   distributed:
     use: false
-LOG:
-  log_output_dir: './output/log'
-  tb_output_dir: './output/tensorboard'
-  vis_dir: './output/vis'
-  
+
 DATASET:
-  name: 'avenue'
+  name: 'Avenue'
   seed: 2020
   read_format: 'opencv'
-  train_path: './data/Avenue/training/frames'
-  train_clip_length: 5
-  train_sampled_clip_length: 5
-  train_frame_step: 1
-  train_clip_step: 1
-  test_path: './data/Avenue/testing/frames'
-  test_clip_length: 5
-  test_sampled_clip_length: 5
-  test_frame_step: 1
-  test_clip_step: 1
-  gt_path: './data/Avenue'
+  train:
+    data_path: './data/Avenue/training/frames'
+    clip_length: 5
+    sampled_clip_length: 5
+    frame_step: 1
+    clip_step: 1
+    gt_path: './data/Avenue'
+  val:
+    data_path: './data/Avenue/testing/frames'
+    clip_length: 5
+    sampled_clip_length: 5
+    frame_step: 1
+    clip_step: 1
+    gt_path: './data/Avenue'
   number_of_class: 1
   score_normalize: true
   score_type: 'normal'
@@ -38,7 +37,10 @@ DATASET:
     guassian_sigma: [3,5,15,10,20,30]
   mini_dataset:
     samples: 100
-  evaluate_function_type: 'compute_auc_score'
+  evaluate_function:
+    name: 'ScoreAUCMetrics'
+    result_type: 'score'
+
 ARGUMENT:
   train:
     use: true
@@ -86,47 +88,21 @@ ARGUMENT:
       use: true
       mean: [0.5, 0.5, 0.5]
       std: [0.5, 0.5, 0.5]
-    fliplr:
-      use: false
-      p: 0.5
-    flipud:
-      use: false
-      p: 0.5
-    rote:
-      use: false
-      degrees: [10,10]
-    JpegCompression:
-      use: false
-      high: 100
-      low: 80
-    GaussianBlur:
-      use: false
-      high: 0.3
-      low: 0.03
-    CropToFixedSize:
-      use: false
-      height: 256
-      width: 256
-      position: 'center'
+
 MODEL:
   name: 'anopred'
-  type: 'anopred'
+  type: 'ame2e'
+  parts: ['meta_AnoPredGeneratorUnet', 'G', 'meta_PixelDiscriminator', 'D', 'auxiliary_LiteFlowNet', 'F']
   hooks:
-    train: ['anopred.AnoPredEvaluateHook', 'base.VisScoreHook']
-    val: ['anopred.AnoPredEvaluateHook']
-  flownet: 'liteflownet'
-  flow_model_path: './pretrained_model/liteflownet/network-sintel.pytorch'
+    train: ['AnoPredEvaluateHook', 'VisScoreHook']
+    val: ['AnoPredEvaluateHook']
   discriminator_channels: [128,256,512,512]
-  pretrain_model: ''
-  detector_config: ''
-  detector_model_path: ''
-RESUME:
-  flag: false
-  checkpoint_path: ''
-FINETUNE:
-  flag: false
-  layer_list: []
+  optical_flow:
+    name: 'liteflownet'
+    model_path: './pretrained_model/liteflownet/network-sintel.pytorch'
+
 TRAIN:
+  engine_name: 'ANOPREDTrainer'
   batch_size: 4
   start_step: 0
   max_steps: 160944
@@ -136,17 +112,15 @@ TRAIN:
   eval_step: 3832
   save_step: 3832
   epochs: 1
-  loss: ['gan_loss_mse','gradient_loss', 'intentsity_loss', 'opticalflow_loss']
-  loss_coefficients: [0.025,1.0,1.0,2.0]
+  losses: ['loss_GANLoss_cuda', 0.25, 'GANLoss', [['gan_mode', 'lsgan']], 'loss_GradientLoss_cuda', 1.0, 'GradientLoss', [], 
+           'loss_IntentsityLoss_cuda', 1.0, 'IntensityLoss', [], 'loss_OpticalflowLoss_cuda', 2.0, 'L1Loss', []]
   mode: 'adversarial'
   adversarial:
     optimizer:
       include: ['Generator', 'Discriminator']
       name: 'adam'
-      g_lr: 0.0002
-      d_lr: 0.00002
+      lrs: [0.0002, 0.00002]
       weight_decay: 0.0001
-      output_name: ['optimizer_g', 'optimizer_d']
     scheduler:
       use: true
       name: 'WarmupCosLR' # 'stepLR'| 'cosLR' | 'WarmupCosLR' | 'WarmupMultiStepLR'
@@ -158,18 +132,13 @@ TRAIN:
       warmup_factor: 0.01
       warmup_iters: 7664
       warmup_method: 'linear' # 'linear' | 'constant'
-  split: ''
   model_output: './output/models'
   checkpoint_output: './output/checkpoint'
-  pusedo_data_path: ''
-  cluster:
-    k: 10
+
 VAL:
+  engine_name: 'ANOPREDInference'
   name: ''
   path: ''
   batch_size: 2
-TEST:
-  name: ''
-  path: ''
   result_output: './output/results'
 

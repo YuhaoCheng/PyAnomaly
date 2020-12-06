@@ -87,8 +87,11 @@ class DefaultTrainer(AbstractTrainer):
                                   train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
                                   val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
 
+        # self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
+        #                       max=self.config.TRAIN.max_steps, mini_eval=self.config.TRAIN.mini_eval_step, dynamic_steps=self.config.TRAIN.dynamic_steps)
+
         self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
-                              max=self.config.TRAIN.max_steps, mini_eval=self.config.TRAIN.mini_eval_step, dynamic_steps=self.config.TRAIN.dynamic_steps)
+                              max=self.config.TRAIN.max_steps, dynamic_steps=self.config.TRAIN.dynamic_steps)
 
         self.evaluate_function = kwargs['evaluate_function']
         
@@ -114,6 +117,11 @@ class DefaultTrainer(AbstractTrainer):
             self.__setattr__(attr_name, self.optimizer[item_key])
             # get the lr scheduler
             self.__setattr__(f'{attr_name}_scheduler', self.lr_scheduler_dict[f'{attr_name}_scheduler'])
+        
+        # get the losses
+        for item_key in self.loss_function.keys():
+            attr_name = str(item_key)
+            self.__setattr__(attr_name, self.loss_function[attr_name])
 
         self.custom_setup()
 
@@ -124,11 +132,7 @@ class DefaultTrainer(AbstractTrainer):
         # Fine-tine a trained model
         if self.config.TRAIN.finetune.use:
             self.fine_tune()
-        
-    @abc.abstractclassmethod
-    def custom_setup(self):
-        pass
-    
+     
     def load_pretrain(self):
         model_path = self.config.MODEL.pretrain_model
         if  model_path is '':
@@ -146,7 +150,7 @@ class DefaultTrainer(AbstractTrainer):
     
     def resume(self):
         self.logger.info('=> Resume the previous training')
-        checkpoint_path = self.config.RESUME.checkpoint_path
+        checkpoint_path = self.config.TRAIN.resume.checkpoint_path
         self.logger.info('=> Load the checkpoint from {}'.format(checkpoint_path))
         checkpoint = torch.load(checkpoint_path)
         self.model.load_state_dict(checkpoint['model_state_dict'])
@@ -154,7 +158,7 @@ class DefaultTrainer(AbstractTrainer):
 
     
     def fine_tune(self):
-        layer_list = self.config.FINETUNE.layer_list
+        layer_list = self.config.TRAIN.finetune.layer_list
         self.logger.info('=> Freeze layers except start with:{}'.format(layer_list))
         for n, p in self.model.named_parameters():
             parts = n.split('.')
@@ -198,12 +202,11 @@ class DefaultTrainer(AbstractTrainer):
         for h in self._hooks:
             h.after_step(current_step)
         
-        # in the future, will be deprecated
-        if (current_step % self.steps.param['mini_eval'] == 0) or current_step == 0:
-            self.mini_eval(current_step)
-            # return
+        # # in the future, will be deprecated
+        # if (current_step % self.steps.param['mini_eval'] == 0) or current_step == 0:
+        #     self.mini_eval(current_step)
+        #     # return
 
-    
     def after_train(self):
         for h in self._hooks:
             h.after_train()
@@ -222,7 +225,10 @@ class DefaultTrainer(AbstractTrainer):
         else:
             engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_epoch, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
 
-    
+    @abc.abstractclassmethod
+    def custom_setup(self):
+        pass
+
     @abc.abstractclassmethod
     def train(self,current_step):
         pass

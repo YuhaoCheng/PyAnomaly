@@ -32,28 +32,28 @@ class STAETrainer(DefaultTrainer):
     NAME = ["STAE.TRAIN"]
     def custom_setup(self):
 
-        for item_key in self.model.keys():
-            attr_name = str(item_key)
-            if self.kwargs['parallel']:
-                temp_model = self.data_parallel(self.model[item_key])
-            else:
-                temp_model = self.model[item_key].cuda()
-            self.__setattr__(attr_name, temp_model)
+        # for item_key in self.model.keys():
+        #     attr_name = str(item_key)
+        #     if self.kwargs['parallel']:
+        #         temp_model = self.data_parallel(self.model[item_key])
+        #     else:
+        #         temp_model = self.model[item_key].cuda()
+        #     self.__setattr__(attr_name, temp_model)
         
-        # get the optimizer
-        for item_key in self.optimizer.keys():
-            attr_name = str(item_key)
-            # get the optimizer
-            self.__setattr__(attr_name, self.optimizer[item_key])
-            # get the lr scheduler
-            self.__setattr__(f'{attr_name}_scheduler', self.lr_scheduler_dict[f'{attr_name}_scheduler'])
+        # # get the optimizer
+        # for item_key in self.optimizer.keys():
+        #     attr_name = str(item_key)
+        #     # get the optimizer
+        #     self.__setattr__(attr_name, self.optimizer[item_key])
+        #     # get the lr scheduler
+        #     self.__setattr__(f'{attr_name}_scheduler', self.lr_scheduler_dict[f'{attr_name}_scheduler'])
 
 
         # import ipdb; ipdb.set_trace()
 
         # get the loss_fucntion
-        self.rec_loss = self.loss_function['RecLoss']
-        self.pred_loss = self.loss_function['WeightedPredLoss']
+        # self.rec_loss = self.loss_function['RecLoss']
+        # self.pred_loss = self.loss_function['WeightedPredLoss']
         
         
 
@@ -129,37 +129,38 @@ class STAETrainer(DefaultTrainer):
         self.saved_loss = {'loss_STAE':self.loss_meter_STAE}
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
-    def mini_eval(self, current_step):
-        # if current_step % self.steps.param['mini_eval'] != 0:
-        #     return
-        # temp_meter_rec = AverageMeter()
-        # # temp_meter_pred = AverageMeter()
-        # self.set_requires_grad(self.STAE, False)
-        # self.STAE.eval()
-        # for data, _ in self.val_dataloader:
-        #     input_mini = data.cuda()
-        #     # Use the model, get the output
-        #     output_rec_mini, output_pred_mini = self.STAE(input_mini)
-        #     rec_psnr_mini = psnr_error(output_rec_mini.detach(), input_mini)
-        #     # pred_psnr_mini = psnr_error(output_pred_mini.detach(), input_pred_mini)
-        #     temp_meter_rec.update(rec_psnr_mini.detach())
-        #     # temp_meter_pred.update(pred_psnr_mini.detach())
-        # self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the REC PSNR is {temp_meter_rec.avg:.3f}')
-        pass
+    # def mini_eval(self, current_step):
+    #     # if current_step % self.steps.param['mini_eval'] != 0:
+    #     #     return
+    #     # temp_meter_rec = AverageMeter()
+    #     # # temp_meter_pred = AverageMeter()
+    #     # self.set_requires_grad(self.STAE, False)
+    #     # self.STAE.eval()
+    #     # for data, _ in self.val_dataloader:
+    #     #     input_mini = data.cuda()
+    #     #     # Use the model, get the output
+    #     #     output_rec_mini, output_pred_mini = self.STAE(input_mini)
+    #     #     rec_psnr_mini = psnr_error(output_rec_mini.detach(), input_mini)
+    #     #     # pred_psnr_mini = psnr_error(output_pred_mini.detach(), input_pred_mini)
+    #     #     temp_meter_rec.update(rec_psnr_mini.detach())
+    #     #     # temp_meter_pred.update(pred_psnr_mini.detach())
+    #     # self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the REC PSNR is {temp_meter_rec.avg:.3f}')
+    #     pass
 
 @ENGINE_REGISTRY.register()
 class STAEInference(DefaultInference):
     NAME = ["STAE.INFERENCE"]
     def custom_setup(self, *defaults,**kwargs):
-        if self.kwargs['parallel']:
-            self.STAE = self.data_parallel(self.model['STAE']).load_state_dict(self.save_model['STAE'])
-        else:
-            # import ipdb; ipdb.set_trace()
-            self.STAE = self.model['STAE'].cuda()
-            self.STAE.load_state_dict(self.save_model['STAE'])
+        # if self.kwargs['parallel']:
+        #     self.STAE = self.data_parallel(self.model['STAE']).load_state_dict(self.save_model['STAE'])
+        # else:
+        #     # import ipdb; ipdb.set_trace()
+        #     self.STAE = self.model['STAE'].cuda()
+        #     self.STAE.load_state_dict(self.save_model['STAE'])
         
-        self.test_dataset_keys = self.kwargs['test_dataset_keys']
-        self.test_dataset_dict = self.kwargs['test_dataset_dict']
+        # self.test_dataset_keys = self.kwargs['test_dataset_keys']
+        # self.test_dataset_dict = self.kwargs['test_dataset_dict']
+        pass
 
     def inference(self):
         for h in self._hooks:

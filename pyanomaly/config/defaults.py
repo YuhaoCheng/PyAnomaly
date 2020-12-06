@@ -8,11 +8,12 @@ __all__ = ['update_config']
 
 
 config = CN()
-
+config.DESCROPTION = 'This the description of the configuration defaults. If you have some information related to the configuration file, please fullfil this item'
 # configure the system related matters, such as gpus, cudnn and so on
 config.SYSTEM = CN()
-config.SYSTEM.multigpus = False  # to determine whether use multi gpus to train or test(data parallel)
-config.SYSTEM.num_gpus = 1    # decide the num_gpus and 
+# config.SYSTEM.multigpus = False  # to determine whether use multi gpus to train or test(data parallel) # will be deprecated in the future 
+# config.SYSTEM.num_gpus = 1    # decide the num_gpus  # will be deprecated in the future 
+# Configure the number of gpus, and whether use the  parallell training 
 config.SYSTEM.gpus = [0]
 
 config.SYSTEM.cudnn = CN()
@@ -187,7 +188,9 @@ config.TRAIN.max_steps = 20000  # epoch * len(dataset)
 config.TRAIN.dynamic_steps = [0, 50, 100]
 config.TRAIN.log_step = 5  # the step to print the info
 config.TRAIN.vis_step = 100  # the step to vis of the training results
-config.TRAIN.mini_eval_step = 10 # the step to exec the light-weight eval
+# =========================================Will be deprecated in the future, because we don't need the minieval anymore===================================================
+config.TRAIN.mini_eval_step = 100 # the step to exec the light-weight eval
+# ============================================================================================================================
 config.TRAIN.eval_step = 100 # the step to use the evaluate function
 config.TRAIN.save_step = 500  # the step to save the model
 config.TRAIN.epochs = 1
@@ -241,7 +244,7 @@ config.TRAIN.adversarial = CN()
 config.TRAIN.adversarial.optimizer = CN()
 config.TRAIN.adversarial.optimizer.include = ['Generator', 'Discriminator']
 config.TRAIN.adversarial.optimizer.name = 'adam'
-config.TRAIN.adversarial.optimizer.lrs = [1e-2, 1e-2]
+config.TRAIN.adversarial.optimizer.lrs = [1e-2, 1e-2] # g_lr,d_lr
 config.TRAIN.adversarial.optimizer.betas = [0.9, 0.999]
 config.TRAIN.adversarial.optimizer.weight_decay = 0.0001
 config.TRAIN.general.optimizer.mode = 'individual'  # all: all the model parts use one optimizer | individual: each model part uses one optimizer 
@@ -259,8 +262,8 @@ config.TRAIN.adversarial.scheduler.warmup_iters = 5000
 config.TRAIN.adversarial.scheduler.warmup_method = 'linear' # 'linear' | 'constant'
 #----------------Train save configure------------
 # config.TRAIN.split = ''
-config.TRAIN.model_output = '' # use save the final model
-config.TRAIN.checkpoint_output = '' # use to save the intermediate results, including lr, optimizer, state_dict...
+config.TRAIN.model_output = './output/models' # use save the final model
+config.TRAIN.checkpoint_output = './output/checkpoint' # use to save the intermediate results, including lr, optimizer, state_dict...
 config.TRAIN.pusedo_data_path = ''
 #-------------------cluster setting--------------
 config.TRAIN.cluster = CN()
@@ -268,12 +271,12 @@ config.TRAIN.cluster.k = 10
 
 # configure the val process, equals to the TEST. 
 config.VAL = CN()
-config.VAL.name = ''
+# config.VAL.name = ''
 config.VAL.engine_name = ''
-config.VAL.path = '' # if not use the data in the TRAIN.test_path
-config.VAL.batch_size = 2
+config.VAL.path = '' # if not use the data in the DATASET.val.data_path
+config.VAL.batch_size = 1
 config.VAL.model_file = ''
-config.VAL.result_output = ''
+config.VAL.result_output = './output/results'
 
 
 def _get_cfg_defaults():

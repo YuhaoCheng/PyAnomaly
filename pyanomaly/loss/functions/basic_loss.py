@@ -13,7 +13,7 @@ from ..loss_registry import LOSS_REGISTRY
 
 __all__ = ['L2Loss', 'IntensityLoss', 'GradientLoss', 'Adversarial_Loss', 
            'Discriminate_Loss', 'AMCDiscriminateLoss', 'AMCGenerateLoss', 
-           'GANLoss', 'WeightedPredLoss', 'MSELoss', 'CrossEntropyLoss']
+           'GANLoss', 'WeightedPredLoss', 'MSELoss', 'CrossEntropyLoss', 'MemLoss']
 
 
 def pad_same(in_dim, ks, stride, dilation=1):
@@ -108,15 +108,6 @@ class Discriminate_Loss(nn.Module):
         super(Discriminate_Loss,self).__init__()
     def forward(self,real_outputs,fake_outputs):
         return torch.mean((real_outputs-1)**2/2)+torch.mean(fake_outputs**2/2)
-
-# class AMCDiscriminateLoss1(nn.Module):
-#     def __init__(self):
-#         super(AMCDiscriminateLoss1, self).__init__()
-#         self.t1 = nn.BCELoss()
-        
-#     def forward(self, outputs, labels):
-#         loss  = self.t1(outputs, labels) 
-#         return loss
 
 @LOSS_REGISTRY.register()
 class AMCDiscriminateLoss(nn.Module):
@@ -233,7 +224,6 @@ class MSELoss(nn.MSELoss):
     loss_cfg = [['size_average', None], ['reduce', None], ['reduction', 'mean']]
     '''
     def __init__(self, loss_cfg):
-        # import ipdb; ipdb.set_trace()
         args_name = list()
         args_value = list()
         for config in loss_cfg:
@@ -241,17 +231,7 @@ class MSELoss(nn.MSELoss):
             args_value.append(config[1])
         loss_args_template = namedtuple('LossArgs', args_name)
         loss_args = loss_args_template._make(args_value)
-        # import ipdb; ipdb.set_trace()
-        # for config in loss_cfg:
-            # print(f"{config[0]}={config[1]}")
-            # exec(f"{config[0]}={config[1]}")
-            # _statement = produce_assign_statement(config[0], config[1])
-            # exec(_statement)
-            # temp[config[0]] = config[1]
-        # import ipdb; ipdb.set_trace()
-        # super(MSELoss, self).__init__(loss_args)
-        # super(MSELoss, self).__init__(size_average=new_size_average, reduce=new_reduce, reduction=new_reduction)
-        # super(MSELoss, self).__init__(reduce=reduce, reduction=reduction)
+
         if len(loss_args) == 0:
             super(MSELoss, self).__init__()
         else:
@@ -270,49 +250,37 @@ class CrossEntropyLoss(nn.CrossEntropyLoss):
             args_value.append(config[1])
         loss_args_template = namedtuple('LossArgs', args_name)
         loss_args = loss_args_template._make(args_value)
-        # super(CrossEntropyLoss, self).__init__(weight=weight, size_average=size_average, ignore_index=ignore_index, reduce=reduce, reduction=reduction)
-        # import ipdb; ipdb.set_trace()
         if len(loss_args) == 0:
             super(CrossEntropyLoss, self).__init__()
         else:
             super(CrossEntropyLoss, self).__init__(loss_args)
 
+@LOSS_REGISTRY.register()
+class L1Loss(nn.L1Loss):
+    '''
+    loss_cfg = [['size_average', None], ['reduce', None], ['reduction', 'mean']]
+    '''
+    def __init__(self, loss_cfg) -> None:
+        args_name = list()
+        args_value = list()
+        for config in loss_cfg:
+            args_name.append(config[0])
+            args_value.append(config[1])
+        loss_args_template = namedtuple('LossArgs', args_name)
+        loss_args = loss_args_template._make(args_value)
+        if len(loss_args) == 0:
+            super(L1Loss, self).__init__()
+        else:
+            super(L1Loss, self).__init__(loss_args)
 
-def produce_assign_statement(name, value):
-    value_type = type(value)
-    if value_type == str:
-        statement = f"{name}='{value}'"
-    else:
-        statement = f"{name}={value}"
-    return statement
-
-# LOSSDICT ={
-#     'mse': nn.MSELoss(reduction='mean').cuda(),
-#     'cross': nn.CrossEntropyLoss(weight=None, size_average=True, reduce=False).cuda(),
-#     'g_adverserial_loss': Adversarial_Loss().cuda(),
-#     'd_adverserial_loss': Discriminate_Loss().cuda(),
-#     'opticalflow_loss': nn.L1Loss().cuda(),
-#     'opticalflow_loss_sqrt': L2Loss().cuda(),
-#     'gradient_loss':GradientLoss().cuda(),
-#     'intentsity_loss': IntensityLoss().cuda(),
-#     # 'amc_d_adverserial_loss_1': AMCDiscriminateLoss1().cuda(),
-#     'amc_d_adverserial_loss_1': AMCDiscriminateLoss().cuda(),
-#     'amc_d_adverserial_loss_2': AMCDiscriminateLoss().cuda(),
-#     # 'amc_d_adverserial_loss_2': AMCDiscriminateLoss2().cuda(),
-#     'amc_g_adverserial_loss': AMCGenerateLoss().cuda(),
-#     'gan_loss': GANLoss(gan_mode='vanilla').cuda(),
-#     'gan_loss_mse': GANLoss(gan_mode='lsgan').cuda(),
-#     'A_loss': IntensityLoss().cuda(),
-#     'B_loss': IntensityLoss().cuda(),
-#     'C_loss': IntensityLoss().cuda(),
-#     # 'rec_loss': nn.MSELoss(reduction='mean').cuda(),
-#     'rec_loss': L2Loss().cuda(),
-#     'weighted_pred_loss': WeightedPredLoss().cuda()
-# }
-
-# def get_basic_loss(loss_name, cfg):
-#     assert loss_name in LOSSDICT.keys(), f'The loss name: {loss_name} is not support'
-#     print(f'Using the loss:{loss_name}')
-#     loss_function = LOSSDICT[loss_name]
-#     return loss_function
-
+@LOSS_REGISTRY.register()
+class MemLoss(nn.Module):
+    def __init__(self):
+        super(MemLoss, self).__init__()
+        # self.l_num =2
+    def forward(self, att_weights):
+        att_weights = att_weights + (att_weights == 0).float() * 1.0
+        x = torch.mean(-att_weights * att_weights.log())
+        # import ipdb; ipdb.set_trace()
+        # print(f'the memae loss is{x}')
+        return x
