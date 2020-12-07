@@ -103,7 +103,7 @@ TRAIN:
   mini_eval_step: 500
   eval_step: 2000
   save_step: 5000
-  losses: ['loss_GANLoss_cuda', 0.25, 'GANLoss', [['gan_mode', 'lsgan']], 'loss_GradientLoss_cuda', 1.0, 'GradientLoss', [], 
+  losses: ['loss_GANLoss_cuda', 0.25, 'GANLoss', [['gan_mode', 'lsgan'], ['target_real_label', 1.0], ['target_fake_label', 0.0]], 'loss_GradientLoss_cuda', 1.0, 'GradientLoss', [], 
            'loss_IntentsityLoss_cuda', 1.0, 'IntensityLoss', [], 'loss_OpticalflowSqrtLoss_cuda', 2.0, 'L2Loss', []]
   mode: 'adversarial'
   adversarial:
