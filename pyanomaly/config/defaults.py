@@ -249,7 +249,7 @@ config.TRAIN.adversarial.optimizer.name = 'adam'
 config.TRAIN.adversarial.optimizer.lrs = [1e-2, 1e-2] # g_lr,d_lr
 config.TRAIN.adversarial.optimizer.betas = [0.9, 0.999]
 config.TRAIN.adversarial.optimizer.weight_decay = 0.0001
-config.TRAIN.general.optimizer.mode = 'individual'  # all: all the model parts use one optimizer | individual: each model part uses one optimizer 
+config.TRAIN.adversarial.optimizer.mode = 'individual'  # all: all the model parts use one optimizer | individual: each model part uses one optimizer 
 #-----------------Scheduler configure--------------
 config.TRAIN.adversarial.scheduler = CN()
 config.TRAIN.adversarial.scheduler.use = False

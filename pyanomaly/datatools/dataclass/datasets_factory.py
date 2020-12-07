@@ -97,7 +97,7 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
 
     def _build(self):
         dataset_dict = OrderedDict()
-        test_dataset_dict = self._produce_test_dataset()
+        test_dataset_dict = self._produce_val_dataset()
         dataset_dict['test_dataset_dict'] = OrderedDict()
         dataset_dict['test_dataset_dict']['general_dataset_dict'] = test_dataset_dict
 

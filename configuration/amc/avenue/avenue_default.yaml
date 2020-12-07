@@ -116,7 +116,7 @@ TRAIN:
   mode: 'adversarial'
   adversarial:
     optimizer:
-      include: ['Generator', 'Discriminator']
+      include: ['G', 'D']
       name: 'adam'
       lrs: [0.0002, 0.00002]
       betas: [0.5, 0.9]

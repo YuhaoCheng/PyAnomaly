@@ -25,8 +25,10 @@ class OptimizerAPI(object):
     def setup(self):
         self.lr_dict = OrderedDict()
         if self.train_mode == 'adversarial':
-            self.lr_dict.update({'Generator':self.params.g_lr})
-            self.lr_dict.update({'Discriminator':self.params.d_lr})
+            # self.lr_dict.update({'Generator':self.params.g_lr})
+            # self.lr_dict.update({'Discriminator':self.params.d_lr})
+            self.lr_dict.update({'Generator':self.lrs[0]})
+            self.lr_dict.update({'Discriminator':self.lrs[1]})
 
     def update(self, new_lr, verbose='none'):
         old_lr = self.lr

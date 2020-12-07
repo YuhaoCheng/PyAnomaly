@@ -4,7 +4,7 @@ model="amc"
 dataset="ped2"
 verbose='default'
 config=""
-GPUS="0"
+GPUS="0,1,2,4"
 MULTIGPUS=False
 func() {
     echo "Usage:"

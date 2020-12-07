@@ -29,7 +29,7 @@ class AbstractDatasetFactory(object):
         pass
     
     @abc.abstractmethod
-    def _produce_test_dataset(self):
+    def _produce_val_dataset(self):
         pass
     
     @abc.abstractmethod

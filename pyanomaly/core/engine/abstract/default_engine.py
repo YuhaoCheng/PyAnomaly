@@ -180,7 +180,7 @@ class DefaultTrainer(AbstractTrainer):
         Data parallel the model
         '''
         self.logger.info('<!_!> ==> Data Parallel')
-        gpus = [int(i) for i in range(self.config.SYSTEM.num_gpus)]
+        gpus = [int(i) for i in self.config.SYSTEM.gpus]
         model_parallel = torch.nn.DataParallel(model.cuda(), device_ids=gpus)
         return model_parallel
     
