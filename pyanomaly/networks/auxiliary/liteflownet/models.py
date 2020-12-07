@@ -9,7 +9,7 @@ import os
 import PIL
 import PIL.Image
 import sys
-from pyanomaly.core.networks.model_registry import AUX_ARCH_REGISTRY
+from pyanomaly.networks.model_registry import AUX_ARCH_REGISTRY
 try:
     from .correlation import correlation # the custom cost volume layer
 except:

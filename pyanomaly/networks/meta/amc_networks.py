@@ -76,7 +76,7 @@ class AMCGenerator(nn.Module):
 
 @META_ARCH_REGISTRY.register()
 class AMCDiscriminiator(nn.Module):
-    def __init__(self, c_in, filters):
+    def __init__(self, cfg, c_in=5, filters=64):
         super(AMCDiscriminiator, self).__init__()
         self.conv1 = nn.Conv2d(c_in, filters, kernel_size=4, stride=2)
         self.conv2 = nn.Conv2d(filters, filters*2, kernel_size=4, stride=2)

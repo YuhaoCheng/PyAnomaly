@@ -5,8 +5,6 @@
 import torch
 import numpy as np
 import torch.nn as nn
-from torch import gt
-from typing import Callable, Optional
 from torch import Tensor
 from collections import namedtuple
 from ..loss_registry import LOSS_REGISTRY
@@ -15,6 +13,29 @@ __all__ = ['L2Loss', 'IntensityLoss', 'GradientLoss', 'Adversarial_Loss',
            'Discriminate_Loss', 'AMCDiscriminateLoss', 'AMCGenerateLoss', 
            'GANLoss', 'WeightedPredLoss', 'MSELoss', 'CrossEntropyLoss', 'MemLoss']
 
+def get_loss_args(loss_cfg):
+    """
+    Generate the loss functions' args based on the configuration file
+
+    Args:
+        loss_cfg: An 2-d list. Each item of the list is a list containing a couple of configuration.
+    
+    Returns:
+        A namedtuple contians the configuration
+    
+    Examples::
+        >>> loss_args = get_loss_args([['size_average', None], ['reduce', None], ['reduction', 'mean']])
+        >>> loss_args
+        >>> namedtuple(size_average=None, reduce=None, reduction='mean')
+    """
+    args_name = list()
+    args_value = list()
+    for config in loss_cfg:
+        args_name.append(config[0])
+        args_value.append(config[1])
+    loss_args_template = namedtuple('LossArgs', args_name)
+    loss_args = loss_args_template._make(args_value)
+    return loss_args
 
 def pad_same(in_dim, ks, stride, dilation=1):
     """
@@ -43,7 +64,7 @@ def conv2d_samepad(in_dim, in_ch, out_ch, ks, stride, dilation=1, bias=True):
 
 @LOSS_REGISTRY.register()
 class L2Loss(nn.Module):
-    def __init__(self, eps=1e-8):
+    def __init__(self, loss_cfg, eps=1e-8):
         super(L2Loss, self).__init__()
         self.eps = eps
     
@@ -56,7 +77,7 @@ class L2Loss(nn.Module):
 
 @LOSS_REGISTRY.register()
 class IntensityLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, loss_cfg):
         super(IntensityLoss, self).__init__()
         self.l_num =2
     def forward(self, gen_frames, gt_frames):
@@ -66,7 +87,7 @@ class IntensityLoss(nn.Module):
 
 @LOSS_REGISTRY.register()
 class GradientLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, loss_cfg):
         super(GradientLoss, self).__init__()
         # channels = gen_frames.size(1)
         channels = 3
@@ -97,21 +118,21 @@ class GradientLoss(nn.Module):
 
 @LOSS_REGISTRY.register()
 class Adversarial_Loss(nn.Module):
-    def __init__(self):
+    def __init__(self, loss_cfg):
         super(Adversarial_Loss,self).__init__()
     def forward(self, fake_outputs):
         return torch.mean((fake_outputs-1)**2/2)
 
 @LOSS_REGISTRY.register()
 class Discriminate_Loss(nn.Module):
-    def __init__(self):
+    def __init__(self, loss_cfg):
         super(Discriminate_Loss,self).__init__()
     def forward(self,real_outputs,fake_outputs):
         return torch.mean((real_outputs-1)**2/2)+torch.mean(fake_outputs**2/2)
 
 @LOSS_REGISTRY.register()
 class AMCDiscriminateLoss(nn.Module):
-    def __init__(self, cfg):
+    def __init__(self, loss_cfg):
         super(AMCDiscriminateLoss, self).__init__()
         self.t1 = nn.BCELoss()
         
@@ -121,7 +142,7 @@ class AMCDiscriminateLoss(nn.Module):
 
 @LOSS_REGISTRY.register()
 class AMCGenerateLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, loss_cfg):
         super(AMCGenerateLoss, self).__init__()
         self.t1 = nn.BCELoss()
     def forward(self, fake_outputs, fake):
@@ -137,31 +158,31 @@ class GANLoss(nn.Module):
 
     https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix
     """
-
-    def __init__(self, gan_mode, target_real_label=1.0, target_fake_label=0.0):
+    def __init__(self, loss_cfg):
         """ Initialize the GANLoss class.
 
         Parameters:
-            gan_mode (str) - - the type of GAN objective. It currently supports vanilla, lsgan, and wgangp.
-            target_real_label (bool) - - label for a real image
-            target_fake_label (bool) - - label of a fake image
+            loss_cfg: A list of configuration. Template: [['gan_mode', vanilla], ['target_real_label', 1.0], ['target_fake_label', 0.0]]
+                      gan_mode (str) - - the type of GAN objective. It currently supports vanilla, lsgan, and wgangp.
+                      target_real_label (bool) - - label for a real image
+                      target_fake_label (bool) - - label of a fake image
 
         Note: Do not use sigmoid as the last layer of Discriminator.
         LSGAN needs no sigmoid. vanilla GANs will handle it with BCEWithLogitsLoss.
         """
         super(GANLoss, self).__init__()
-        self.register_buffer('real_label', torch.tensor(target_real_label))
-        self.register_buffer('fake_label', torch.tensor(target_fake_label))
-        self.gan_mode = gan_mode
-        if gan_mode == 'lsgan':
+        loss_args = get_loss_args(loss_cfg)
+        self.register_buffer('real_label', torch.tensor(loss_args.target_real_label))
+        self.register_buffer('fake_label', torch.tensor(loss_args.target_fake_label))
+        self.gan_mode = loss_args.gan_mode
+        if self.gan_mode == 'lsgan':
             self.loss = nn.MSELoss()
-        elif gan_mode == 'vanilla':
+        elif self.gan_mode == 'vanilla':
             self.loss = nn.BCEWithLogitsLoss()
-        elif gan_mode in ['wgangp']:
+        elif self.gan_mode in ['wgangp']:
             self.loss = None
         else:
-            raise NotImplementedError('gan mode %s not implemented' % gan_mode)
-
+            raise NotImplementedError('gan mode %s not implemented' % self.gan_mode)
     def get_target_tensor(self, prediction, target_is_real):
         """Create label tensors with the same size as the input.
 
@@ -224,14 +245,7 @@ class MSELoss(nn.MSELoss):
     loss_cfg = [['size_average', None], ['reduce', None], ['reduction', 'mean']]
     '''
     def __init__(self, loss_cfg):
-        args_name = list()
-        args_value = list()
-        for config in loss_cfg:
-            args_name.append(config[0])
-            args_value.append(config[1])
-        loss_args_template = namedtuple('LossArgs', args_name)
-        loss_args = loss_args_template._make(args_value)
-
+        loss_args = get_loss_args(loss_cfg)
         if len(loss_args) == 0:
             super(MSELoss, self).__init__()
         else:
@@ -243,13 +257,7 @@ class CrossEntropyLoss(nn.CrossEntropyLoss):
     loss_cfg = [['weight', None], ['size_average', None], ['ignore_index', -100], ['reduce', None], ['reduction', 'mean']]
     '''
     def __init__(self, loss_cfg):
-        args_name = list()
-        args_value = list()
-        for config in loss_cfg:
-            args_name.append(config[0])
-            args_value.append(config[1])
-        loss_args_template = namedtuple('LossArgs', args_name)
-        loss_args = loss_args_template._make(args_value)
+        loss_args = get_loss_args(loss_cfg)
         if len(loss_args) == 0:
             super(CrossEntropyLoss, self).__init__()
         else:
@@ -260,14 +268,8 @@ class L1Loss(nn.L1Loss):
     '''
     loss_cfg = [['size_average', None], ['reduce', None], ['reduction', 'mean']]
     '''
-    def __init__(self, loss_cfg) -> None:
-        args_name = list()
-        args_value = list()
-        for config in loss_cfg:
-            args_name.append(config[0])
-            args_value.append(config[1])
-        loss_args_template = namedtuple('LossArgs', args_name)
-        loss_args = loss_args_template._make(args_value)
+    def __init__(self, loss_cfg):
+        loss_args = get_loss_args(loss_cfg)
         if len(loss_args) == 0:
             super(L1Loss, self).__init__()
         else:
