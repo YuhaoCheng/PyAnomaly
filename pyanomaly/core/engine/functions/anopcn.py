@@ -28,39 +28,11 @@ __all__ = ['ANOPCNTrainer', 'ANOPCNInference']
 class ANOPCNTrainer(DefaultTrainer):
     _NAME = ["ANOPCN.TRAIN"]
     def custom_setup(self):
-        # basic things
-        # if self.kwargs['parallel']:
-        #     self.G = self.data_parallel(self.model['Generator'])
-        #     self.D = self.data_parallel(self.model['Discriminator'])
-        #     self.F = self.data_parallel(self.model['FlowNet'])
-        # else:
-        #     self.G = self.model['Generator'].cuda()
-        #     self.D = self.model['Discriminator'].cuda()
-        #     self.F = self.model['FlowNet'].cuda()
-        
-        # # get the optimizer
-        # self.optim_G = self.optimizer['optimizer_g']
-        # self.optim_D = self.optimizer['optimizer_d']
-
-        # # get the loss_fucntion
-        # self.gan_loss = self.loss_function['gan_loss_mse']
-        # self.gd_loss = self.loss_function['gradient_loss']
-        # self.int_loss = self.loss_function['intentsity_loss']
-        # self.op_loss = self.loss_function['opticalflow_loss_sqrt']
-
-        # self.lr_g = self.lr_scheduler_dict['optimizer_g_scheduler']
-        # self.lr_d = self.lr_scheduler_dict['optimizer_d_scheduler']
-
         # basic meter
         self.loss_predmeter_G = AverageMeter(name='loss_pred_G')
         self.loss_predmeter_D = AverageMeter(name='loss_pred_D')
         self.loss_refinemeter_G = AverageMeter(name='loss_refine_G')
         self.loss_refinemeter_D = AverageMeter(name='loss_refine_D')
-
-        # # others
-        # self.test_dataset_keys = self.kwargs['test_dataset_keys']
-        # self.test_dataset_dict = self.kwargs['test_dataset_dict']
-        # import ipdb; ipdb.set_trace()
 
     def train(self,current_step):
         # Pytorch [N, C, D, H, W]
@@ -267,45 +239,9 @@ class ANOPCNTrainer(DefaultTrainer):
         self.saved_loss = {'loss_G':self.loss_refinemeter_G.val, 'loss_D':self.loss_refinemeter_D.val}
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
 
-
-    # def mini_eval(self, current_step):
-    #     if current_step % self.steps.param['mini_eval'] != 0:
-    #         return
-    #     temp_meter = AverageMeter(name='temp')
-    #     self.set_requires_grad(self.F, False)
-    #     self.set_requires_grad(self.D, False)
-    #     self.set_requires_grad(self.G, False)
-    #     self.G.eval()
-    #     self.D.eval()
-    #     self.F.eval()
-    #     for data, _ in self.val_dataloader:
-    #         # get the data
-    #         target_mini = data[:, :, -1, :, :].cuda() # t frame
-    #         input_data_mini = data[:, :, :-1, :, :].cuda() # 0 ~ t-1 frame
-    #         _, output_refineframe_G_mini = self.G(input_data_mini, target_mini)
-    #         vaild_psnr = psnr_error(output_refineframe_G_mini.detach(), target_mini, hat=False)
-    #         temp_meter.update(vaild_psnr.detach())
-    #     self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the PSNR is {temp_meter.avg:.3f}')
-
 @ENGINE_REGISTRY.register()
 class ANOPCNInference(DefaultInference):
     _NAME = ["ANOPCN.INFERENCE"]
-    def __init__(self, *defaults,**kwargs):
-        if kwargs['parallel']:
-            self.G = self.data_parallel(self.model['Generator']).load_state_dict(self.save_model['G'])
-            self.D = self.data_parallel(self.model['Discriminator']).load_state_dict(self.save_model['D'])
-            self.F = self.data_parallel(self.model['FlowNet'])
-        else:
-            self.G = self.model['Generator'].cuda()
-            self.G.load_state_dict(self.save_model['G'])
-            self.D = self.model['Discriminator'].cuda()
-            self.D.load_state_dict(self.save_model['D'])
-            self.F = self.model['FlowNet'].cuda()
-        
-
-        self.test_dataset_keys = kwargs['test_dataset_keys']
-        self.test_dataset_dict = kwargs['test_dataset_dict']
-
     def inference(self):
         for h in self._hooks:
             h.inference()
