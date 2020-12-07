@@ -2,8 +2,6 @@
 @author:  Yuhao Cheng
 @contact: yuhao.cheng[at]outlook.com
 """
-import sys
-sys.path.append('../')
 import warnings
 warnings.filterwarnings('ignore')
 import os
@@ -16,10 +14,10 @@ from PIL import Image
 from collections import OrderedDict
 import torchvision.transforms.functional as tf
 from torch.utils.data import DataLoader
-torch.autograd.set_detect_anomaly(True)
+# torch.autograd.set_detect_anomaly(True)
 
 from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images, make_info_message, ParamSet
-from pyanomaly.datatools.evaluate.utils import psnr_error
+# from pyanomaly.datatools.evaluate.utils import psnr_error
 from ..abstract.default_engine import DefaultTrainer, DefaultInference
 
 from ..engine_registry import ENGINE_REGISTRY
@@ -30,7 +28,6 @@ __all__ = ['ANOPREDTrainer', 'ANOPREDInference']
 class ANOPREDTrainer(DefaultTrainer):
     NAME = ["ANOPRED.TRAIN"]
     def custom_setup(self):
-
         # basic meter
         self.loss_meter_G = AverageMeter(name='Loss_G')
         self.loss_meter_D = AverageMeter(name='Loss_D')
@@ -82,7 +79,7 @@ class ANOPREDTrainer(DefaultTrainer):
         self.optimizer_G.zero_grad()
         loss_g_all.backward()
         self.optimizer_G.step()
-        
+
         # record
         self.loss_meter_G.update(loss_g_all.detach())
         
