@@ -6,14 +6,15 @@ import torch
 import torch.nn as nn
 import torchsnooper
 from collections import OrderedDict, namedtuple
-from pyanomaly.networks.meta.base.commonness import (
+from pyanomaly.networks.meta.base import (
     PixelDiscriminator, 
     NLayerDiscriminator,
     DoubleConv, 
     Down, 
     Up, 
     OutConv,  
-    BasicConv2d
+    BasicConv2d,
+    ConvLSTMCell
 )
 
 from ..model_registry import META_ARCH_REGISTRY
