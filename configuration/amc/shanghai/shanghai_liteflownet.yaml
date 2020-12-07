@@ -1,6 +1,4 @@
 SYSTEM:
-  # multigpus: false
-  # num_gpus: 2
   gpus: [0,1]
   cudnn:
     benchmark: false
@@ -92,13 +90,14 @@ ARGUMENT:
 MODEL:
   name: 'amc'
   type: 'ame2e'
-  parts: ['meta_AMCGenerator', 'G', 'meta_AMCDiscriminiator', 'D', 'auxiliary_LiteFlowNet', 'F']
+  parts: ['meta_G', 'AMCGenerator', 'meta_D', 'AMCDiscriminiator', 'auxiliary_F', 'LiteFlowNet']
   hooks:
     train: ['AMCEvaluateHook', 'VisScoreHook']
     val: ['AMCEvaluateHook']
-  optical_flow:
-    name: 'liteflownet'
-    model_path: './pretrained_model/liteflownet/network-sintel.pytorch'
+  auxiliary:
+    optical_flow:
+      name: 'liteflownet'
+      model_path: './pretrained_model/liteflownet/network-sintel.pytorch'
 
 TRAIN:
   engine_name: 'AMCTrainer'
@@ -110,17 +109,15 @@ TRAIN:
   mini_eval_step: 2000
   eval_step: 4433
   save_step: 4433
-  epochs: 1
-  losses: ['loss_GANLoss_cuda', 0.25, 'GANLoss', [['gan_mode', 'vanilla']], 'loss_GradientLoss_cuda', 1.0, 'GradientLoss', [], 
+  losses: ['loss_GANLoss_cuda', 0.25, 'GANLoss', [['gan_mode', 'vanilla'], ['target_real_label', 1.0], ['target_fake_label', 0.0]], 'loss_GradientLoss_cuda', 1.0, 'GradientLoss', [], 
            'loss_IntentsityLoss_cuda', 1.0, 'IntensityLoss', [], 'loss_OpticalflowSqrtLoss_cuda', 2.0, 'L2Loss', []]
   mode: 'adversarial'
   adversarial:
     optimizer:
-      include: ['Generator', 'Discriminator']
+      include: ['G', 'D']
       name: 'adam'
       lrs: [0.0002,0.00002]
       weight_decay: 0.0001
-      output_name: ['optimizer_g', 'optimizer_d']
     scheduler:
       use: false
       name: 'WarmupCosLR'

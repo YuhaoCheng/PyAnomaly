@@ -1,13 +1,9 @@
 SYSTEM:
-  multigpus: false
-  num_gpus: 2
   gpus: [0,1]
   cudnn:
     benchmark: true
     deterministic: true
     enable: true
-  distributed:
-    use: false
   
 DATASET:
   name: 'Ped2'
@@ -96,14 +92,15 @@ ARGUMENT:
 MODEL:
   name: 'anopcn'
   type: 'ame2e'
-  parts: ['meta_AnoPcn', 'G', 'meta_PixelDiscriminator', 'D', 'auxiliary_FlowNet2', 'F']
+  parts: ['meta_G', 'AnoPcn', 'meta_D', 'PixelDiscriminator', 'auxiliary_F', 'FlowNet2']
   hooks:
     train: ['AnoPCNEvaluateHook', 'VisScoreHook']
     val: ['AnoPCNEvaluateHook']
   discriminator_channels: [128,256,512,512]
-  optical_flow:
-    name: 'flownet2'
-    model_path: './pretrained_model/FlowNet2_checkpoint.pth.tar'
+  auxiliary:
+    optical_flow:
+      name: 'flownet2'
+      model_path: './pretrained_model/FlowNet2_checkpoint.pth.tar'
 
 TRAIN:
   engine_name: 'ANOPCNTrainer'
@@ -116,13 +113,12 @@ TRAIN:
   mini_eval_step: 500
   eval_step: 638
   save_step: 638
-  epochs: 1
   losses: ['loss_GANLoss_cuda', 0.025, 'GANLoss', [['gan_mode', 'lsgan']], 'loss_GradientLoss_cuda', 1.0, 'GradientLoss', [], 
            'loss_IntentsityLoss_cuda', 1.0, 'IntensityLoss', [], 'loss_OpticalflowSqrtLoss_cuda', 1.0, 'L2Loss', []]
   mode: 'adversarial'
   adversarial:
     optimizer:
-      include: ['Generator', 'Discriminator']
+      include: ['G', 'D']
       name: 'adam'
       lrs: [0.0001, 0.00001]
       weight_decay: 0.0
@@ -137,13 +133,6 @@ TRAIN:
       warmup_factor: 0.001
       warmup_iters: 1000
       warmup_method: 'linear' # 'linear' | 'constant'
-  model_output: './output/models'
-  checkpoint_output: './output/checkpoint'
 
 VAL:
   engine_name: 'ANOPCNInference'
-  name: ''
-  path: ''
-  batch_size: 2
-  result_output: './output/results'
-
