@@ -15,9 +15,17 @@ from .meta import(
     AutoEncoderCov3DMem,
     CAE
 )
+from .auxiliary import (
+    FlowNet2,
+    LiteFlowNet
+)
 import logging
 logger = logging.getLogger(__name__)
 class ModelAPI(object):
+    '''
+    For example:
+    If we have a couple in MODEL.parts like this: ['meta_G', 'Generator'], you will get the dict {'G': Generator<object at 0x12345456>}
+    '''
     MODEL_TYPE = ['e2e', 'me2e', 'ae2e', 'ame2e']
     def __init__(self, cfg):
         self.cfg = cfg

@@ -11,7 +11,7 @@ import numpy as np
 from collections import OrderedDict
 from torch.utils.data import DataLoader
 from pyanomaly.datatools.evaluate.utils import psnr_error, oc_score
-from pyanomaly.core.utils import multi_obj_grid_crop, frame_gradient, flow_batch_estimate, get_batch_dets, tensorboard_vis_images, save_results
+from pyanomaly.core.utils import multi_obj_grid_crop, frame_gradient, flow_batch_estimate, get_batch_dets, tensorboard_vis_images, save_score_results
 from pyanomaly.core.other.kmeans import kmeans, kmeans_predict
 # from lib.datatools.evaluate import eval_api
 from ..abstract import HookBase, EvaluateHook
@@ -236,16 +236,9 @@ class OCEvaluateHook(EvaluateHook):
                     print(f'finish test video set {video_name}')
                     break
         
-        self.trainer.pkl_path = save_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records)
+        self.trainer.pkl_path = save_score_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records)
         results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config)
         self.trainer.logger.info(results)
         tb_writer.add_text('AUC of ROC curve', f'AUC is {results.auc:.5f}',global_steps)
         return results.auc
 
-
-# def get_ocae_hooks(name):
-#     if name in HOOKS:
-#         t = eval(name)()
-#     else:
-#         raise Exception('The hook is not in amc_hooks')
-#     return t

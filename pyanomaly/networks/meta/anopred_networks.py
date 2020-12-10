@@ -21,8 +21,10 @@ __all__ = ['AnoPredGeneratorUnet']
 
 @META_ARCH_REGISTRY.register()
 class AnoPredGeneratorUnet(nn.Module):
-    def __init__(self, c_in, c_out, bilinear=False):
-        super(GeneratorUnet, self).__init__()
+    def __init__(self, cfg, bilinear=False):
+        super(AnoPredGeneratorUnet, self).__init__()
+        c_in = 12 # 4*3 = 12
+        c_out = 3
         self.c_in = c_in
         self.c_out = c_out
         self.bilinear = bilinear

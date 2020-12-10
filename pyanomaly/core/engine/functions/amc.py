@@ -29,41 +29,42 @@ __all__ = ['AMCTrainer', 'AMCInference']
 class AMCTrainer(DefaultTrainer):
     _NAME = ["AMC.TRAIN"]    
     def custom_setup(self):
-        # get model
-        if self.kwargs['parallel']:
-            self.G = self.data_parallel(self.model['Generator'])
-            self.D = self.data_parallel(self.model['Discriminator'])
-            self.F = self.data_parallel(self.model['FlowNet'])
-        else:
-            self.G = self.model['Generator'].cuda()
-            self.D = self.model['Discriminator'].cuda()
-            self.F = self.model['FlowNet'].cuda()
+        # # get model
+        # if self.kwargs['parallel']:
+        #     self.G = self.data_parallel(self.model['Generator'])
+        #     self.D = self.data_parallel(self.model['Discriminator'])
+        #     self.F = self.data_parallel(self.model['FlowNet'])
+        # else:
+        #     self.G = self.model['Generator'].cuda()
+        #     self.D = self.model['Discriminator'].cuda()
+        #     self.F = self.model['FlowNet'].cuda()
 
-        # get optimizer
-        self.optim_G = self.optimizer['optimizer_g']
-        self.optim_D = self.optimizer['optimizer_d']
+        # # get optimizer
+        # self.optim_G = self.optimizer['optimizer_g']
+        # self.optim_D = self.optimizer['optimizer_d']
 
-        # get loss functions
-        self.gan_loss = self.loss_function['gan_loss']
-        self.gd_loss = self.loss_function['gradient_loss']
-        self.int_loss = self.loss_function['intentsity_loss']
-        self.op_loss = self.loss_function['opticalflow_loss']
+        # # get loss functions
+        # self.gan_loss = self.loss_function['gan_loss']
+        # self.gd_loss = self.loss_function['gradient_loss']
+        # self.int_loss = self.loss_function['intentsity_loss']
+        # self.op_loss = self.loss_function['opticalflow_loss']
 
-        # get scheculers
-        self.lr_g = self.lr_scheduler_dict['optimizer_g_scheduler']
-        self.lr_d = self.lr_scheduler_dict['optimizer_d_scheduler']
+        # # get scheculers
+        # self.lr_g = self.lr_scheduler_dict['optimizer_g_scheduler']
+        # self.lr_d = self.lr_scheduler_dict['optimizer_d_scheduler']
         
         # create loss meters
         self.loss_meter_G = AverageMeter(name='Loss_G')
         self.loss_meter_D = AverageMeter(name='Loss_D')
 
-        # get test datasets
-        self.test_dataset_keys = self.kwargs['test_dataset_keys']
-        self.test_dataset_dict = self.kwargs['test_dataset_dict']
-        self.test_dataset_keys_w = self.kwargs['test_dataset_keys_w']
-        self.test_dataset_dict_w = self.kwargs['test_dataset_dict_w']
+        # # get test datasets
+        # self.test_dataset_keys = self.kwargs['test_dataset_keys']
+        # self.test_dataset_dict = self.kwargs['test_dataset_dict']
+        # self.test_dataset_keys_w = self.kwargs['test_dataset_keys_w']
+        # self.test_dataset_dict_w = self.kwargs['test_dataset_dict_w']
 
         self.optical = ParamSet(name='optical', size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format)
+        # import ipdb; ipdb.set_trace()
     
     def train(self,current_step):
         # Pytorch [N, C, D, H, W]
@@ -97,33 +98,42 @@ class AMCTrainer(DefaultTrainer):
         flow_gt_vis, flow_gt  = flow_batch_estimate(self.F, gt_flow_esti_tensor, self.normalize.param['train'],
                                                     optical_size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format)
         fake_g = self.D(torch.cat([target, output_flow_G], dim=1))
-        loss_g_adv = self.gan_loss(fake_g, True)
-        loss_op = self.op_loss(output_flow_G, flow_gt)
-        loss_int = self.int_loss(output_frame_G, target)
-        loss_gd = self.gd_loss(output_frame_G, target)
 
-        loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + self.loss_lamada['opticalflow_loss'] * loss_op + self.loss_lamada['gan_loss'] * loss_g_adv
-        self.optim_G.zero_grad()
+        # loss_g_adv = self.gan_loss(fake_g, True)
+        # loss_op = self.op_loss(output_flow_G, flow_gt)
+        # loss_int = self.int_loss(output_frame_G, target)
+        # loss_gd = self.gd_loss(output_frame_G, target)
+        # loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + self.loss_lamada['opticalflow_loss'] * loss_op + self.loss_lamada['gan_loss'] * loss_g_adv
+
+        loss_g_adv = self.GANLoss(fake_g, True)
+        loss_op = self.OpticalflowSqrtLoss(output_flow_G, flow_gt)
+        loss_int = self.IntentsityLoss(output_frame_G, target)
+        loss_gd = self.GradientLoss(output_frame_G, target)
+        loss_g_all = self.loss_lamada['IntentsityLoss'] * loss_int + self.loss_lamada['GradientLoss'] * loss_gd + self.loss_lamada['OpticalflowSqrtLoss'] * loss_op + self.loss_lamada['GANLoss'] * loss_g_adv
+
+        self.optimizer_G.zero_grad()
         loss_g_all.backward()
-        self.optim_G.step()
+        self.optimizer_G.step()
         self.loss_meter_G.update(loss_g_all.detach())
         
         if self.config.TRAIN.adversarial.scheduler.use:
-            self.lr_g.step()
+            self.optimizer_G_scheduler.step()
 
         #---------update optim_D ---------------
         self.set_requires_grad(self.D, True)
-        self.optim_D.zero_grad()
+        self.optimizer_D.zero_grad()
         # import ipdb; ipdb.set_trace()
         real_d = self.D(torch.cat([target, flow_gt],dim=1))
         fake_d = self.D(torch.cat([target, output_flow_G.detach()], dim=1))
-        loss_d_1 = self.gan_loss(real_d, True)
-        loss_d_2 = self.gan_loss(fake_d, False)
+        # loss_d_1 = self.gan_loss(real_d, True)
+        # loss_d_2 = self.gan_loss(fake_d, False)
+        loss_d_1 = self.GANLoss(real_d, True)
+        loss_d_2 = self.GANLoss(fake_d, False)
         loss_d = (loss_d_1  + loss_d_2) * 0.5 
         loss_d.backward()
-        self.optim_D.step()
+        self.optimizer_D.step()
         if self.config.TRAIN.adversarial.scheduler.use:
-            self.lr_d.step()
+            self.optimizer_D_scheduler.step()
         self.loss_meter_D.update(loss_d.detach())
         # ======================End==================
 
@@ -152,7 +162,7 @@ class AMCTrainer(DefaultTrainer):
         start = time.time()
         
         self.saved_model = {'G':self.G, 'D':self.D}
-        self.saved_optimizer = {'optim_G': self.optim_G, 'optim_D': self.optim_D}
+        self.saved_optimizer = {'optim_G': self.optimizer_G, 'optim_D': self.optimizer_D}
         self.saved_loss = {'loss_G':self.loss_meter_G.val, 'loss_D':self.loss_meter_D.val}
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     

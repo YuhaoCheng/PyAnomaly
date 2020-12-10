@@ -19,7 +19,7 @@ from pyanomaly import (
     EvaluateAPI
 )
 
-def main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name, is_training):
+def main(args, cfg, logger, tensorboard_log_dir, cfg_name, time_stamp, log_file_name, is_training):
     
     # the system setting
     parallel_flag = system_setup(args, cfg)
@@ -90,5 +90,5 @@ if __name__ == '__main__':
     logger.info(f'^_^==> Use the following tensorboard:{tensorboard_log_dir}')
     logger.info(f'@_@==> Use the following config in path: {cfg_path}')
     logger.info(f'the configure name is {cfg_name}, the content is:\n{cfg}')
-    main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name, is_training=args.train)
+    main(args, cfg, logger, tensorboard_log_dir, cfg_name, time_stamp, log_file_name, is_training=args.train)
     logger.info(f'Finish {phase} the whole process!!!')
