@@ -126,9 +126,15 @@ class ANOPREDTrainer(DefaultTrainer):
         # reset start
         start = time.time()
         
-        self.saved_model = {'G':self.G, 'D':self.D}
-        self.saved_optimizer = {'optim_G': self.optimizer_G, 'optim_D': self.optimizer_D}
-        self.saved_loss = {'loss_G':self.loss_meter_G.val, 'loss_D':self.loss_meter_D.val}
+        # self.saved_model = {'G':self.G, 'D':self.D}
+        self.saved_model['G'] = self.G
+        self.saved_model['D'] = self.D
+        # self.saved_optimizer = {'optim_G': self.optimizer_G, 'optim_D': self.optimizer_D}
+        self.saved_optimizer['optimizer_G'] = self.optimizer_G
+        self.saved_optimizer['optimizer_D'] = self.optimizer_D
+        # self.saved_loss = {'loss_G':self.loss_meter_G.val, 'loss_D':self.loss_meter_D.val}
+        self.saved_loss['loss_G'] = self.loss_meter_G.val
+        self.saved_loss['loss_D'] = self.loss_meter_D.val
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
 @ENGINE_REGISTRY.register()

@@ -27,41 +27,11 @@ __all__ = ['AMCTrainer', 'AMCInference']
 
 @ENGINE_REGISTRY.register()
 class AMCTrainer(DefaultTrainer):
-    _NAME = ["AMC.TRAIN"]    
+    NAME = ["AMC.TRAIN"]    
     def custom_setup(self):
-        # # get model
-        # if self.kwargs['parallel']:
-        #     self.G = self.data_parallel(self.model['Generator'])
-        #     self.D = self.data_parallel(self.model['Discriminator'])
-        #     self.F = self.data_parallel(self.model['FlowNet'])
-        # else:
-        #     self.G = self.model['Generator'].cuda()
-        #     self.D = self.model['Discriminator'].cuda()
-        #     self.F = self.model['FlowNet'].cuda()
-
-        # # get optimizer
-        # self.optim_G = self.optimizer['optimizer_g']
-        # self.optim_D = self.optimizer['optimizer_d']
-
-        # # get loss functions
-        # self.gan_loss = self.loss_function['gan_loss']
-        # self.gd_loss = self.loss_function['gradient_loss']
-        # self.int_loss = self.loss_function['intentsity_loss']
-        # self.op_loss = self.loss_function['opticalflow_loss']
-
-        # # get scheculers
-        # self.lr_g = self.lr_scheduler_dict['optimizer_g_scheduler']
-        # self.lr_d = self.lr_scheduler_dict['optimizer_d_scheduler']
-        
         # create loss meters
         self.loss_meter_G = AverageMeter(name='Loss_G')
         self.loss_meter_D = AverageMeter(name='Loss_D')
-
-        # # get test datasets
-        # self.test_dataset_keys = self.kwargs['test_dataset_keys']
-        # self.test_dataset_dict = self.kwargs['test_dataset_dict']
-        # self.test_dataset_keys_w = self.kwargs['test_dataset_keys_w']
-        # self.test_dataset_dict_w = self.kwargs['test_dataset_dict_w']
 
         self.optical = ParamSet(name='optical', size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format)
         # import ipdb; ipdb.set_trace()
@@ -161,65 +131,21 @@ class AMCTrainer(DefaultTrainer):
         # reset start
         start = time.time()
         
-        self.saved_model = {'G':self.G, 'D':self.D}
-        self.saved_optimizer = {'optim_G': self.optimizer_G, 'optim_D': self.optimizer_D}
-        self.saved_loss = {'loss_G':self.loss_meter_G.val, 'loss_D':self.loss_meter_D.val}
+        # self.saved_model = {'G':self.G, 'D':self.D}
+        self.saved_model['G'] = self.G
+        self.saved_model['D'] = self.D
+        # self.saved_optimizer = {'optim_G': self.optimizer_G, 'optim_D': self.optimizer_D}
+        self.saved_optimizer['optimizer_G'] = self.optimizer_G
+        self.saved_optimizer['optimizer_D'] = self.optimizer_D
+        # self.saved_loss = {'loss_G':self.loss_meter_G.val, 'loss_D':self.loss_meter_D.val}
+        self.saved_loss['loss_G'] = self.loss_meter_G.val
+        self.saved_loss['loss_D'] = self.loss_meter_D.val
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
-    
-    # def mini_eval(self, current_step):
-    #     pass
-    #     # if current_step % self.steps.param['mini_eval'] != 0:
-    #     #     return
-    #     # temp_meter_frame = AverageMeter()
-    #     # temp_meter_flow = AverageMeter()
-    #     # self.set_requires_grad(self.F, False)
-    #     # self.set_requires_grad(self.D, False)
-    #     # self.set_requires_grad(self.G, False)
-    #     # self.G.eval()
-    #     # self.D.eval()
-    #     # self.F.eval()
-    #     # for data , _ in self.val_dataloader:
-    #     #     # get the data
-    #     #     target_mini = data[:, :, 1, :, :]
-    #     #     input_data_mini = data[:, :, 0, :, :]
-    #     #     # squeeze the dimension
-    #     #     target_mini = target_mini.view(target_mini.shape[0],-1,target_mini.shape[-2], target_mini.shape[-1]).cuda()
-    #     #     input_data_mini = input_data_mini.view(input_data_mini.shape[0],-1,input_data_mini.shape[-2], input_data_mini.shape[-1]).cuda()
-            
-    #     #     # Use the model, get the output
-    #     #     output_flow_G_mini, output_frame_G_mini = self.G(input_data_mini)
-    #     #     input_gtFlowEstimTensor = torch.cat([input_data_mini, target_mini], 1)
-    #     #     gtFlow_vis, gtFlow = flow_batch_estimate(self.F, input_gtFlowEstimTensor, self.trainer.normalize.param['val'],
-    #     #                                             output_format=self.config.DATASET.optical_format, optical_size=self.config.DATASET.optical_size)
-            
-    #     #     frame_psnr_mini = psnr_error(output_frame_G_mini.detach(), target_mini)
-    #     #     flow_psnr_mini = psnr_error(output_flow_G_mini.detach(), gtFlow)
-    #     #     temp_meter_frame.update(frame_psnr_mini.detach())
-    #     #     temp_meter_flow.update(flow_psnr_mini.detach())
-    #     # self.logger.info(f'&^*_*^& ==> Step:{current_step}/{self.steps.param["max"]} the frame PSNR is {temp_meter_frame.avg:.3f}, the flow PSNR is {temp_meter_flow.avg:.3f}')
-    #     # # return temp_meter.avg
 
 
 @ENGINE_REGISTRY.register()
 class AMCInference(DefaultInference):
-    _NAME = ["AMC.INFERENCE"]
-    def custom_setup(self):
-        if self.kwargs['parallel']:
-            self.G = self.data_parallel(self.model['Generator']).load_state_dict(self.save_model['G'])
-            self.D = self.data_parallel(self.model['Discriminator']).load_state_dict(self.save_model['D'])
-            self.F = self.data_parallel(self.model['FlowNet'])
-        else:
-            self.G = self.model['Generator'].cuda()
-            self.G.load_state_dict(self.save_model['G'])
-            self.D = self.model['Discriminator'].cuda()
-            self.D.load_state_dict(self.save_model['D'])
-            self.F = self.model['FlowNet'].cuda()
-        
-        self.test_dataset_keys = self.kwargs['test_dataset_keys']
-        self.test_dataset_dict = self.kwargs['test_dataset_dict']
-
-        self.test_dataset_keys_w = self.kwargs['test_dataset_keys_w']
-        self.test_dataset_dict_w = self.kwargs['test_dataset_dict_w']
+    NAME = ["AMC.INFERENCE"]
 
     def inference(self):
         for h in self._hooks:

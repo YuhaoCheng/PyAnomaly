@@ -8,6 +8,7 @@ from ..utils import engine_save_checkpoint
 from ..utils import engine_save_model
 from .abstract_engine import AbstractTrainer, AbstractInference
 import abc
+from collections import OrderedDict
 # import logging
 # logger = logging.getLogger(__name__)
 
@@ -87,9 +88,6 @@ class DefaultTrainer(AbstractTrainer):
                                   train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
                                   val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
 
-        # self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
-        #                       max=self.config.TRAIN.max_steps, mini_eval=self.config.TRAIN.mini_eval_step, dynamic_steps=self.config.TRAIN.dynamic_steps)
-
         self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
                               max=self.config.TRAIN.max_steps, dynamic_steps=self.config.TRAIN.dynamic_steps)
 
@@ -101,6 +99,11 @@ class DefaultTrainer(AbstractTrainer):
         # the lr scheduler
         self.lr_scheduler_dict = kwargs['lr_scheduler_dict']
 
+        # initialize the saved objects
+        self.saved_model = OrderedDict()
+        self.saved_optimizer = OrderedDict()
+        self.saved_loss = OrderedDict()
+        
         # Get the models
         for item_key in self.model.keys():
             attr_name = str(item_key)
