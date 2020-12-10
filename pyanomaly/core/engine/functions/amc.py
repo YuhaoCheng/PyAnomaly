@@ -19,14 +19,14 @@ from torch.utils.data import DataLoader
 
 from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images, vis_optical_flow, make_info_message, ParamSet
 from pyanomaly.datatools.evaluate.utils import psnr_error
-from ..abstract.default_engine import DefaultTrainer, DefaultInference
+from ..abstract.base_engine import BaseTrainer, BaseInference
 
 from ..engine_registry import ENGINE_REGISTRY
 
 __all__ = ['AMCTrainer', 'AMCInference']
 
 @ENGINE_REGISTRY.register()
-class AMCTrainer(DefaultTrainer):
+class AMCTrainer(BaseTrainer):
     NAME = ["AMC.TRAIN"]    
     def custom_setup(self):
         # create loss meters
@@ -144,7 +144,7 @@ class AMCTrainer(DefaultTrainer):
 
 
 @ENGINE_REGISTRY.register()
-class AMCInference(DefaultInference):
+class AMCInference(BaseInference):
     NAME = ["AMC.INFERENCE"]
 
     def inference(self):

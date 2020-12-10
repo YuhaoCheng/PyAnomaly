@@ -19,7 +19,7 @@ import torchvision.transforms.functional as tf
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.svm import LinearSVC
 
-from ..abstract.default_engine import DefaultTrainer, DefaultInference
+from ..abstract.base_engine import BaseTrainer, BaseInference
 from pyanomaly.core.utils import AverageMeter, multi_obj_grid_crop, frame_gradient, get_batch_dets, tensorboard_vis_images, ParamSet, make_info_message
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from ..engine_registry import ENGINE_REGISTRY
@@ -31,7 +31,7 @@ except:
 __all__ = ['OCAETrainer', 'OCAEInference']
 
 @ENGINE_REGISTRY.register()
-class OCAETrainer(DefaultTrainer):
+class OCAETrainer(BaseTrainer):
     NAME = ["OCAE.TRAIN"]
     def custom_setup(self):
         self.ovr_model = OneVsRestClassifier(LinearSVC(random_state = 0), n_jobs=16)
@@ -144,7 +144,7 @@ class OCAETrainer(DefaultTrainer):
     
 
 @ENGINE_REGISTRY.register()
-class OCAEInference(DefaultInference):
+class OCAEInference(BaseInference):
     NAME = ["OCAE.INFERENCE"]
     def custom_setup(self):
         self.ovr_model_path = os.path.join(self.config.TRAIN.model_output, f'ocae_cfg@{self.config_name}#{self.verbose}.npy')

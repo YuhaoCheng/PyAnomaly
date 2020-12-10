@@ -19,13 +19,13 @@ from torch.utils.data import DataLoader
 
 from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images, make_info_message, ParamSet
 from pyanomaly.datatools.evaluate.utils import psnr_error
-from ..abstract.default_engine import DefaultTrainer, DefaultInference
+from ..abstract.base_engine import BaseTrainer, BaseInference
 
 from ..engine_registry import ENGINE_REGISTRY
 
 __all__ = ['ANOPCNTrainer', 'ANOPCNInference']
 @ENGINE_REGISTRY.register()
-class ANOPCNTrainer(DefaultTrainer):
+class ANOPCNTrainer(BaseTrainer):
     NAME = ["ANOPCN.TRAIN"]
     def custom_setup(self):
         # basic meter
@@ -246,7 +246,7 @@ class ANOPCNTrainer(DefaultTrainer):
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
 
 @ENGINE_REGISTRY.register()
-class ANOPCNInference(DefaultInference):
+class ANOPCNInference(BaseInference):
     NAME = ["ANOPCN.INFERENCE"]
     def inference(self):
         for h in self._hooks:

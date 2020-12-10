@@ -19,13 +19,13 @@ from torch.utils.data import DataLoader
 
 from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images, make_info_message, ParamSet
 from pyanomaly.datatools.evaluate.utils import psnr_error
-from ..abstract.default_engine import DefaultTrainer, DefaultInference
+from ..abstract.base_engine import BaseTrainer, BaseInference
 from ..engine_registry import ENGINE_REGISTRY
 
 __all__ = ['MEMAETrainer', 'MEMAEInference']
 
 @ENGINE_REGISTRY.register()
-class MEMAETrainer(DefaultTrainer):
+class MEMAETrainer(BaseTrainer):
     NAME = ["MEMAE.TRAIN"]
     def custom_setup(self):
 
@@ -93,7 +93,7 @@ class MEMAETrainer(DefaultTrainer):
 
 
 @ENGINE_REGISTRY.register()
-class MEMAEInference(DefaultInference):
+class MEMAEInference(BaseInference):
     NAME = ["MEMAE.INFERENCE"]
     def inference(self):
         for h in self._hooks:
