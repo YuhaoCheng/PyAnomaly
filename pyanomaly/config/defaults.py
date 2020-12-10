@@ -273,8 +273,9 @@ config.TRAIN.cluster.k = 10
 
 # configure the val process, equals to the TEST. 
 config.VAL = CN()
-# config.VAL.name = ''
 config.VAL.engine_name = ''
+config.VAL.log_step = 5  # the step to print the info
+config.VAL.vis_step = 100  # the step to vis of the training results
 config.VAL.path = '' # if not use the data in the DATASET.val.data_path
 config.VAL.batch_size = 1
 config.VAL.model_file = ''

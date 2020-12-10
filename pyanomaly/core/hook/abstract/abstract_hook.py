@@ -4,11 +4,11 @@
 """
 import torch
 from ..hook_registry import HOOK_REGISTRY
-
+import abc
 __all__ = ['HookBase', 'EvaluateHook']
 
 @HOOK_REGISTRY.register()
-class HookBase:
+class HookBase(object):
     """
     Base class for hooks that can be registered with :class:`TrainerBase`.
     Each hook can implement 4 methods. The way they are called is demonstrated
@@ -35,7 +35,6 @@ class HookBase:
         trainer: A weak reference to the trainer object. Set by the trainer when the hook is
             registered.
     """
-
     def before_train(self):
         """
         Called before the first iteration.
@@ -84,5 +83,6 @@ class EvaluateHook(HookBase):
         acc = self.evaluate(0)
         self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
     
+    @abc.abstractmethod
     def evaluate(self, current_step)->float:
-        raise Exception('Not implement the evaluate in EvaluateHook')
+        pass

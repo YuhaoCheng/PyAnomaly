@@ -23,12 +23,13 @@ class AnoPCNEvaluateHook(EvaluateHook):
         !!! Will change, e.g. accuracy, mAP.....
         !!! Or can call other methods written by the official
         '''
-        self.trainer.set_requires_grad(self.trainer.F, False)
-        self.trainer.set_requires_grad(self.trainer.G, False)
-        self.trainer.set_requires_grad(self.trainer.D, False)
-        self.trainer.G.eval()
-        self.trainer.D.eval()
-        self.trainer.F.eval()
+        # self.trainer.set_requires_grad(self.trainer.F, False)
+        # self.trainer.set_requires_grad(self.trainer.G, False)
+        # self.trainer.set_requires_grad(self.trainer.D, False)
+        # self.trainer.G.eval()
+        # self.trainer.D.eval()
+        # self.trainer.F.eval()
+        self.trainer.set_all(False)
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
 

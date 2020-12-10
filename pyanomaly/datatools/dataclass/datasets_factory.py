@@ -54,7 +54,7 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
             dataset = self.ingredient(_temp_test_folder, clip_length=self.dataset_params.val.clip_length, 
                                       sampled_clip_length=self.dataset_params.val.sampled_clip_length, 
                                       clip_step=self.dataset_params.val.clip_step, frame_step=self.dataset_params.val.frame_step, is_training=False,
-                                      transforms=self.aug_dict['test_aug'], one_video=True, cfg=self.cfg)
+                                      transforms=self.aug_dict['val_aug'], one_video=True, cfg=self.cfg)
             dataset_dict[video_dir] = dataset
         video_keys = list(dataset_dict.keys())
         test_dataset_dict = OrderedDict()
@@ -98,8 +98,8 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
     def _build(self):
         dataset_dict = OrderedDict()
         test_dataset_dict = self._produce_val_dataset()
-        dataset_dict['test_dataset_dict'] = OrderedDict()
-        dataset_dict['test_dataset_dict']['general_dataset_dict'] = test_dataset_dict
+        dataset_dict['val_dataset_dict'] = OrderedDict()
+        dataset_dict['val_dataset_dict']['general_dataset_dict'] = test_dataset_dict
 
         if self.is_training:
             train_dataset_dict = self._produce_train_dataset()

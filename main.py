@@ -59,7 +59,7 @@ def main(args, cfg, logger, tensorboard_log_dir, cfg_name, time_stamp, log_file_
     hooks = ha(is_training)
 
     # Get the engine
-    engine_api = EngineAPI(cfg, True)
+    engine_api = EngineAPI(cfg, is_training)
     engine = engine_api.build()
     trainer = engine(model_dict, dataloaders_dict, optimizer_dict, loss_function_dict, logger, cfg, parallel=parallel_flag, 
                     pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, loss_lamada=loss_lamada,

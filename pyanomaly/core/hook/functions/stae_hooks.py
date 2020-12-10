@@ -27,12 +27,15 @@ __all__ = ['STAEEvaluateHook']
 class STAEEvaluateHook(EvaluateHook): 
     def evaluate(self, current_step):
         '''
-        Evaluate the results of the model
-        !!! Will change, e.g. accuracy, mAP.....
-        !!! Or can call other methods written by the official
+        Evaluate the model base on some methods
+        Args:
+            current_step: The current step at present
+        Returns:
+            results: The magnitude of the method based on this evaluation metric
         '''
-        self.trainer.set_requires_grad(self.trainer.STAE, False)
-        self.trainer.STAE.eval()
+        # self.trainer.set_requires_grad(self.trainer.STAE, False)
+        # self.trainer.STAE.eval()
+        self.trainer.set_all(False) # eval mode
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
         frame_num = self.trainer.config.DATASET.val.sampled_clip_length
