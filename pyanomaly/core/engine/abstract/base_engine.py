@@ -12,7 +12,7 @@ from collections import OrderedDict
 # import logging
 # logger = logging.getLogger(__name__)
 
-class DefaultTrainer(AbstractTrainer):
+class BaseTrainer(AbstractTrainer):
     def __init__(self, *defaults, **kwargs):
         '''
         Args:
@@ -136,32 +136,45 @@ class DefaultTrainer(AbstractTrainer):
         if self.config.TRAIN.finetune.use:
             self.fine_tune()
     
+    def _load_file(self, model_keys, model_file):
+        for item in model_keys:
+            item = str(item)
+            getattr(self, item).load_state_dict(model_file[item]['state_dict'])
+        self.logger.info('Finish load!')
 
     def load_pretrain(self):
         model_path = self.config.MODEL.pretrain_model
+
         if  model_path is '':
             self.logger.info('=>Not have the pre-train model! Training from the scratch')
         else:
-            self.logger.info('=>Loading the model in {}'.format(model_path))
+            self.logger.info(f'=>Loading the model in {model_path}')
             pretrain_model = torch.load(model_path)
             if 'epoch' in pretrain_model.keys():
                 self.logger.info('(|_|) ==> Use the check point file')
-                self.model.load_state_dict(pretrain_model['model_state_dict'])
+                # self.model.load_state_dict(pretrain_model['model_state_dict'])
+                # model_file = pretrain_model['model_state_dict']
+                self._load_file(self.model.keys(), pretrain_model)
             else:
                 self.logger.info('(+_+) ==> Use the model file')
-                self.model.load_state_dict(pretrain_model['state_dict'])
+                # self.model.load_state_dict(pretrain_model['state_dict'])
+                # model_file = pretrain_model['state_dict']
+                self._load_file(self.model.keys(), pretrain_model)
+
 
     
     def resume(self):
         self.logger.info('=> Resume the previous training')
         checkpoint_path = self.config.TRAIN.resume.checkpoint_path
-        self.logger.info('=> Load the checkpoint from {}'.format(checkpoint_path))
+        self.logger.info(f'=> Load the checkpoint from {checkpoint_path}')
         checkpoint = torch.load(checkpoint_path)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-
+        # self.model.load_state_dict(checkpoint['model_state_dict'])
+        self._load_file(self.model.keys(), checkpoint['model_state_dict'])
+        # self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        self._load_file(self.optimizer.keys(), checkpoint['optimizer_state_dict'])
     
     def fine_tune(self):
+        # need to improve
         layer_list = self.config.TRAIN.finetune.layer_list
         self.logger.info('=> Freeze layers except start with:{}'.format(layer_list))
         for n, p in self.model.named_parameters():
@@ -251,7 +264,7 @@ class DefaultTrainer(AbstractTrainer):
     
         
  
-class DefaultInference(AbstractInference):
+class BaseInference(AbstractInference):
     def __init__(self, *defaults,**kwargs):
         '''
          Args:

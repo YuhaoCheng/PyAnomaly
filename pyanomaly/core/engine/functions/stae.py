@@ -2,8 +2,6 @@
 @author:  Yuhao Cheng
 @contact: yuhao.cheng[at]outlook.com
 """
-import sys
-sys.path.append('../')
 #!!!!! ignore the warning messages
 import warnings
 warnings.filterwarnings('ignore')

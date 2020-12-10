@@ -67,7 +67,7 @@ def main(args, cfg, logger, tensorboard_log_dir, cfg_name, time_stamp, log_file_
                     lr_scheduler_dict=lr_scheduler_dict
                     )
 
-    
+    # import ipdb; ipdb.set_trace()
     trainer.run(cfg.TRAIN.start_step, cfg.TRAIN.max_steps)
     
     

@@ -34,7 +34,7 @@ class AMCTrainer(BaseTrainer):
         self.loss_meter_D = AverageMeter(name='Loss_D')
 
         self.optical = ParamSet(name='optical', size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format)
-        # import ipdb; ipdb.set_trace()
+        import ipdb; ipdb.set_trace()
     
     def train(self,current_step):
         # Pytorch [N, C, D, H, W]
