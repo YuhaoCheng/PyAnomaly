@@ -5,18 +5,24 @@
 import time
 import weakref
 from pyanomaly.core.hook.abstract import HookBase
+import abc
 
 class AbstractTrainer(object):
+    '''
+    The abstract defination of method and frame work during the training process. All of trainers must be the sub-class of this class
+    '''
+    @abc.abstractmethod
     def __init__(self, *args, **kwargs):
-        self._eval_hooks = []
         self._hooks = []
-        raise Exception('NO Implement')
-
-    def set_up(self):
-        '''
-        In the future, this will set up the kwargs and so on
-        '''
+        # self._eval_hooks = []
+        # self._hooks = []
+        # raise Exception('NO Implement')
         pass
+    # def set_up(self):
+    #     '''
+    #     In the future, this will set up the kwargs and so on
+    #     '''
+    #     pass
 
     def _get_time(self):
         '''
@@ -96,15 +102,18 @@ class AbstractTrainer(object):
         pass
 
 class AbstractInference(object):
-    def __init__(self):
-        self._hooks = []
-        raise Exception('No implement')
 
-    def set_up(self):
-        '''
-        set up the whole inference
-        '''
+    @abc.abstractmethod
+    def __init__(self, *defaults,**kwargs):
+        self._hooks = []
+        # self._hooks = []
+        # raise Exception('No implement')
         pass
+    # def set_up(self):
+    #     '''
+    #     set up the whole inference
+    #     '''
+    #     pass
     
     def _get_time(self):
         '''
@@ -141,6 +150,7 @@ class AbstractInference(object):
             if net is not None:
                 for param in net.parameters():
                     param.requires_grad = requires_grad
+    
     def run(self):
         '''
         The basic loop of implement the algorithm

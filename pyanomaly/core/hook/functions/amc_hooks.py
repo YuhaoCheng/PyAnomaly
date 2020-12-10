@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from ..abstract import EvaluateHook
 
 from pyanomaly.datatools.evaluate.utils import psnr_error
-from pyanomaly.core.utils import flow_batch_estimate, tensorboard_vis_images, save_results, vis_optical_flow
+from pyanomaly.core.utils import flow_batch_estimate, tensorboard_vis_images, save_score_results, vis_optical_flow
 from pyanomaly.datatools.evaluate.utils import simple_diff, find_max_patch, amc_score, calc_w
 
 from ..hook_registry import HOOK_REGISTRY
@@ -128,16 +128,9 @@ class AMCEvaluateHook(EvaluateHook):
                     print(f'finish test video set {video_name}')
                     break
         
-        self.trainer.pkl_path = save_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records, psnr=psnr_records)
+        self.trainer.pkl_path = save_score_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records, psnr=psnr_records)
         results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
         self.trainer.logger.info(results)
         tb_writer.add_text('AMC: AUC of ROC curve', f'auc is {results.auc}',global_steps)
         return results.auc
 
-    
-# def get_amc_hooks(name):
-#     if name in HOOKS:
-#         t = eval(name)()
-#     else:
-#         raise Exception('The hook is not in amc_hooks')
-#     return t

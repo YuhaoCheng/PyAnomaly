@@ -17,7 +17,8 @@ Not for this project, this kind of project structure can be used in other CV pro
 And Now, I want to describe the each package in `pyanomaly`
 
 ##### Config
-This package only contains one file `defaults.py`, which defines default configuration. During the real using process, we merely change this file. We only change the `YAML` files in `configuration`.
+This package only contains one file `defaults.py`, which defines default configuration. During the real using process, we merely change this file. We only change the `YAML` files in `configuration`.  For the detailed information of the configuration items, please refer to the `defaults.py`
+
 
 ##### Core
 This package contains the core functions of the whole project, which are the fixed training and inference methods. Each file is the individual trainer or inference for a method, which designs in modular. Not only the individual methods, but this part also contains the `hook` and `optimizer` and `scheduler`, which are used in the training or inference processed. The detail methods to register `hook` are in [USAGE](./usage.md).

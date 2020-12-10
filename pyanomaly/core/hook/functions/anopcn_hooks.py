@@ -9,7 +9,7 @@ import pickle
 from collections import OrderedDict
 from torch.utils.data import DataLoader
 from pyanomaly.datatools.evaluate.utils import psnr_error
-from pyanomaly.core.utils import save_results, tensorboard_vis_images
+from pyanomaly.core.utils import save_score_results, tensorboard_vis_images
 from ..abstract import EvaluateHook
 from ..hook_registry import HOOK_REGISTRY
 
@@ -23,12 +23,13 @@ class AnoPCNEvaluateHook(EvaluateHook):
         !!! Will change, e.g. accuracy, mAP.....
         !!! Or can call other methods written by the official
         '''
-        self.trainer.set_requires_grad(self.trainer.F, False)
-        self.trainer.set_requires_grad(self.trainer.G, False)
-        self.trainer.set_requires_grad(self.trainer.D, False)
-        self.trainer.G.eval()
-        self.trainer.D.eval()
-        self.trainer.F.eval()
+        # self.trainer.set_requires_grad(self.trainer.F, False)
+        # self.trainer.set_requires_grad(self.trainer.G, False)
+        # self.trainer.set_requires_grad(self.trainer.D, False)
+        # self.trainer.G.eval()
+        # self.trainer.D.eval()
+        # self.trainer.F.eval()
+        self.trainer.set_all(False)
         tb_writer = self.trainer.kwargs['writer_dict']['writer']
         global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
 
@@ -89,16 +90,9 @@ class AnoPCNEvaluateHook(EvaluateHook):
                     print(f'finish test video set {video_name}')
                     break
 
-        self.trainer.pkl_path = save_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records, psnr=psnr_records)
+        self.trainer.pkl_path = save_score_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records, psnr=psnr_records)
         results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
         self.trainer.logger.info(results)
         tb_writer.add_text('anopcn: AUC of ROC curve', f'auc is {results.auc}',global_steps)
         return results.auc
 
-        
-# def get_anopcn_hooks(name):
-#     if name in HOOKS:
-#         t = eval(name)()
-#     else:
-#         raise Exception('The hook is not in amc_hooks')
-#     return t

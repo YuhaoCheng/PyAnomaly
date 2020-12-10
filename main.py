@@ -19,7 +19,7 @@ from pyanomaly import (
     EvaluateAPI
 )
 
-def main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name, is_training):
+def main(args, cfg, logger, tensorboard_log_dir, cfg_name, time_stamp, log_file_name, is_training):
     
     # the system setting
     parallel_flag = system_setup(args, cfg)
@@ -59,7 +59,7 @@ def main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, tim
     hooks = ha(is_training)
 
     # Get the engine
-    engine_api = EngineAPI(cfg, True)
+    engine_api = EngineAPI(cfg, is_training)
     engine = engine_api.build()
     trainer = engine(model_dict, dataloaders_dict, optimizer_dict, loss_function_dict, logger, cfg, parallel=parallel_flag, 
                     pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, loss_lamada=loss_lamada,
@@ -67,7 +67,7 @@ def main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, tim
                     lr_scheduler_dict=lr_scheduler_dict
                     )
 
-    
+    # import ipdb; ipdb.set_trace()
     trainer.run(cfg.TRAIN.start_step, cfg.TRAIN.max_steps)
     
     
@@ -90,5 +90,5 @@ if __name__ == '__main__':
     logger.info(f'^_^==> Use the following tensorboard:{tensorboard_log_dir}')
     logger.info(f'@_@==> Use the following config in path: {cfg_path}')
     logger.info(f'the configure name is {cfg_name}, the content is:\n{cfg}')
-    main(args, cfg, logger, final_output_dir, tensorboard_log_dir, cfg_name, time_stamp, log_file_name, is_training=args.train)
+    main(args, cfg, logger, tensorboard_log_dir, cfg_name, time_stamp, log_file_name, is_training=args.train)
     logger.info(f'Finish {phase} the whole process!!!')

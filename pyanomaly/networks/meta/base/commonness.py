@@ -262,19 +262,19 @@ class Inception(nn.Module):
 class PixelDiscriminator(nn.Module):
     """Defines a 1x1 PatchGAN discriminator (pixelGAN)"""
 
-    def __init__(self, input_nc, num_filters, use_norm=False,norm_layer=nn.BatchNorm2d):
+    def __init__(self, cfg, use_norm=False,norm_layer=nn.BatchNorm2d):
         """Construct a 1x1 PatchGAN discriminator
 
         Parameters:
-            input_nc (int)  -- the number of channels in input images
-            ndf (int)       -- the number of filters in the last conv layer
+            input_nc (int)  -- the number of channels in input images. Default:3
+            ndf (int)       -- the number of filters in the last conv layer. Default: [128,256,512,512]
             norm_layer      -- normalization layer
         """
         '''
         different from ano_pred with norm here
         '''
-
-
+        input_nc = 3
+        num_filters = [128,256,512,512]
         super(PixelDiscriminator, self).__init__()
         if use_norm:
             if type(norm_layer) == functools.partial:  # no need to use bias as BatchNorm2d has affine parameters

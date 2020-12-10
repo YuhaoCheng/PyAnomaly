@@ -2,92 +2,173 @@
 @author:  Yuhao Cheng
 @contact: yuhao.cheng[at]outlook.com
 """
-import os
-import sys
-sys.path.append('../../')
 import torch
-import time
-from PIL import Image
-from torch.autograd import Variable
-import torchvision.transforms.functional as tf
-from .utils import engine_save_checkpoint
-from .utils import engine_save_model
-from pyanomaly.core.utils import AverageMeter
-
+from pyanomaly.core.utils import AverageMeter, ParamSet
+from ..utils import engine_save_checkpoint
+from ..utils import engine_save_model
 from .abstract_engine import AbstractTrainer, AbstractInference
+import abc
+from collections import OrderedDict
+# import logging
+# logger = logging.getLogger(__name__)
 
 class BaseTrainer(AbstractTrainer):
-    '''
-    Define the basic things about training
-    '''
-    def __init__(self, model, train_dataloader, val_dataloader, optimizer, loss_function, logger,config, verbose='None',parallel=True, pretrain=False, **kwargs):
-        # logger & config
-        self.logger = logger
-        self.config = config
-        
-        # basic things
-        if parallel:
-            self.model = self.data_parallel(model)
-        else:
-            self.model = model
-        
-        if pretrain:
-            self.load_pretrain()
+    def __init__(self, *defaults, **kwargs):
+        '''
+        Args:
+            defaults(tuple): the default will have:
+                0 0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
+                - 1->train_dataloader: the dataloader    # Will be deprecated in the future
+                - 2->val_dataloader: the dataloader     # Will be deprecated in the future
+                1 -->dataloader_dict: the dict of all the dataloader will be used in the process
+                2 3->optimizer:{'optimizer_g':op_g, 'optimizer_d'}
+                3 4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
+                4 5->logger: the logger of the whole training process
+                5 6->config: the config object of the whole process
 
-        self.train_dataloader = train_dataloader
-        self.val_dataloader = val_dataloader
-        self.optimizer = optimizer
-        self.loss_function = loss_function
+            kwargs(dict): the default will have:
+                verbose(str):
+                parallel(bool): True-> data parallel
+                pertrain(bool): True-> use the pretarin model
+                dataloaders_dict: will to replace the train_dataloader and test_dataloader
+                extra param:
+                    test_dataset_keys: the dataset keys of each video
+                    test_dataset_dict: the dataset dict of whole test videos
+        '''
+        self._hooks = []
+        # self._eval_hooks = []
+        self._register_hooks(kwargs['hooks'])
+        # logger & config
+        self.logger = defaults[4]
+        self.config = defaults[5]
+
+        self.model = defaults[0]
+        
+        if kwargs['pretrain']:
+            self.load_pretrain()
+        # =============================the old version to get iter of dataloader========================
+        # self.train_dataloader = defaults[1]
+        # self._train_loader_iter = iter(self.train_dataloader)
+
+        # self.val_dataloader = defaults[2]
+        # self._val_loader_iter = iter(self.val_dataloader)
+        # ==============================================================================================
+        dataloaders_dict = defaults[1]
+        self._dataloaders_dict = dataloaders_dict
+        self.train_dataloaders_dict = dataloaders_dict['train']
+        self._train_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['all'])
+        # self.val_dataloaders_dict = dataloaders_dict['test']
+        # temporal, but it is wrong !!!
+        # self._val_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['video_datasets']['all'])
+        # self._val_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['all'])
+        self.val_dataloaders_dict = dataloaders_dict['val']
+        self.val_dataset_keys = list(dataloaders_dict['val']['general_dataset_dict'].keys())
+        # get the optimizer
+        self.optimizer = defaults[2]
+
+        # get the loss_fucntion
+        self.loss_function = defaults[3]
 
         # basic meter
-        self.batch_time =  AverageMeter()
-        self.data_time = AverageMeter()
-        self.loss_basic = AverageMeter()
+        self.batch_time =  AverageMeter(name='batch_time')
+        self.data_time = AverageMeter(name='data_time')
 
         # others
-        self.verbose = verbose
+        self.verbose = kwargs['verbose']
         self.accuarcy = 0.0  # to store the accuracy varies from epoch to epoch
-        self.kwargs = kwargs
-        self.total_steps = len(self.train_dataloader)
+        self.config_name = kwargs['config_name']
         self.result_path = ''
+        self.kwargs = kwargs
+        self.normalize = ParamSet(name='normalize', 
+                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
+                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
 
-        if self.config.RESUME.flag:
+        self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
+                              max=self.config.TRAIN.max_steps, dynamic_steps=self.config.TRAIN.dynamic_steps)
+
+        self.evaluate_function = kwargs['evaluate_function']
+        
+        # hypyer-parameters of loss
+        self.loss_lamada = kwargs['loss_lamada']
+
+        # the lr scheduler
+        self.lr_scheduler_dict = kwargs['lr_scheduler_dict']
+
+        # initialize the saved objects
+        self.saved_model = OrderedDict()
+        self.saved_optimizer = OrderedDict()
+        self.saved_loss = OrderedDict()
+
+        # Get the models
+        for item_key in self.model.keys():
+            attr_name = str(item_key)
+            if self.kwargs['parallel']:
+                temp_model = self.data_parallel(self.model[item_key])
+            else:
+                temp_model = self.model[item_key].cuda()
+            self.__setattr__(attr_name, temp_model)
+        
+        # get the optimizer
+        for item_key in self.optimizer.keys():
+            attr_name = str(item_key)
+            # get the optimizer
+            self.__setattr__(attr_name, self.optimizer[item_key])
+            # get the lr scheduler
+            self.__setattr__(f'{attr_name}_scheduler', self.lr_scheduler_dict[f'{attr_name}_scheduler'])
+        
+        # get the losses
+        for item_key in self.loss_function.keys():
+            attr_name = str(item_key)
+            self.__setattr__(attr_name, self.loss_function[attr_name])
+
+        self.custom_setup()
+
+        # Continue training a model from a checkpoint
+        if self.config.TRAIN.resume.use:
             self.resume()
         
-        if self.config.FINETUNE.flag:
+        # Fine-tine a trained model
+        if self.config.TRAIN.finetune.use:
             self.fine_tune()
-
-    def _get_time(self):
-        '''
-        Get the current time
-        '''
-        return time.strftime('%Y-%m-%d-%H-%M') # 2019-08-07-10-34
     
+    def _load_file(self, model_keys, model_file):
+        for item in model_keys:
+            item = str(item)
+            getattr(self, item).load_state_dict(model_file[item]['state_dict'])
+        self.logger.info('Finish load!')
+
     def load_pretrain(self):
         model_path = self.config.MODEL.pretrain_model
+
         if  model_path is '':
             self.logger.info('=>Not have the pre-train model! Training from the scratch')
         else:
-            self.logger.info('=>Loading the model in {}'.format(model_path))
+            self.logger.info(f'=>Loading the model in {model_path}')
             pretrain_model = torch.load(model_path)
             if 'epoch' in pretrain_model.keys():
-                self. logger.info('(|_|) ==> Use the check point file')
-                self.model.load_state_dict(pretrain_model['model_state_dict'])
+                self.logger.info('(|_|) ==> Use the check point file')
+                # self.model.load_state_dict(pretrain_model['model_state_dict'])
+                # model_file = pretrain_model['model_state_dict']
+                self._load_file(self.model.keys(), pretrain_model)
             else:
                 self.logger.info('(+_+) ==> Use the model file')
-                # model_all.load_state_dict(pretrain_model['state_dict'], strict=False)
-                self.model.load_state_dict(pretrain_model['state_dict'])
+                # self.model.load_state_dict(pretrain_model['state_dict'])
+                # model_file = pretrain_model['state_dict']
+                self._load_file(self.model.keys(), pretrain_model)
     
     def resume(self):
         self.logger.info('=> Resume the previous training')
-        checkpoint_path = self.config.RESUME.checkpoint_path
-        self.logger.info('=> Load the checkpoint from {}'.format(checkpoint_path))
+        checkpoint_path = self.config.TRAIN.resume.checkpoint_path
+        self.logger.info(f'=> Load the checkpoint from {checkpoint_path}')
         checkpoint = torch.load(checkpoint_path)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        # self.model.load_state_dict(checkpoint['model_state_dict'])
+        self._load_file(self.model.keys(), checkpoint['model_state_dict'])
+        # self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        self._load_file(self.optimizer.keys(), checkpoint['optimizer_state_dict'])
     
     def fine_tune(self):
-        layer_list = self.config.FINETUNE.layer_list
+        # need to improve
+        layer_list = self.config.TRAIN.finetune.layer_list
         self.logger.info('=> Freeze layers except start with:{}'.format(layer_list))
         for n, p in self.model.named_parameters():
             parts = n.split('.')
@@ -110,130 +191,214 @@ class BaseTrainer(AbstractTrainer):
         '''
         self.logger.info('<!_!> ==> Data Parallel')
         gpus = [int(i) for i in self.config.SYSTEM.gpus]
-        model_parallel = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+        model_parallel = torch.nn.DataParallel(model.cuda(), device_ids=gpus)
         return model_parallel
+    
+    def set_all(self, is_train):
+        """
+        Set all of models in this trainer in eval or train model
+        Args:
+            is_train: bool. True=train mode; False=eval mode
+        Returns:
+            None
+        """
+        for item in self.trainer.model.keys():
+            self.set_requires_grad(getattr(self, str(item)), is_train)
+            if is_train:
+                getattr(self, str(item)).train()
+            else:
+                getattr(self, str(item)).eval()
+    
+    
+    '''
+    Run the whole process:
+    1. print the log information ( before_step)
+    2. execute training process (train)
+    3. evaluate(including the validation and test) -
+                                                   |  --> (after_step)
+    4. save model                                  -
+    '''
+    
+    def before_step(self, current_step):
+        pass
 
-    def run(self, current_epoch):
-        '''
-        Run the whole process:
-        1. print the log information
-        2. execute training process
-        3. evaluate(including the validation and test)
-        4. save model
-        '''
-        self.logger.info('-0_0- ==>|{}| Start Traing the {}/{} epoch'.format(self._get_time(), current_epoch, self.config.TRAIN.epochs))
+    
+    def after_step(self, current_step):
+        # acc = 0.0
+        for h in self._hooks:
+            h.after_step(current_step)
+
+    def after_train(self):
+        for h in self._hooks:
+            h.after_train()
         
-        # train the model
-        self.train(current_epoch)
-
-        # evaluate 
-        acc = self.evaluate(current_epoch)
-        if acc > self.accuarcy:
-            self.accuarcy = acc
-            # save the model & checkpoint
-            self.save(current_epoch, best=True)
-        else:
-            # save the checkpoint
-            self.save(current_epoch)
-            self.logger.info('LOL==>the accuracy is not imporved in epcoh{}'.format(current_epoch))
-
+        self.save(self.config.TRAIN.max_steps)
 
     def save(self, current_epoch, best=False):
+        '''
+        self.saved_model: is the model or a dict of combination of models
+        self.saved_optimizer: is the optimizer or a dict of combination of optimizers
+        self.saved_loss: the loss  or a dict of the combination  of loss 
+        '''
         if best:
-            save_checkpoint(self.config, self.kwargs['config_name'], self.model, current_epoch, self.loss_basic.val, self.optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['cae_type'] + '#' + self.verbose))
-            self.result_path = save_model(self.config, self.kwargs['config_name'], self.model, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['cae_type'] + '#' + self.verbose))
+            engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_epoch, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose),best=best)
+            self.result_path = engine_save_model(self.config, self.kwargs['config_name'], self.saved_model, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
         else:
-            save_checkpoint(self.config, self.kwargs['config_name'], self.model, current_epoch, self.loss_basic.val, self.optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['cae_type'] + '#' + self.verbose))
-        
+            engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_epoch, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
 
-    def train(self,current_epoch):
-        start = time.time()
-        self.model.train()
-        writer = self.kwargs['writer_dict']['writer']
-        global_steps = self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['cae_type'])]
+    @abc.abstractmethod
+    def custom_setup(self):
+        pass
 
-        for step, (data,target) in enumerate(self.train_dataloader):
-            self.data_time.update(time.time() - start)
-            # True Process
-            output = self.model(data)
-            loss = self.loss_function(output, target.cuda())
-            self.optimizer.zero_grad()
-            loss.sum().backward()
-            self.optimizer.step()
-            # record
-            self.loss_basic.update(loss.sum())
-            self.batch_time.update(time.time() - start)
-
-            if (step % 10 == 0) or (step == self.total_steps - 1):
-                msg = 'Epoch: [{0}][{1}/{2}]\t' \
-                    'Type: {cae_type}\t' \
-                    'Time: {batch_time.val:.3f}s ({batch_time.avg:.3f}s)\t' \
-                    'Speed: {speed:.1f} samples/s\t' \
-                    'Data: {data_time.val:.3f}s ({data_time.avg:.3f}s)\t' \
-                    'Loss: {losses.val:.5f} ({losses.avg:.5f})\t'.format(current_epoch, step, self.total_steps, cae_type=self.kwargs['cae_type'], batch_time=self.batch_time, speed=self.config.TRAIN.batch_size/self.batch_time.val, data_time=self.data_time,losses=self.loss_basic)
-                self.logger.info(msg)
-            writer.add_scalar('Train_loss', self.loss_basic.val, global_steps)
-            global_steps += 1 
-            # reset start
-            start = time.time()
-
-        self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['cae_type'])] = global_steps
+    @abc.abstractmethod
+    def train(self,current_step):
+        pass
     
-    def evaluate(self, current_epoch):
-        '''
-        Evaluate the results of the model
-        !!! Will change, e.g. accuracy, mAP.....
-        !!! Or can call other methods written by the official
-        '''
-        self.model.eval()
-        correct_1 = 0.0
-        correct_5 = 0.0
-        for _ ,(data, target) in enumerate(self.val_dataloader):
-            data = Variable(data).cuda()
-            target = Variable(target).cuda()
-            score = self.model(data)
-            _, pred = score.topk(5,1,largest=True, sorted=True)
-
-            target = target.view(target.size(0), -1).expand_as(pred)
-            correct = pred.eq(target).float()
-
-            # compute top5
-            correct_5 += (correct[:, :5].sum()) / len(self.val_dataloader.dataset)
-
-            # compute top1
-            correct_1 += (correct[:, :1].sum()) / len(self.val_dataloader.dataset)
-        
-        self.logger.info('&^*_*^& ==> Epoch:{}/{} the top1 is {}, the top5 is {}'.format(current_epoch, self.config.TRAIN.epochs,correct_1, correct_5))
-
-        return correct_1
-
-        
+ 
 class BaseInference(AbstractInference):
-    def __init__(self, model, model_path,logger, config, verbose='None',parallel=True, mode='dataset',**kwargs):
+    def __init__(self, *defaults, **kwargs):
         '''
         Args:
-            mode: change the mode of inference, can choose: dataset | image
+            defaults(tuple): the default will have:
+                0 0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
+                - 1->train_dataloader: the dataloader    # Will be deprecated in the future
+                - 2->val_dataloader: the dataloader     # Will be deprecated in the future
+                1 -->dataloader_dict: the dict of all the dataloader will be used in the process
+                2 3->optimizer:{'optimizer_g':op_g, 'optimizer_d'}
+                3 4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
+                4 5->logger: the logger of the whole training process
+                5 6->config: the config object of the whole process
+
+            kwargs(dict): the default will have:
+                verbose(str):
+                parallel(bool): True-> data parallel
+                pertrain(bool): True-> use the pretarin model
+                dataloaders_dict: will to replace the train_dataloader and test_dataloader
+                extra param:
+                    test_dataset_keys: the dataset keys of each video
+                    test_dataset_dict: the dataset dict of whole test videos
         '''
-        self.logger = logger
-        self.config = config
-        self.model_path = model_path
-        if parallel:
-            self.model = self.data_parallel(model)
-        else:
-            self.model = model
-        self.load()
+        self._hooks = []
+        # self._eval_hooks = []
+        self._register_hooks(kwargs['hooks'])
+        # logger & config
+        self.logger = defaults[4]
+        self.config = defaults[5]
 
-        self.verbose = verbose
+        self.model = defaults[0]
+        
+        if kwargs['pretrain']:
+            self.load_pretrain()
+        
+        dataloaders_dict = defaults[1]
+
+        self.val_dataloaders_dict = dataloaders_dict['train']
+        self.val_dataset_keys = list(dataloaders_dict['test']['general_dataset_dict'].keys())
+
+        # get the optimizer
+        self.optimizer = defaults[2]
+
+        # get the loss_fucntion
+        self.loss_function = defaults[3]
+
+        # basic meter
+        self.batch_time =  AverageMeter(name='batch_time')
+        self.data_time = AverageMeter(name='data_time')
+
+        # others
+        self.verbose = kwargs['verbose']
+        self.accuarcy = 0.0  # to store the accuracy varies from epoch to epoch
+        self.config_name = kwargs['config_name']
+        self.result_path = ''
         self.kwargs = kwargs
-        self.mode = mode
+        self.normalize = ParamSet(name='normalize', 
+                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
+                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
 
-        self.metric = 0.0
+        self.steps = ParamSet(name='steps', log=self.config.VAL.log_step, vis=self.config.VAL.vis_step, eval=self.config.TRAIN.eval_step, max=self.config.TRAIN.max_steps)
 
-        if self.mode == 'dataset':
-            self.inference_dataloader = self.kwargs['inference_dataloader']
+        self.evaluate_function = kwargs['evaluate_function']
+        
+        # hypyer-parameters of loss
+        self.loss_lamada = kwargs['loss_lamada']
 
-    def load(self):
-        self.model.load_state_dict(torch.load(self.model_path))
+        # the lr scheduler
+        self.lr_scheduler_dict = kwargs['lr_scheduler_dict']
+
+        # initialize the saved objects
+        # None
+
+        # Get the models
+        for item_key in self.model.keys():
+            attr_name = str(item_key)
+            if self.kwargs['parallel']:
+                temp_model = self.data_parallel(self.model[item_key])
+            else:
+                temp_model = self.model[item_key].cuda()
+            self.__setattr__(attr_name, temp_model)
+        
+        # get the optimizer
+        # None
+        
+        # get the losses
+        for item_key in self.loss_function.keys():
+            attr_name = str(item_key)
+            self.__setattr__(attr_name, self.loss_function[attr_name])
+
+        self.custom_setup()
+
+    
+    
+    def _load_file(self, model_keys, model_file):
+        for item in model_keys:
+            item = str(item)
+            getattr(self, item).load_state_dict(model_file[item]['state_dict'])
+        self.logger.info('Finish load!')
+
+    def load_pretrain(self):
+        model_path = self.config.MODEL.pretrain_model
+
+        if  model_path is '':
+            self.logger.info('=>Not have the pre-train model! Training from the scratch')
+        else:
+            self.logger.info(f'=>Loading the model in {model_path}')
+            pretrain_model = torch.load(model_path)
+            if 'epoch' in pretrain_model.keys():
+                self.logger.info('(|_|) ==> Use the check point file')
+                # self.model.load_state_dict(pretrain_model['model_state_dict'])
+                # model_file = pretrain_model['model_state_dict']
+                self._load_file(self.model.keys(), pretrain_model)
+            else:
+                self.logger.info('(+_+) ==> Use the model file')
+                # self.model.load_state_dict(pretrain_model['state_dict'])
+                # model_file = pretrain_model['state_dict']
+                self._load_file(self.model.keys(), pretrain_model)
+
+
+    # def load(self):
+    #     if type(self.model) == type(dict()):
+    #         for k, v in self.model.items():
+    #             temp = torch.load(self.model_path)
+    #             if k[0] == 'F':
+    #                 continue
+    #             self.model[k].load_state_dict(temp[k[0]])
+    #     else:
+    #         self.model.load_state_dict(torch.load(self.model_path))
+    def set_all(self, is_train):
+        """
+        Set all of models in this trainer in eval or train model
+        Args:
+            is_train: bool. True=train mode; False=eval mode
+        Returns:
+            None
+        """
+        for item in self.trainer.model.keys():
+            self.set_requires_grad(getattr(self, str(item)), is_train)
+            if is_train:
+                getattr(self, str(item)).train()
+            else:
+                getattr(self, str(item)).eval()
+    
 
     def data_parallel(self, model):
         '''
@@ -243,53 +408,13 @@ class BaseInference(AbstractInference):
         gpus = [int(i) for i in self.config.SYSTEM.gpus]
         model_parallel = torch.nn.DataParallel(model, device_ids=gpus).cuda()
         return model_parallel
+
+
+    @abc.abstractmethod
+    def custom_setup(self):
+        pass
+
+    @abc.abstractmethod
+    def inference(self, current_step):
+        pass
     
-    def run(self, **kwargs):
-        if self.mode == 'dataset':
-            metric = self.evaluate()
-        elif self.mode == 'image':
-            self.get_result(kwargs)
-        else:
-            raise Exception('Wrong inference mode')
-    
-    def evaluate(self):
-        '''
-        Evaluate the results of the model
-        !!! Will change, e.g. accuracy, mAP.....
-        !!! Or can call other methods written by the official
-        '''
-        self.model.eval()
-        correct_1 = 0.0
-        correct_5 = 0.0
-        for _ ,(data, target) in enumerate(self.inference_dataloader):
-            data = Variable(data).cuda()
-            target = Variable(target).cuda()
-            score = self.model(data)
-            _, pred = score.topk(5,1,largest=True, sorted=True)
-
-            target = target.view(target.size(0), -1).expand_as(pred)
-            correct = pred.eq(target).float()
-
-            # compute top5
-            correct_5 += (correct[:, :5].sum()) / len(self.inference_dataloader.dataset)
-
-            # compute top1
-            correct_1 += (correct[:, :1].sum()) / len(self.inference_dataloader.dataset)
-        
-        self.logger.info('Inference ==> the top1 is {}, the top5 is {}'.format(correct_1, correct_5))
-
-        return correct_1
-    
-    def get_result(self, kwargs):
-        '''
-        Get the results for one image
-        '''
-        self.model.eval()
-        image = Image.open(kwargs['image'])
-        image = tf.resize(kwargs['size'])
-        image = tf.to_tensor(image)
-        
-        
-
-
-

@@ -1,14 +1,10 @@
 SYSTEM:
-  multigpus: false
-  num_gpus: 1
   gpus: [0]
   cudnn:
     benchmark: false
     deterministic: true
     enable: true
-  distributed:
-    use: false
-  
+
 DATASET:
   name: 'Ped2'
   seed: 2020
@@ -89,14 +85,15 @@ ARGUMENT:
 MODEL:
   name: 'anopred'
   type: 'ame2e'
-  parts: ['meta_AnoPredGeneratorUnet', 'G', 'meta_PixelDiscriminator', 'D', 'auxiliary_LiteFlowNet', 'F']
+  parts: ['meta_G', 'AnoPredGeneratorUnet', 'meta_D', 'PixelDiscriminator', 'auxiliary_F', 'LiteFlowNet']
   hooks:
     train: ['AnoPredEvaluateHook', 'VisScoreHook']
     val: ['AnoPredEvaluateHook']
   discriminator_channels: [128,256,512,512]
-  optical_flow:
-    name: 'liteflownet'
-    model_path: './pretrained_model/liteflownet/network-sintel.pytorch'
+  auxiliary:
+    optical_flow:
+      name: 'liteflownet'
+      model_path: './pretrained_model/liteflownet/network-sintel.pytorch'
 
 TRAIN:
   engine_name: 'ANOPREDTrainer'
@@ -108,8 +105,7 @@ TRAIN:
   mini_eval_step: 300
   eval_step: 320
   save_step: 320
-  epochs: 1
-  losses: ['loss_GANLoss_cuda', 0.25, 'GANLoss', [['gan_mode', 'lsgan']], 'loss_GradientLoss_cuda', 1.0, 'GradientLoss', [], 
+  losses: ['loss_GANLoss_cuda', 0.25, 'GANLoss', [['gan_mode', 'lsgan'], ['target_real_label', 1.0], ['target_fake_label', 0.0]], 'loss_GradientLoss_cuda', 1.0, 'GradientLoss', [], 
            'loss_IntentsityLoss_cuda', 1.0, 'IntensityLoss', [], 'loss_OpticalflowLoss_cuda', 2.0, 'L1Loss', []]
   mode: 'adversarial'
   adversarial:
@@ -129,13 +125,7 @@ TRAIN:
       warmup_factor: 0.01
       warmup_iters: 320
       warmup_method: 'linear' # 'linear' | 'constant'
-  model_output: './output/models'
-  checkpoint_output: './output/checkpoint'
 
 VAL:
   engine_name: 'ANOPREDInference'
-  name: ''
-  path: ''
-  batch_size: 2
-  result_output: './output/results'
 

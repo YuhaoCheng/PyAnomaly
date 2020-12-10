@@ -1,4 +1,4 @@
-from fvcore.common import flops_count
+from fvcore.nn.flop_count import flop_count
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
