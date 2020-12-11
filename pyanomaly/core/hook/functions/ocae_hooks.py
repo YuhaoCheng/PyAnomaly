@@ -39,8 +39,8 @@ class ClusterHook(HookBase):
         # import ipdb; ipdb.set_trace()
         if current_step % self.trainer.config.TRAIN.eval_step == 0 and current_step!= 0:
             self.trainer.logger.info('Start clsuter the feature')
-            frame_num = self.trainer.config.DATASET.train_clip_length
-            frame_step = self.trainer.config.DATASET.train_clip_step
+            frame_num = self.trainer.config.DATASET.train.clip_length
+            frame_step = self.trainer.config.DATASET.train.clip_step
             feature_record = []
             for video_name in self.trainer.cluster_dataset_keys:
                 dataset = self.trainer.cluster_dataset_dict[video_name]
