@@ -5,8 +5,9 @@
 from fvcore.common.config import CfgNode as CN
 
 __all__ = ['update_config'] 
-
-
+"""
+This the default configuration of the whole prohect.
+"""
 config = CN()
 config.DESCROPTION = 'This the description of the configuration defaults. If you have some information related to the configuration file, please fullfil this item'
 # configure the system related matters, such as gpus, cudnn and so on
@@ -283,17 +284,17 @@ config.VAL.result_output = './output/results'
 
 
 def _get_cfg_defaults():
-    '''
-    Get the config template
+    """
+    Get the config template.
     NOT USE IN OTHER FILES!!
-    '''
+    """
     return config.clone()
 
 
 def update_config(yaml_path, opts):
-    '''
-    Make the template update based on the yaml file
-    '''
+    """
+    Make the template update based on the yaml file.
+    """
     print('=>Merge the config with {}\t'.format(yaml_path))
     cfg = _get_cfg_defaults()
     cfg.merge_from_file(yaml_path)
