@@ -15,9 +15,9 @@ from scipy.ndimage import gaussian_filter1d
 
 from ..abstract import EvaluateHook
 from pyanomaly.datatools.evaluate.utils import reconstruction_loss
-from pyanomaly.datatools.abstract.readers import GroundTruthLoader
-# from lib.datatools.evaluate import eval_api
-from pyanomaly.core.utils import tsne_vis, tensorboard_vis_images, save_score_results
+# from pyanomaly.datatools.abstract.readers import GroundTruthLoader
+# from pyanomaly.core.utils import tsne_vis, tensorboard_vis_images, save_score_results
+from pyanomaly.core.utils import tensorboard_vis_images, save_score_results
 
 from ..hook_registry import HOOK_REGISTRY
 
@@ -44,14 +44,14 @@ class STAEEvaluateHook(EvaluateHook):
         score_records=[]
         # total = 0
         num_videos = 0
-        random_video_sn = torch.randint(0, len(self.trainer.test_dataset_keys), (1,))
+        random_video_sn = torch.randint(0, len(self.trainer.val_dataset_keys), (1,))
         import ipdb; ipdb.set_trace()
         # calc the score for the test dataset
-        for sn, video_name in enumerate(self.trainer.test_dataset_keys):
+        for sn, video_name in enumerate(self.trainer.val_dataset_keys):
             num_videos += 1
             # need to improve
             # dataset = self.trainer.test_dataset_dict[video_name]
-            dataloader = self.trainer.test_dataloaders_dict[video_name]
+            dataloader = self.trainer.val_dataloaders_dict[video_name]
             # len_dataset = dataset.pics_len
             len_dataset = dataloader.dataset.pics_len
             test_iters = len_dataset - frame_num + 1
@@ -62,7 +62,7 @@ class STAEEvaluateHook(EvaluateHook):
             
             vis_range = range(int(len_dataset*0.5), int(len_dataset*0.5 + 5))
 
-            psnrs = np.empty(shape=(len_dataset,),dtype=np.float32)
+            # psnrs = np.empty(shape=(len_dataset,),dtype=np.float32)
             scores = np.empty(shape=(len_dataset,),dtype=np.float32)
             # for clip_sn, (test_input, anno, meta) in enumerate(data_loader):
             for clip_sn, (test_input, anno, meta) in enumerate(dataloader):

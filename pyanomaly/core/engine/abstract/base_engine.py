@@ -206,7 +206,7 @@ class BaseTrainer(AbstractTrainer):
         Returns:
             None
         """
-        for item in self.trainer.model.keys():
+        for item in self.model.keys():
             self.set_requires_grad(getattr(self, str(item)), is_train)
             if is_train:
                 getattr(self, str(item)).train()

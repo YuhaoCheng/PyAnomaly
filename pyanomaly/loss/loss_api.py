@@ -29,7 +29,8 @@ class LossAPI(object):
                 if len(loss_cfg) != 0:
                     loss_dict[loss_name] = LOSS_REGISTRY.get(couple[2])(loss_cfg)
                 else:
-                    loss_dict[loss_name] = LOSS_REGISTRY.get(couple[2])([])
+                    print(loss_name)
+                    loss_dict[loss_name] = LOSS_REGISTRY.get(couple[2])()
             else:
                 raise Exception(f'The name of {register_name} is not supported')
             

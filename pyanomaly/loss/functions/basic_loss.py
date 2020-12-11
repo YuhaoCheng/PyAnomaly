@@ -64,7 +64,7 @@ def conv2d_samepad(in_dim, in_ch, out_ch, ks, stride, dilation=1, bias=True):
 
 @LOSS_REGISTRY.register()
 class L2Loss(nn.Module):
-    def __init__(self, loss_cfg, eps=1e-8):
+    def __init__(self, eps=1e-8):
         super(L2Loss, self).__init__()
         self.eps = eps
     
