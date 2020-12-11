@@ -186,9 +186,13 @@ class BaseTrainer(AbstractTrainer):
         self.logger.info('Finish Setting freeze layers')
     
     def data_parallel(self, model):
-        '''
-        Data parallel the model
-        '''
+        """
+        Data parallel the model by using torch.nn.DataParallel
+        Args:
+            model: torch.nn.Module
+        Returns:
+            model_parallel
+        """
         self.logger.info('<!_!> ==> Data Parallel')
         gpus = [int(i) for i in self.config.SYSTEM.gpus]
         model_parallel = torch.nn.DataParallel(model.cuda(), device_ids=gpus)
