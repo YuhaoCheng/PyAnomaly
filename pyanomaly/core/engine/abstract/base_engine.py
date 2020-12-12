@@ -47,23 +47,15 @@ class BaseTrainer(AbstractTrainer):
         
         if kwargs['pretrain']:
             self.load_pretrain()
-        # =============================the old version to get iter of dataloader========================
-        # self.train_dataloader = defaults[1]
-        # self._train_loader_iter = iter(self.train_dataloader)
-
-        # self.val_dataloader = defaults[2]
-        # self._val_loader_iter = iter(self.val_dataloader)
-        # ==============================================================================================
+        
         dataloaders_dict = defaults[1]
         self._dataloaders_dict = dataloaders_dict
         self.train_dataloaders_dict = dataloaders_dict['train']
         self._train_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['all'])
-        # self.val_dataloaders_dict = dataloaders_dict['test']
         # temporal, but it is wrong !!!
-        # self._val_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['video_datasets']['all'])
-        # self._val_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['all'])
         self.val_dataloaders_dict = dataloaders_dict['val']
         self.val_dataset_keys = list(dataloaders_dict['val']['general_dataset_dict'].keys())
+
         # get the optimizer
         self.optimizer = defaults[2]
 
@@ -144,6 +136,16 @@ class BaseTrainer(AbstractTrainer):
         self.logger.info('Finish load!')
 
     def load_pretrain(self):
+        """Load the pretrain model.
+        Using this method to load the pretrain model or checkpoint. 
+        This method only loads the model file, not loads optimizer and etc.
+
+        Args:
+            None
+        Returns:
+            None
+        
+        """
         model_path = self.config.MODEL.pretrain_model
 
         if  model_path is '':
@@ -163,6 +165,9 @@ class BaseTrainer(AbstractTrainer):
                 self._load_file(self.model.keys(), pretrain_model)
     
     def resume(self):
+        """Load files used for resume training.
+        The method loads the model file and the optimzier file.
+        """
         self.logger.info('=> Resume the previous training')
         checkpoint_path = self.config.TRAIN.resume.checkpoint_path
         self.logger.info(f'=> Load the checkpoint from {checkpoint_path}')
@@ -173,6 +178,10 @@ class BaseTrainer(AbstractTrainer):
         self._load_file(self.optimizer.keys(), checkpoint['optimizer_state_dict'])
     
     def fine_tune(self):
+        """Set the fine-tuning layers
+        This method will set the not fine-tuning layers freezon and the fine-tuning layers activate.
+        
+        """
         # need to improve
         layer_list = self.config.TRAIN.finetune.layer_list
         self.logger.info('=> Freeze layers except start with:{}'.format(layer_list))
