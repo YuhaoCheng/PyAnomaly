@@ -25,22 +25,22 @@ __all__ = ['VisScoreHook', 'TSNEHook']
 @HOOK_REGISTRY.register()
 class VisScoreHook(HookBase):
     def after_step(self, current_step):
-        writer = self.trainer.kwargs['writer_dict']['writer']
-        global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
+        writer = self.engine.kwargs['writer_dict']['writer']
+        global_steps = self.engine.kwargs['writer_dict']['global_steps_{}'.format(self.engine.kwargs['model_type'])]
 
-        if not os.path.exists(self.trainer.config.LOG.vis_dir):
-            os.mkdir(self.trainer.config.LOG.vis_dir)
+        if not os.path.exists(self.engine.config.LOG.vis_dir):
+            os.mkdir(self.engine.config.LOG.vis_dir)
         
-        if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
-            with open(self.trainer.pkl_path, 'rb') as reader:
+        if current_step % self.engine.steps.param['eval'] == 0 and current_step != 0:
+            with open(self.engine.pkl_path, 'rb') as reader:
                 results = pickle.load(reader)
-            print(f'Vis The results in {self.trainer.pkl_path}')
-            sigma = self.trainer.config.DATASET.smooth.guassian_sigma[0]
+            print(f'Vis The results in {self.engine.pkl_path}')
+            sigma = self.engine.config.DATASET.smooth.guassian_sigma[0]
             psnrs = results['psnr']
             smooth_psnrs = results[f'psnr_smooth_{sigma}']
             scores = results['score']
             smooth_scores = results[f'score_smooth_{sigma}']
-            gt_loader = GroundTruthLoader(self.trainer.config)
+            gt_loader = GroundTruthLoader(self.engine.config)
             gt = gt_loader()
             if psnrs == []:
                 for i in range(len(scores)):
@@ -78,23 +78,23 @@ class VisScoreHook(HookBase):
                 ax5 = fig.add_subplot(2,3,5)
                 ax5.plot([i for i in range(len(smooth_psnrs[video_id]))], smooth_psnrs[video_id])
                 ax5.set_ylabel(f'Guassian Smooth PSNR{sigma}')
-                writer.add_figure(f'verbose_{self.trainer.verbose}_{self.trainer.config_name}_{self.trainer.kwargs["time_stamp"]}_vis{video_id}', fig, global_steps)
+                writer.add_figure(f'verbose_{self.engine.verbose}_{self.engine.config_name}_{self.engine.kwargs["time_stamp"]}_vis{video_id}', fig, global_steps)
             
         
-            self.trainer.logger.info(f'^^^^Finish vis @{current_step}')
+            self.engine.logger.info(f'^^^^Finish vis @{current_step}')
 
 @HOOK_REGISTRY.register()
 class TSNEHook(HookBase):
     def after_step(self, current_step):
-        writer = self.trainer.kwargs['writer_dict']['writer']
+        writer = self.engine.kwargs['writer_dict']['writer']
         global_steps = self.tainer.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
 
-        if not os.path.exists(self.trainer.config.LOG.vis_dir):
-            os.mkdir(self.trainer.config.LOG.vis_dir)
+        if not os.path.exists(self.engine.config.LOG.vis_dir):
+            os.mkdir(self.engine.config.LOG.vis_dir)
         
-        if current_step % self.trainer.config.TRAIN.eval_step == 0:
-            vis_path = os.path.join(self.trainer.config.LOG.vis_dir, f'{self.trainer.config.DATASET.name}_tsne_model:{self.trainer.config.MODEL.name}_step:{current_step}.jpg')
-            feature, feature_labels = self.trainer.analyze_feature
+        if current_step % self.engine.config.TRAIN.eval_step == 0:
+            vis_path = os.path.join(self.engine.config.LOG.vis_dir, f'{self.engine.config.DATASET.name}_tsne_model:{self.engine.config.MODEL.name}_step:{current_step}.jpg')
+            feature, feature_labels = self.engine.analyze_feature
             tsne_vis(feature, feature_labels, vis_path)
             image = cv2.imread(vis_path)
             image = image[:,:,[2,1,0]]

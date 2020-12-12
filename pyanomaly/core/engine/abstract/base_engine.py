@@ -180,7 +180,7 @@ class BaseTrainer(AbstractTrainer):
     def fine_tune(self):
         """Set the fine-tuning layers
         This method will set the not fine-tuning layers freezon and the fine-tuning layers activate.
-        
+
         """
         # need to improve
         layer_list = self.config.TRAIN.finetune.layer_list
@@ -367,7 +367,6 @@ class BaseInference(AbstractInference):
 
         self.custom_setup()
 
-    
     
     def _load_file(self, model_keys, model_file):
         """Method to load the data into pytorch structure.

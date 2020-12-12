@@ -27,23 +27,24 @@ class AMCEvaluateHook(EvaluateHook):
         !!! Will change, e.g. accuracy, mAP.....
         !!! Or can call other methods written by the official
         '''
-        self.trainer.set_requires_grad(self.trainer.F, False)
-        self.trainer.set_requires_grad(self.trainer.G, False)
-        self.trainer.set_requires_grad(self.trainer.D, False)
-        self.trainer.D.eval()
-        self.trainer.G.eval()
-        self.trainer.F.eval()
-        tb_writer = self.trainer.kwargs['writer_dict']['writer']
-        global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
-        frame_num = self.trainer.config.DATASET.test_clip_length
+        # self.trainer.set_requires_grad(self.trainer.F, False)
+        # self.trainer.set_requires_grad(self.trainer.G, False)
+        # self.trainer.set_requires_grad(self.trainer.D, False)
+        # self.trainer.D.eval()
+        # self.trainer.G.eval()
+        # self.trainer.F.eval()
+        self.engine.set_all(False)
+        tb_writer = self.engine.kwargs['writer_dict']['writer']
+        global_steps = self.engine.kwargs['writer_dict']['global_steps_{}'.format(self.engine.kwargs['model_type'])]
+        frame_num = self.engine.config.DATASET.test_clip_length
         psnr_records=[]
         score_records=[]
         # score_records_w=[]
         w_dict = OrderedDict()
         # total = 0
         # calc the scores for the training set
-        for video_name in self.trainer.test_dataset_keys_w:
-            dataset = self.trainer.test_dataset_dict_w[video_name]
+        for video_name in self.engine.test_dataset_keys_w:
+            dataset = self.engine.test_dataset_dict_w[video_name]
             len_dataset = dataset.pics_len
             test_iters = len_dataset - frame_num + 1 
             test_counter = 0
@@ -54,10 +55,10 @@ class AMCEvaluateHook(EvaluateHook):
             for data, anno, meta in data_loader:
                 input_data_test = data[:, :, 0, :, :].cuda()
                 target_test = data[:, :, 1, :, :].cuda()
-                output_flow_G, output_frame_G = self.trainer.G(input_data_test)
+                output_flow_G, output_frame_G = self.engine.G(input_data_test)
                 gtFlowEstim = torch.cat([input_data_test, target_test], 1)
-                gtFlow_vis, gtFlow = flow_batch_estimate(self.trainer.F, gtFlowEstim, self.trainer.normalize.param['val'], 
-                                                         output_format=self.trainer.config.DATASET.optical_format, optical_size=self.trainer.config.DATASET.optical_size)
+                gtFlow_vis, gtFlow = flow_batch_estimate(self.engine.F, gtFlowEstim, self.engine.normalize.param['val'], 
+                                                         output_format=self.engine.config.DATASET.optical_format, optical_size=self.engine.config.DATASET.optical_size)
                 diff_appe, diff_flow = simple_diff(target_test, output_frame_G, gtFlow, output_flow_G)
                 patch_score_appe, patch_score_flow, _, _ = find_max_patch(diff_appe, diff_flow)
                 scores[test_counter+frame_num-1] = [patch_score_appe, patch_score_flow]
@@ -75,12 +76,12 @@ class AMCEvaluateHook(EvaluateHook):
         tb_writer.add_text('weight of train set', f'w_f:{wf:.3f}, w_i:{wi:.3f}', global_steps)
         print(f'wf:{wf}, wi:{wi}')
         num_videos = 0
-        random_video_sn = torch.randint(0, len(self.trainer.test_dataset_keys), (1,))
+        random_video_sn = torch.randint(0, len(self.engine.test_dataset_keys), (1,))
         # calc the score for the test dataset
-        for sn, video_name in enumerate(self.trainer.test_dataset_keys):
+        for sn, video_name in enumerate(self.engine.test_dataset_keys):
             num_videos += 1
             # need to improve
-            dataset = self.trainer.test_dataset_dict[video_name]
+            dataset = self.engine.test_dataset_dict[video_name]
             len_dataset = dataset.pics_len
             test_iters = len_dataset - frame_num + 1
             test_counter = 0
@@ -93,10 +94,10 @@ class AMCEvaluateHook(EvaluateHook):
                 test_input = data[:, :, 0, :, :].cuda()
                 test_target = data[:, :, 1, :, :].cuda()
 
-                g_output_flow, g_output_frame = self.trainer.G(test_input)
+                g_output_flow, g_output_frame = self.engine.G(test_input)
                 gt_flow_esti_tensor = torch.cat([test_input, test_target], 1)
-                flow_gt_vis, flow_gt = flow_batch_estimate(self.trainer.F, gt_flow_esti_tensor, self.trainer.param['val'], 
-                                                          output_format=self.trainer.config.DATASET.optical_format, optical_size=self.trainer.config.DATASET.optical_size)
+                flow_gt_vis, flow_gt = flow_batch_estimate(self.engine.F, gt_flow_esti_tensor, self.engine.param['val'], 
+                                                          output_format=self.engine.config.DATASET.optical_format, optical_size=self.engine.config.DATASET.optical_size)
                 test_psnr = psnr_error(g_output_frame, test_target)
                 score, _, _ = amc_score(test_target, g_output_frame, flow_gt, g_output_flow, wf, wi)
                 test_psnr = test_psnr.tolist()
@@ -106,15 +107,15 @@ class AMCEvaluateHook(EvaluateHook):
                 test_counter += 1
 
                 if sn == random_video_sn and (frame_sn in vis_range):
-                    temp = vis_optical_flow(g_output_flow.detach(), output_format=self.trainer.config.DATASET.optical_format, output_size=(g_output_flow.shape[-2], g_output_flow.shape[-1]), 
-                                            normalize=self.trainer.normalize.param['val'])
+                    temp = vis_optical_flow(g_output_flow.detach(), output_format=self.engine.config.DATASET.optical_format, output_size=(g_output_flow.shape[-2], g_output_flow.shape[-1]), 
+                                            normalize=self.engine.normalize.param['val'])
                     vis_objects = OrderedDict({
                         'amc_eval_frame': test_target.detach(),
                         'amc_eval_frame_hat': g_output_frame.detach(),
                         'amc_eval_flow': flow_gt_vis.detach(),
                         'amc_eval_flow_hat': temp 
                     })
-                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize.param['val'])
+                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.engine.normalize.param['val'])
                 
                 if test_counter >= test_iters:
                     psnrs[:frame_num-1]=psnrs[frame_num-1]
@@ -128,9 +129,9 @@ class AMCEvaluateHook(EvaluateHook):
                     print(f'finish test video set {video_name}')
                     break
         
-        self.trainer.pkl_path = save_score_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records, psnr=psnr_records)
-        results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
-        self.trainer.logger.info(results)
+        self.engine.pkl_path = save_score_results(self.engine.config, self.engine.logger, verbose=self.engine.verbose, config_name=self.engine.config_name, current_step=current_step, time_stamp=self.engine.kwargs["time_stamp"],score=score_records, psnr=psnr_records)
+        results = self.engine.evaluate_function(self.engine.pkl_path, self.engine.logger, self.engine.config, self.engine.config.DATASET.score_type)
+        self.engine.logger.info(results)
         tb_writer.add_text('AMC: AUC of ROC curve', f'auc is {results.auc}',global_steps)
         return results.auc
 

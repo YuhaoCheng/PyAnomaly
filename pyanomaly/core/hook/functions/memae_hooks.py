@@ -30,22 +30,22 @@ class MemAEEvaluateHook(EvaluateHook):
         !!! Will change, e.g. accuracy, mAP.....
         !!! Or can call other methods written by the official
         '''
-        self.trainer.set_requires_grad(self.trainer.MemAE, False)
-        self.trainer.MemAE.eval()
-        tb_writer = self.trainer.kwargs['writer_dict']['writer']
-        global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
-        frame_num = self.trainer.config.DATASET.val.clip_length
-        clip_step = self.trainer.config.DATASET.val.clip_step
+        self.engine.set_requires_grad(self.engine.MemAE, False)
+        self.engine.MemAE.eval()
+        tb_writer = self.engine.kwargs['writer_dict']['writer']
+        global_steps = self.engine.kwargs['writer_dict']['global_steps_{}'.format(self.engine.kwargs['model_type'])]
+        frame_num = self.engine.config.DATASET.val.clip_length
+        clip_step = self.engine.config.DATASET.val.clip_step
         psnr_records=[]
         score_records=[]
         # total = 0
         num_videos = 0
-        random_video_sn = torch.randint(0, len(self.trainer.test_dataset_keys), (1,))
+        random_video_sn = torch.randint(0, len(self.engine.test_dataset_keys), (1,))
         # calc the score for the test dataset
-        for sn, video_name in enumerate(self.trainer.test_dataset_keys):
+        for sn, video_name in enumerate(self.engine.test_dataset_keys):
             num_videos += 1
             # need to improve
-            dataset = self.trainer.test_dataset_dict[video_name]
+            dataset = self.engine.test_dataset_dict[video_name]
             len_dataset = dataset.pics_len
             test_iters = len_dataset - frame_num + 1
             # test_iters = len_dataset // clip_step
@@ -59,7 +59,7 @@ class MemAEEvaluateHook(EvaluateHook):
             for clip_sn, (test_input, anno, meta) in enumerate(data_loader):
                 test_target = test_input.cuda()
                 time_len = test_input.shape[2]
-                output, _ = self.trainer.MemAE(test_target)
+                output, _ = self.engine.MemAE(test_target)
                 clip_score = reconstruction_loss(output, test_target)
                 
                 # scores[test_counter*time_len:(test_counter + 1)*time_len] = clip_score.squeeze(0)
@@ -76,7 +76,7 @@ class MemAEEvaluateHook(EvaluateHook):
                         'memae_eval_clip': test_target.detach(),
                         'memae_eval_clip_hat': output.detach()
                     })
-                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize.param['val'])
+                    tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.engine.normalize.param['val'])
                 
                 if test_counter >= test_iters:
                     # import ipdb; ipdb.set_trace()
@@ -90,8 +90,8 @@ class MemAEEvaluateHook(EvaluateHook):
                     print(f'finish test video set {video_name}')
                     break
         
-        self.trainer.pkl_path = save_score_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records)
-        results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
-        self.trainer.logger.info(results)
+        self.engine.pkl_path = save_score_results(self.engine.config, self.engine.logger, verbose=self.engine.verbose, config_name=self.engine.config_name, current_step=current_step, time_stamp=self.engine.kwargs["time_stamp"],score=score_records)
+        results = self.engine.evaluate_function(self.engine.pkl_path, self.engine.logger, self.engine.config, self.engine.config.DATASET.score_type)
+        self.engine.logger.info(results)
         tb_writer.add_text('amc: AUC of ROC curve', f'auc is {results.auc}',global_steps)
         return results.auc
