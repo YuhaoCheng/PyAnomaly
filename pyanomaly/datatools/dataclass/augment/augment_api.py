@@ -15,8 +15,8 @@ class AugmentAPI(object):
         self.normalize = True
         self._use_default_train = False
         self._use_default_val = False
-        self.train_aug_cfg = self.cfg.get('ARGUMENT')['train']
-        self.val_aug_cfg = self.cfg.get('ARGUMENT')['val']
+        self.train_aug_cfg = self.cfg.get('AUGMENT')['train']
+        self.val_aug_cfg = self.cfg.get('AUGMENT')['val']
 
     def build(self):
         aug_dict = OrderedDict()

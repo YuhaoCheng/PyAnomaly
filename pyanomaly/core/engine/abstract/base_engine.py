@@ -73,8 +73,8 @@ class BaseTrainer(AbstractTrainer):
         self.result_path = ''
         self.kwargs = kwargs
         self.normalize = ParamSet(name='normalize', 
-                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
-                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
+                                  train={'use':self.config.AUGMENT.train.normal.use, 'mean':self.config.AUGMENT.train.normal.mean, 'std':self.config.AUGMENT.train.normal.std}, 
+                                  val={'use':self.config.AUGMENT.val.normal.use, 'mean':self.config.AUGMENT.val.normal.mean, 'std':self.config.AUGMENT.val.normal.std})
 
         self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
                               max=self.config.TRAIN.max_steps, dynamic_steps=self.config.TRAIN.dynamic_steps)
