@@ -45,7 +45,7 @@ class STAEEvaluateHook(EvaluateHook):
         # total = 0
         num_videos = 0
         random_video_sn = torch.randint(0, len(self.engine.val_dataset_keys), (1,))
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         # calc the score for the test dataset
         for sn, video_name in enumerate(self.engine.val_dataset_keys):
             num_videos += 1
