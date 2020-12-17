@@ -105,9 +105,13 @@ class STAEEvaluateHook(EvaluateHook):
         # self.engine.pkl_path = save_score_results(self.engine.config, self.engine.logger, verbose=self.engine.verbose, config_name=self.engine.config_name, current_step=current_step, time_stamp=self.engine.kwargs["time_stamp"], score=score_records)
         self.engine.pkl_path = save_score_results(score_records, self.engine.config, self.engine.logger, verbose=self.engine.verbose, config_name=self.engine.config_name, current_step=current_step, time_stamp=self.engine.kwargs["time_stamp"])
         # results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
-        for result_path in self.engine.pkl_path:
-            results = self.engine.evaluate_function.compute({'val':{'default':result_path}})
+        
+        # for result_path in self.engine.pkl_path:
+        #     results = self.engine.evaluate_function.compute({'val':{'default':result_path}})
+        results = self.engine.evaluate_function.compute({'val': self.engine.pkl_path})
+        
         self.engine.logger.info(results)
         tb_writer.add_text('amc: AUC of ROC curve', f'auc is {results.avg_value}',global_steps)
+
         return results.avg_value
 

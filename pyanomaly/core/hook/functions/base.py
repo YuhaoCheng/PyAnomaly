@@ -6,21 +6,23 @@ import os
 import pickle
 import cv2
 import numpy as np
-import torch
-from torch.utils.data import DataLoader
-from collections import OrderedDict
+# import torch
+# from torch.utils.data import DataLoader
+# from collections import OrderedDict
 import matplotlib.pyplot as plt
-from tsnecuda import TSNE
-from scipy.ndimage import gaussian_filter1d
+# from tsnecuda import TSNE
+# from scipy.ndimage import gaussian_filter1d
+import logging
+logger = logging.getLogger(__name__)
 
-from pyanomaly.datatools.evaluate.utils import psnr_error
+# from pyanomaly.datatools.evaluate.utils import psnr_error
 from pyanomaly.datatools.abstract.readers import GroundTruthLoader
 from pyanomaly.core.utils import tsne_vis
 
 from ..abstract import HookBase
 from ..hook_registry import HOOK_REGISTRY
 
-__all__ = ['VisScoreHook', 'TSNEHook']
+__all__ = ['VisScoreHook']
 
 @HOOK_REGISTRY.register()
 class VisScoreHook(HookBase):
@@ -32,10 +34,11 @@ class VisScoreHook(HookBase):
             os.mkdir(self.engine.config.LOG.vis_dir)
         
         if current_step % self.engine.steps.param['eval'] == 0 and current_step != 0:
+            import ipdb; ipdb.set_trace()
             with open(self.engine.pkl_path, 'rb') as reader:
                 results = pickle.load(reader)
-            print(f'Vis The results in {self.engine.pkl_path}')
-            sigma = self.engine.config.DATASET.smooth.guassian_sigma[0]
+            logger.info(f'Vis The results in {self.engine.pkl_path}')
+            sigma = self.engine.config.DATASET.smooth.guassian_sigma[0] # need to change
             psnrs = results['psnr']
             smooth_psnrs = results[f'psnr_smooth_{sigma}']
             scores = results['score']
@@ -83,29 +86,23 @@ class VisScoreHook(HookBase):
         
             self.engine.logger.info(f'^^^^Finish vis @{current_step}')
 
-@HOOK_REGISTRY.register()
-class TSNEHook(HookBase):
-    def after_step(self, current_step):
-        writer = self.engine.kwargs['writer_dict']['writer']
-        global_steps = self.tainer.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
 
-        if not os.path.exists(self.engine.config.LOG.vis_dir):
-            os.mkdir(self.engine.config.LOG.vis_dir)
+# @HOOK_REGISTRY.register()
+# class TSNEHook(HookBase):
+#     def after_step(self, current_step):
+#         writer = self.engine.kwargs['writer_dict']['writer']
+#         global_steps = self.tainer.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])]
+
+#         if not os.path.exists(self.engine.config.LOG.vis_dir):
+#             os.mkdir(self.engine.config.LOG.vis_dir)
         
-        if current_step % self.engine.config.TRAIN.eval_step == 0:
-            vis_path = os.path.join(self.engine.config.LOG.vis_dir, f'{self.engine.config.DATASET.name}_tsne_model:{self.engine.config.MODEL.name}_step:{current_step}.jpg')
-            feature, feature_labels = self.engine.analyze_feature
-            tsne_vis(feature, feature_labels, vis_path)
-            image = cv2.imread(vis_path)
-            image = image[:,:,[2,1,0]]
-            writer.add_image(str(vis_path), image, global_step=global_steps)
+#         if current_step % self.engine.config.TRAIN.eval_step == 0:
+#             vis_path = os.path.join(self.engine.config.LOG.vis_dir, f'{self.engine.config.DATASET.name}_tsne_model:{self.engine.config.MODEL.name}_step:{current_step}.jpg')
+#             feature, feature_labels = self.engine.analyze_feature
+#             tsne_vis(feature, feature_labels, vis_path)
+#             image = cv2.imread(vis_path)
+#             image = image[:,:,[2,1,0]]
+#             writer.add_image(str(vis_path), image, global_step=global_steps)
 
-
-# def get_base_hooks(name):
-#     if name in HOOKS:
-#         t = eval(name)()
-#     else:
-#         raise Exception('The hook is not in amc_hooks')
-#     return t
 
         

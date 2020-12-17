@@ -21,10 +21,23 @@ class EngineAverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count if self.count != 0 else 0
 
-def engine_save_model(cfg, cfg_name, model, logger, time_stamp,metric,verbose='None',best=False):
-    '''
-    Save the final model of training 
-    '''
+def engine_save_model(cfg, cfg_name, model, logger, time_stamp, metric, verbose='None', best=False):
+    """Save Models.
+
+    The method is used to save the model into files.
+
+    Args:
+        cfg(fvcore.common.config.CfgNode): The config object.
+        cfg_name(str): The name of the configuration name.
+        model(torch.nn.Module or OrderedDict): The torch.nn.Module or the OrderedDict.
+        time_stamp(str): The time stamp when the training process strats.
+        metric(float): The performance of this model.
+        verbose(str): Comments.
+        best(bool): Indicate whether the model is best at present.
+    
+    Returns:
+        output(str): The string of the location(path + name) where stroing the model
+    """
     logger.info('=>Save the final model in:{}'.format(cfg.TRAIN.model_output))
     model_name = f'cfg@{cfg_name}#{time_stamp}#{metric:.3f}^{verbose}.pth'
     model_name_best = f'best_{cfg.DATASET.name}_{cfg.MODEL.name}#{metric:.3f}_cfg@{cfg_name}.pth'
@@ -33,7 +46,7 @@ def engine_save_model(cfg, cfg_name, model, logger, time_stamp,metric,verbose='N
     
     output = output / model_name
     output_best = Path(cfg.TRAIN.model_output) / model_name_best
-    if type(model) == type(dict()):
+    if type(model) == type(dict()) or type(model) == type(OrderedDict()):
         temp = {k:v.state_dict() for k, v in model.items()}
         torch.save(temp, output)
         if best:
@@ -50,11 +63,15 @@ def engine_save_model(cfg, cfg_name, model, logger, time_stamp,metric,verbose='N
 
 
 def engine_save_checkpoint(cfg, cfg_name, model, epoch, loss, optimizer, logger, time_stamp, metric, flag='inter', verbose='None', best=False):
-    '''
-    Save the checkpoint of training, in order to resume the training process
+    """Save the checkpoint.
+    The method is used to save the checkpoint of training including the models and optimizer, in order to resume the training process\
+    
     Args:
-        flag: if the cheeckpoint is final, the value of it is 'final'. else, the value of it is 'inter'
-    '''
+        cfg(fvcore.common.config.CfgNode): The config object.
+
+        flag(str): if the cheeckpoint is final, the value of it is 'final'. else, the value of it is 'inter'
+
+    """
     output = Path(cfg.TRAIN.checkpoint_output) / cfg.DATASET.name / cfg.MODEL.name /('cfg@' + cfg_name) / time_stamp
     output.mkdir(parents=True, exist_ok=True)
     logger.info(f'=>Save the checkpoint in:{output}')
@@ -63,12 +80,15 @@ def engine_save_checkpoint(cfg, cfg_name, model, epoch, loss, optimizer, logger,
     checkpoint = OrderedDict() # make the type of the checkpoint is OrderedDict 
     checkpoint['epoch'] = epoch
     checkpoint['loss'] = loss
-    if type(model) == type(dict()):
+    # Models
+    if type(model) == type(dict()) or type(model) == type(OrderedDict()):
         temp = {k:v.state_dict() for k, v in model.items()}
         checkpoint['model_state_dict'] = temp
     else:
         checkpoint['model_state_dict'] = model.state_dict()
-    if type(optimizer) == type(dict()):
+    
+    # Optimizer
+    if type(optimizer) == type(dict()) or type(optimizer) == type(OrderedDict()):
         temp = {k:v.state_dict() for k, v in optimizer.items()}
         checkpoint['optimizer_state_dict'] = temp
     else:

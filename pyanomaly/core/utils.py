@@ -2,24 +2,25 @@
 @author:  Yuhao Cheng
 @contact: yuhao.cheng[at]outlook.com
 """
-'''
+"""
 Some useful tools in training process
-'''
+"""
 import torch
-import cv2
+# import cv2
 import os
-import numpy as np
-import math
+# import numpy as np
+# import math
 import pickle
 from scipy.ndimage import gaussian_filter1d
 import torch.nn.functional as F
-import torchvision.transforms as T
+# import torchvision.transforms as T
 import torchvision.transforms.functional as tf
 from tsnecuda import TSNE
 from pyanomaly.utils import flow2img
-from skimage.measure import compare_ssim as ssim
+# from skimage.measure import compare_ssim as ssim
 from collections import OrderedDict
 import matplotlib.pyplot as plt
+
 class AverageMeter(object):
     """
     Computes and store the average the current value
@@ -376,9 +377,21 @@ def get_batch_dets(det_model, batch_image):
         return bboxs
 
 def save_score_results(score, cfg, logger, verbose=None, config_name='None', current_step=0, time_stamp='time_step'): 
-    """
-    This method is used to store the normal/abnormal scores which are used for the evaluation functions
-    The 
+    """Save scores.
+    This method is used to store the normal/abnormal scores of frames which are used for the evaluation functions
+
+    Args:
+        score(list): The scores of all of the videos.
+        cfg(fvcore.common.config.CfgNode): The configuration object
+        logger: The logger object
+        verbose: Comments
+        config_name(str): The name of the configuration name
+        current_step: The current iteration number of the whole training process
+        time_stamp: The time string records when the training process starts
+
+    Returns:
+        result_paths(list): The list records where the results store. Each item is an individual result. 
+
     """
     # Smooth  function
     def smooth_value(value, sigma):
@@ -394,7 +407,9 @@ def save_score_results(score, cfg, logger, verbose=None, config_name='None', cur
         os.mkdir(cfg.VAL.result_output)
 
     # result_path = os.path.join(cfg.TEST.result_output, f'{verbose}_cfg#{config_name}#step{current_step}@{time_stamp}_results.pkl')
-    result_paths = list()
+    # result_paths = list()
+    result_paths = OrderedDict()
+
     result_perfix_name = f'{verbose}_cfg#{config_name}#step{current_step}@{time_stamp}'
     # result_keys = kwargs.keys()
     result_dict = OrderedDict()
@@ -410,12 +425,14 @@ def save_score_results(score, cfg, logger, verbose=None, config_name='None', cur
             # result_dict[f'score_smooth_{sigma}'] = new_score
             with open(result_path, 'wb') as writer:
                 pickle.dump(result_dict, writer, pickle.HIGHEST_PROTOCOL)
-            result_paths.append(result_path)        
-            logger.info(f'Smooth the value with sigma:{cfg.DATASET.smooth.guassian_sigma}')
+            # result_paths.append(result_path) 
+            result_paths[f'sigma_{sigma}'] = result_path       
+            logger.info(f'Smooth the value with sigma:{sigma}')
     else:
         result_name = result_perfix_name + f'_sigmaNone_results.pkl'
         result_path = os.path.join(cfg.VAL.result_output, result_name)
-        result_paths.append(result_path)
+        result_paths['sigma_None'] = result_path
+        # result_paths.append(result_path)
         logger.info(f'Smooth the value with sigma: None')
         
     return result_paths
