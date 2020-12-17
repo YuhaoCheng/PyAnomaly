@@ -2,16 +2,18 @@
 @author:  Yuhao Cheng
 @contact: yuhao.cheng[at]outlook.com
 """
-import os
-import pickle
-import cv2
+# import os
+# import pickle
+# import cv2
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
+import logging
+logger = logging.getLogger(__name__)
+# from torch.utils.data import DataLoader
 from collections import OrderedDict
-import matplotlib.pyplot as plt
-from tsnecuda import TSNE
-from scipy.ndimage import gaussian_filter1d
+# import matplotlib.pyplot as plt
+# from tsnecuda import TSNE
+# from scipy.ndimage import gaussian_filter1d
 
 from ..abstract import EvaluateHook
 from pyanomaly.datatools.evaluate.utils import reconstruction_loss
@@ -26,8 +28,9 @@ __all__ = ['STAEEvaluateHook']
 @HOOK_REGISTRY.register()
 class STAEEvaluateHook(EvaluateHook): 
     def evaluate(self, current_step):
-        """
-        Evaluate the model base on some methods
+        """STAE evaluation method. 
+
+        Evaluate the model base on some methods.
         Args:
             current_step: The current step at present
         Returns:
@@ -39,14 +42,15 @@ class STAEEvaluateHook(EvaluateHook):
         tb_writer = self.engine.kwargs['writer_dict']['writer']
         global_steps = self.engine.kwargs['writer_dict']['global_steps_{}'.format(self.engine.kwargs['model_type'])]
         frame_num = self.engine.config.DATASET.val.sampled_clip_length
-        clip_step = self.engine.config.DATASET.val.clip_step
-        psnr_records=[]
+        # clip_step = self.engine.config.DATASET.val.clip_step
+        # psnr_records=[]
         score_records=[]
         # total = 0
         num_videos = 0
         random_video_sn = torch.randint(0, len(self.engine.val_dataset_keys), (1,))
         # import ipdb; ipdb.set_trace()
         # calc the score for the test dataset
+
         for sn, video_name in enumerate(self.engine.val_dataset_keys):
             num_videos += 1
             # need to improve
@@ -98,7 +102,8 @@ class STAEEvaluateHook(EvaluateHook):
                     normal_scores = np.array([(1.0 - np.divide(s-smin, smax)) for s in scores])
                     normal_scores = np.clip(normal_scores, 0, None)
                     score_records.append(normal_scores)
-                    print(f'finish test video set {video_name}')
+                    # print(f'finish test video set {video_name}')
+                    logger.info(f'Finish testing the video:{video_name}')
                     break
         # import ipdb; ipdb.set_trace()
 
@@ -111,7 +116,7 @@ class STAEEvaluateHook(EvaluateHook):
         results = self.engine.evaluate_function.compute({'val': self.engine.pkl_path})
         
         self.engine.logger.info(results)
-        tb_writer.add_text('amc: AUC of ROC curve', f'auc is {results.avg_value}',global_steps)
+        tb_writer.add_text(f'{self.engine.config.MODEL.name}: AUC of ROC curve', f'auc is {results.avg_value}', global_steps)
 
         return results.avg_value
 

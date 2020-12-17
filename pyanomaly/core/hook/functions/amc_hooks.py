@@ -22,11 +22,15 @@ __all__ = ['AMCEvaluateHook']
 @HOOK_REGISTRY.register()
 class AMCEvaluateHook(EvaluateHook):
     def evaluate(self, current_step):
-        '''
-        Evaluate the results of the model
-        !!! Will change, e.g. accuracy, mAP.....
-        !!! Or can call other methods written by the official
-        '''
+        """AMC evaluation method. 
+        
+        Evaluate the model base on some methods.
+
+        Args:
+            current_step: The current step at present
+        Returns:
+            results: The magnitude of the method based on this evaluation metric
+        """
         # self.trainer.set_requires_grad(self.trainer.F, False)
         # self.trainer.set_requires_grad(self.trainer.G, False)
         # self.trainer.set_requires_grad(self.trainer.D, False)
@@ -131,7 +135,8 @@ class AMCEvaluateHook(EvaluateHook):
         
         self.engine.pkl_path = save_score_results(self.engine.config, self.engine.logger, verbose=self.engine.verbose, config_name=self.engine.config_name, current_step=current_step, time_stamp=self.engine.kwargs["time_stamp"],score=score_records, psnr=psnr_records)
         results = self.engine.evaluate_function(self.engine.pkl_path, self.engine.logger, self.engine.config, self.engine.config.DATASET.score_type)
+        
         self.engine.logger.info(results)
-        tb_writer.add_text('AMC: AUC of ROC curve', f'auc is {results.auc}',global_steps)
+        tb_writer.add_text(f'{self.engine.config.MODEL.name}: AUC of ROC curve', f'auc is {results.auc}',global_steps)
         return results.auc
 
