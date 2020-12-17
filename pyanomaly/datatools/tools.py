@@ -45,6 +45,37 @@ class RecordResult(object):
 
         return self.thresholds[index]
 
+
+class IndividualRecordResult(object):
+    def __init__(self, fpr=None, tpr=None, thresholds=None, auc=-np.inf, dataset=None, loss_file=None, sigma=0):
+        self.fpr = fpr
+        self.tpr = tpr
+        self.thresholds = thresholds
+        self.auc = auc
+        self.dataset = dataset
+        self.loss_file = loss_file
+        self.sigma = sigma
+
+    def __lt__(self, other):
+        return self.auc < other.auc
+
+    def __gt__(self, other):
+        return self.auc > other.auc
+
+    def __str__(self):
+        return f'dataset = {self.dataset}, loss file = {self.loss_file}, auc = {self.auc:.5f}, sigma={self.sigma}'
+    
+    def get_threshold(self):
+        diff_list = list()
+        num_points = len(self.fpr)
+        for i in range(num_points):
+            temp = self.tpr[i] - self.fpr[i]
+            diff_list.append(temp)
+        index = diff_list.index(max(diff_list))
+
+        return self.thresholds[index]
+
+
 def make_objects_db(data_path, split='training',det_threshold=0.95, time_file='./training_3.json', verbose='none'):
     """
     Make the database based on the detections

@@ -376,10 +376,10 @@ def get_batch_dets(det_model, batch_image):
         return bboxs
 
 def save_score_results(score, cfg, logger, verbose=None, config_name='None', current_step=0, time_stamp='time_step'): 
-    '''
+    """
     This method is used to store the normal/abnormal scores which are used for the evaluation functions
     The 
-    '''
+    """
     # Smooth  function
     def smooth_value(value, sigma):
         new_value = []

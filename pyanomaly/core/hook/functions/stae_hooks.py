@@ -51,7 +51,8 @@ class STAEEvaluateHook(EvaluateHook):
             num_videos += 1
             # need to improve
             # dataset = self.trainer.test_dataset_dict[video_name]
-            dataloader = self.engine.val_dataloaders_dict[video_name]
+            # dataloader = self.engine.val_dataloaders_dict[video_name]
+            dataloader = self.engine.val_dataloaders_dict['general_dataset_dict'][video_name]
             # len_dataset = dataset.pics_len
             len_dataset = dataloader.dataset.pics_len
             test_iters = len_dataset - frame_num + 1
@@ -66,7 +67,7 @@ class STAEEvaluateHook(EvaluateHook):
             scores = np.empty(shape=(len_dataset,),dtype=np.float32)
             # for clip_sn, (test_input, anno, meta) in enumerate(data_loader):
             for clip_sn, (test_input, anno, meta) in enumerate(dataloader):
-                test_input = data.cuda()
+                test_input = test_input.cuda()
                 # test_target = data[:,:,16:,:,:].cuda()
                 time_len = test_input.shape[2]
                 # import ipdb; ipdb.set_trace()
@@ -99,11 +100,13 @@ class STAEEvaluateHook(EvaluateHook):
                     score_records.append(normal_scores)
                     print(f'finish test video set {video_name}')
                     break
-        
-        self.engine.pkl_path = save_score_results(self.engine.config, self.engine.logger, verbose=self.engine.verbose, config_name=self.engine.config_name, current_step=current_step, time_stamp=self.engine.kwargs["time_stamp"],score=score_records)
+        # import ipdb; ipdb.set_trace()
+
+        # self.engine.pkl_path = save_score_results(self.engine.config, self.engine.logger, verbose=self.engine.verbose, config_name=self.engine.config_name, current_step=current_step, time_stamp=self.engine.kwargs["time_stamp"], score=score_records)
+        self.engine.pkl_path = save_score_results(score_records, self.engine.config, self.engine.logger, verbose=self.engine.verbose, config_name=self.engine.config_name, current_step=current_step, time_stamp=self.engine.kwargs["time_stamp"])
         # results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config, self.trainer.config.DATASET.score_type)
         for result_path in self.engine.pkl_path:
-            results = self.evaluate_function.compute({'val':result_path})
+            results = self.engine.evaluate_function.compute({'val':{'default':result_path}})
         self.engine.logger.info(results)
         tb_writer.add_text('amc: AUC of ROC curve', f'auc is {results.auc}',global_steps)
         return results.auc

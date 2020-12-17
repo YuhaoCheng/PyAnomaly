@@ -102,16 +102,28 @@ class ScoreAUCMetrics(AbstractEvalMethod):
         
 
     def eval_method(self, result, gt, verbose):
-        fpr, tpr, thresholds = metrics.roc_curve(gt, result, pos_label=self.pos_label)
-        auc = metrics.auc(fpr, tpr)
-        results = RecordResult(fpr, tpr, thresholds, auc, self.dataset_name, self._result_name, verbose)
+        import ipdb; ipdb.set_trace()
+        temp_result = result[0]
+        assert len(temp_result) == len(gt)
+        temp_video_num = len(gt)
+        for i in range(temp_video_num):
+            # fpr, tpr, thresholds = metrics.roc_curve(gt, result, pos_label=self.pos_label)
+            fpr, tpr, thresholds = metrics.roc_curve(gt[i], temp_result[i], pos_label=self.pos_label)
+            auc = metrics.auc(fpr, tpr)
+            results = RecordResult(fpr, tpr, thresholds, auc, self.dataset_name, self._result_name, verbose)
 
         return results
 
     def compute(self, result_file_dict):
-        '''
-        result_file_dict = {'train':{description1:sigma0_result_file, description2:sigma1_result_file, .....}, 'val':{description1:sigma0_result_file, description2:sigma1_result_file}}
-        '''
+        """Compute the metrics.
+        Load the results stored in the file, compute the results and return the optimal result.
+        Args:
+            result_file_dict: The dictionary to store the results' files
+            For example:
+            {'train':{'description1':sigma0_result_file, 'description2':sigma1_result_file, .....}, 
+            'val':{'description1':sigma0_result_file, 'description2':sigma1_result_file}
+            }
+        """
         for part in self.parts:
             #=====================Need to change, temporal=========================
             if part == 'train':
@@ -119,9 +131,11 @@ class ScoreAUCMetrics(AbstractEvalMethod):
             #=======================================================================
             gt = self.gt_dict[part]
             result_file = result_file_dict[part]
+            # import ipdb; ipdb.set_trace()
             for key, item in result_file.items():
                 self._result_name = item
-                score_records, num_videos = self.load_results(result_file)
+                # score_records, num_videos = self.load_results(result_file)
+                score_records, num_videos = self.load_results(item)
                 assert num_videos == len(gt), f'the number of saved videos does not match the ground truth, {num_videos} != {len(gt)}'
                 temp_result = self.eval_method(score_records, gt, str(key))
                 if temp_result > self.optimal_resulst:

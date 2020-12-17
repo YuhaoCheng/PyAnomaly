@@ -63,17 +63,17 @@ class HookBase(object):
 class EvaluateHook(HookBase):
     def after_step(self, current_step):
         acc = 0.0
-        if current_step % self.trainer.steps.param['eval'] == 0 and current_step != 0:
+        if current_step % self.engine.steps.param['eval'] == 0 and current_step != 0:
             with torch.no_grad():
                 acc = self.evaluate(current_step)
-                if acc > self.trainer.accuarcy:
-                    self.trainer.accuarcy = acc
+                if acc > self.engine.accuarcy:
+                    self.engine.accuarcy = acc
                     # save the model & checkpoint
-                    self.trainer.save(current_step, best=True)
-                elif current_step % self.trainer.steps.param['save'] == 0 and current_step != 0:
+                    self.engine.save(current_step, best=True)
+                elif current_step % self.engine.steps.param['save'] == 0 and current_step != 0:
                     # save the checkpoint
-                    self.trainer.save(current_step)
-                    self.trainer.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
+                    self.engine.save(current_step)
+                    self.engine.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
                 else:
                     pass
         else:
@@ -81,7 +81,7 @@ class EvaluateHook(HookBase):
     
     def inference(self):
         acc = self.evaluate(0)
-        self.trainer.logger.info(f'The inference metric is:{acc:.3f}')
+        self.engine.logger.info(f'The inference metric is:{acc:.3f}')
     
     @abc.abstractmethod
     def evaluate(self, current_step)->float:

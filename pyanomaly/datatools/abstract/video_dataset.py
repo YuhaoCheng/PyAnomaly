@@ -121,7 +121,7 @@ class FrameLevelVideoDataset(AbstractVideoDataset):
         #     self.aug_params = self.cfg.ARGUMENT.val
         #     self.flag = 'Val'
 
-        self.aug_params = self.cfg.get('ARGUMENT')[self.phase]
+        self.aug_params = self.cfg.get('AUGMENT')[self.phase]
         self.dataset_params = self.cfg.DATASET
         # set up the keys of the dataset
         self.setup()
