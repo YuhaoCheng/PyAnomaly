@@ -26,13 +26,13 @@ __all__ = ['STAEEvaluateHook']
 @HOOK_REGISTRY.register()
 class STAEEvaluateHook(EvaluateHook): 
     def evaluate(self, current_step):
-        '''
+        """
         Evaluate the model base on some methods
         Args:
             current_step: The current step at present
         Returns:
             results: The magnitude of the method based on this evaluation metric
-        '''
+        """
         # self.trainer.set_requires_grad(self.trainer.STAE, False)
         # self.trainer.STAE.eval()
         self.engine.set_all(False) # eval mode
@@ -108,6 +108,6 @@ class STAEEvaluateHook(EvaluateHook):
         for result_path in self.engine.pkl_path:
             results = self.engine.evaluate_function.compute({'val':{'default':result_path}})
         self.engine.logger.info(results)
-        tb_writer.add_text('amc: AUC of ROC curve', f'auc is {results.auc}',global_steps)
-        return results.auc
+        tb_writer.add_text('amc: AUC of ROC curve', f'auc is {results.avg_value}',global_steps)
+        return results.avg_value
 

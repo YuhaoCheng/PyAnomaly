@@ -102,15 +102,19 @@ class ScoreAUCMetrics(AbstractEvalMethod):
         
 
     def eval_method(self, result, gt, verbose):
-        import ipdb; ipdb.set_trace()
-        temp_result = result[0]
+        # import ipdb; ipdb.set_trace()
+        temp_result = result[0] # Because the store scores using the append methods 
         assert len(temp_result) == len(gt)
         temp_video_num = len(gt)
+        results = RecordResult(self.dataset_name, self._result_name, verbose)
         for i in range(temp_video_num):
             # fpr, tpr, thresholds = metrics.roc_curve(gt, result, pos_label=self.pos_label)
             fpr, tpr, thresholds = metrics.roc_curve(gt[i], temp_result[i], pos_label=self.pos_label)
             auc = metrics.auc(fpr, tpr)
-            results = RecordResult(fpr, tpr, thresholds, auc, self.dataset_name, self._result_name, verbose)
+            # results = RecordResult(fpr, tpr, thresholds, auc, self.dataset_name, self._result_name, verbose)\
+            results.update(auc)
+        
+        assert results.count == temp_video_num, f'The length of the results is not equal to the gt, {results.count} vs. {temp_video_num}'
 
         return results
 
@@ -127,7 +131,7 @@ class ScoreAUCMetrics(AbstractEvalMethod):
         for part in self.parts:
             #=====================Need to change, temporal=========================
             if part == 'train':
-                continue
+                continue      # because the train not have the label
             #=======================================================================
             gt = self.gt_dict[part]
             result_file = result_file_dict[part]
