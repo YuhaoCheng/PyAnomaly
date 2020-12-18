@@ -17,7 +17,8 @@ from pyanomaly.core.utils import tensorboard_vis_images, save_score_results
 __all__ = ['STAEEvaluateHook']
 
 @HOOK_REGISTRY.register()
-class STAEEvaluateHook(EvaluateHook): 
+class STAEEvaluateHook(EvaluateHook):
+    def 
     def evaluate(self, current_step):
         """STAE evaluation method. 
 

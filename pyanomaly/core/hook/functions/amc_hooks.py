@@ -67,9 +67,11 @@ class AMCEvaluateHook(EvaluateHook):
                                                          output_format=self.engine.config.DATASET.optical_format, optical_size=self.engine.config.DATASET.optical_size)
                 # import ipdb; ipdb.set_trace()
                 diff_appe, diff_flow = simple_diff(target_test, output_frame_G, gtFlow, output_flow_G)
-                patch_score_appe, patch_score_flow, _, _ = find_max_patch(diff_appe, diff_flow)
+                # patch_score_appe, patch_score_flow, _, _ = find_max_patch(diff_appe, diff_flow)
+                patch_score_appe, patch_score_flow = find_max_patch(diff_appe, diff_flow)
                 scores[test_counter+frame_num-1] = [patch_score_appe, patch_score_flow]
                 test_counter += 1
+                print(test_counter)
                 if test_counter >= test_iters:
                     scores[:frame_num-1] = [scores[frame_num-1]]
                     scores = torch.tensor(scores)

@@ -36,7 +36,7 @@ class AnoPCNEvaluateHook(EvaluateHook):
         global_steps = self.engine.kwargs['writer_dict']['global_steps_{}'.format(self.engine.kwargs['model_type'])]
 
         frame_num = self.engine.config.DATASET.test_clip_length
-        psnr_records=[]
+        # psnr_records=[]
         score_records=[]
         total = 0
 
@@ -55,7 +55,6 @@ class AnoPCNEvaluateHook(EvaluateHook):
             # import ipdb; ipdb.set_trace()
             # psnrs = np.empty(shape=(len_dataset,),dtype=np.float32)
             scores = np.empty(shape=(len_dataset,),dtype=np.float32)
-            # for test_input, _ in data_loader:
             vis_range = range(int(len_dataset*0.5), int(len_dataset*0.5 + 5))
             for frame_sn, (test_input, anno, meta) in enumerate(dataloader):
                 test_target = test_input[:, :, -1, :, :].cuda()
