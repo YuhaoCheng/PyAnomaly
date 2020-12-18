@@ -27,7 +27,7 @@ class LossAPI(object):
             if register_name == 'loss':
                 # import ipdb; ipdb.set_trace()
                 if len(loss_cfg) != 0:
-                    loss_dict[loss_name] = LOSS_REGISTRY.get(couple[2])(loss_cfg)
+                    loss_dict[loss_name] = LOSS_REGISTRY.get(couple[2])(loss_cfg=loss_cfg)
                 else:
                     print(loss_name)
                     loss_dict[loss_name] = LOSS_REGISTRY.get(couple[2])()

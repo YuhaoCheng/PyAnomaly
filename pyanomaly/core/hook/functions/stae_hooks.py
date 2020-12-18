@@ -33,12 +33,12 @@ class STAEEvaluateHook(EvaluateHook):
         global_steps = self.engine.kwargs['writer_dict']['global_steps_{}'.format(self.engine.kwargs['model_type'])]
         frame_num = self.engine.config.DATASET.val.sampled_clip_length
         score_records=[]
-        num_videos = 0
+        # num_videos = 0
         random_video_sn = torch.randint(0, len(self.engine.val_dataset_keys), (1,))
 
         # calc the score for the test dataset
         for sn, video_name in enumerate(self.engine.val_dataset_keys):
-            num_videos += 1
+            # num_videos += 1
             # need to improve
             dataloader = self.engine.val_dataloaders_dict['general_dataset_dict'][video_name]
             len_dataset = dataloader.dataset.pics_len

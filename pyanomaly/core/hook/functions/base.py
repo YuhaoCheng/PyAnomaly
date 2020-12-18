@@ -44,7 +44,7 @@ class VisScoreHook(HookBase):
             ax3.plot([i for i in range(len(gt[video_id]))], gt[video_id])
             ax3.set_ylabel('GT')
             ax3.set_xlabel('frames')
-            writer.add_figure(f'verbose_{self.engine.verbose}@{verbose}_{self.engine.config_name}_{self.engine.kwargs["time_stamp"]}_vis{video_id}', fig, global_steps)  
+            writer.add_figure(f'verbose_{self.engine.verbose}_{verbose}_{self.engine.config_name}_{self.engine.kwargs["time_stamp"]}_vis{video_id}', fig, global_steps)  
         
     def after_step(self, current_step):
         writer = self.engine.kwargs['writer_dict']['writer']

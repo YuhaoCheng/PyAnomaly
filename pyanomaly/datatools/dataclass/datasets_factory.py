@@ -16,8 +16,8 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
     The factory class to produce the video anomaly dataset class. 
     """
 
-    NORMAL = ['stae', 'amc', 'anopcn', 'anopred'] # These methods only need the normal dataset
-    NEED_W = ['memae'] # These methods need the extra dataset to compute some parameters 
+    NORMAL = ['stae', 'memae', 'anopcn', 'anopred'] # These methods only need the normal dataset
+    NEED_W = ['amc'] # These methods need the extra dataset to compute some parameters 
     NEED_CLUSTER = ['ocae'] # These methods need the extra dataset to cluster
 
     def __init__(self, cfg, aug_dict, is_training=True) -> None:

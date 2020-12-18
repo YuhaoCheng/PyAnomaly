@@ -109,7 +109,8 @@ TRAIN:
   log_step: 10
   vis_step: 958
   # mini_eval_step: 400
-  eval_step: 958
+  # eval_step: 958
+  eval_step: 10
   save_step: 958
   losses: ['loss_GANLoss_cuda', 0.25, 'GANLoss', [['gan_mode', vanilla], ['target_real_label', 1.0], ['target_fake_label', 0.0]], 'loss_GradientLoss_cuda', 1.0, 'GradientLoss', [], 
            'loss_IntentsityLoss_cuda', 1.0, 'IntensityLoss', [], 'loss_OpticalflowSqrtLoss_cuda', 2.0, 'L2Loss', []]
