@@ -5,8 +5,9 @@
 from fvcore.common.config import CfgNode as CN
 
 __all__ = ['update_config'] 
-
-
+"""
+This the default configuration of the whole prohect.
+"""
 config = CN()
 config.DESCROPTION = 'This the description of the configuration defaults. If you have some information related to the configuration file, please fullfil this item'
 # configure the system related matters, such as gpus, cudnn and so on
@@ -71,80 +72,80 @@ config.DATASET.evaluate_function = CN()
 config.DATASET.evaluate_function.name = ''
 config.DATASET.evaluate_function.result_type = 'score'  # 'score' | 'psnr' | .....
 
-# ****************configure the argument of the data*************************
-config.ARGUMENT = CN()
+# ****************configure the augment of the data*************************
+config.AUGMENT = CN()
 #========================Train Augment===================
-config.ARGUMENT.train = CN()
-config.ARGUMENT.train.use = False
-config.ARGUMENT.train.resize = CN()
-config.ARGUMENT.train.resize.use = False
-config.ARGUMENT.train.resize.height = 32
-config.ARGUMENT.train.resize.width = 32
-config.ARGUMENT.train.grayscale = CN()
-config.ARGUMENT.train.grayscale.use = False
-config.ARGUMENT.train.fliplr = CN()
-config.ARGUMENT.train.fliplr.use = False
-config.ARGUMENT.train.fliplr.p = 1.0
-config.ARGUMENT.train.flipud = CN()
-config.ARGUMENT.train.flipud.use = False
-config.ARGUMENT.train.flipud.p = 1.0
-config.ARGUMENT.train.rote = CN()
-config.ARGUMENT.train.rote.use = False
-config.ARGUMENT.train.rote.degrees = [0,0]
-config.ARGUMENT.train.JpegCompression = CN()
-config.ARGUMENT.train.JpegCompression.use = False
-config.ARGUMENT.train.JpegCompression.high = 100
-config.ARGUMENT.train.JpegCompression.low = 80
-config.ARGUMENT.train.GaussianBlur = CN()
-config.ARGUMENT.train.GaussianBlur.use = False
-config.ARGUMENT.train.GaussianBlur.high = 0.3
-config.ARGUMENT.train.GaussianBlur.low = 0.03
-config.ARGUMENT.train.CropToFixedSize = CN()
-config.ARGUMENT.train.CropToFixedSize.use = False
-config.ARGUMENT.train.CropToFixedSize.height = 256
-config.ARGUMENT.train.CropToFixedSize.width = 256
-config.ARGUMENT.train.CropToFixedSize.position = 'center' # uniform | normal | center | ...
+config.AUGMENT.train = CN()
+config.AUGMENT.train.use = False
+config.AUGMENT.train.resize = CN()
+config.AUGMENT.train.resize.use = False
+config.AUGMENT.train.resize.height = 32
+config.AUGMENT.train.resize.width = 32
+config.AUGMENT.train.grayscale = CN()
+config.AUGMENT.train.grayscale.use = False
+config.AUGMENT.train.fliplr = CN()
+config.AUGMENT.train.fliplr.use = False
+config.AUGMENT.train.fliplr.p = 1.0
+config.AUGMENT.train.flipud = CN()
+config.AUGMENT.train.flipud.use = False
+config.AUGMENT.train.flipud.p = 1.0
+config.AUGMENT.train.rote = CN()
+config.AUGMENT.train.rote.use = False
+config.AUGMENT.train.rote.degrees = [0,0]
+config.AUGMENT.train.JpegCompression = CN()
+config.AUGMENT.train.JpegCompression.use = False
+config.AUGMENT.train.JpegCompression.high = 100
+config.AUGMENT.train.JpegCompression.low = 80
+config.AUGMENT.train.GaussianBlur = CN()
+config.AUGMENT.train.GaussianBlur.use = False
+config.AUGMENT.train.GaussianBlur.high = 0.3
+config.AUGMENT.train.GaussianBlur.low = 0.03
+config.AUGMENT.train.CropToFixedSize = CN()
+config.AUGMENT.train.CropToFixedSize.use = False
+config.AUGMENT.train.CropToFixedSize.height = 256
+config.AUGMENT.train.CropToFixedSize.width = 256
+config.AUGMENT.train.CropToFixedSize.position = 'center' # uniform | normal | center | ...
 #-------------------Normal------------------------
-config.ARGUMENT.train.normal = CN()
-config.ARGUMENT.train.normal.use = False
-config.ARGUMENT.train.normal.mean = [0.485, 0.456, 0.406]
-config.ARGUMENT.train.normal.std = [0.229, 0.224, 0.225]
+config.AUGMENT.train.normal = CN()
+config.AUGMENT.train.normal.use = False
+config.AUGMENT.train.normal.mean = [0.485, 0.456, 0.406]
+config.AUGMENT.train.normal.std = [0.229, 0.224, 0.225]
 #========================Val Augment===================
-config.ARGUMENT.val = CN()
-config.ARGUMENT.val.use = False
-config.ARGUMENT.val.resize = CN()
-config.ARGUMENT.val.resize.use = False
-config.ARGUMENT.val.resize.height = 32
-config.ARGUMENT.val.resize.width = 32
-config.ARGUMENT.val.grayscale = CN()
-config.ARGUMENT.val.grayscale.use = False
-config.ARGUMENT.val.fliplr = CN()
-config.ARGUMENT.val.fliplr.use = False
-config.ARGUMENT.val.fliplr.p = 1.0
-config.ARGUMENT.val.flipud = CN()
-config.ARGUMENT.val.flipud.use = False
-config.ARGUMENT.val.flipud.p = 1.0
-config.ARGUMENT.val.rote = CN()
-config.ARGUMENT.val.rote.use = False
-config.ARGUMENT.val.rote.degrees = [0,0]
-config.ARGUMENT.val.JpegCompression = CN()
-config.ARGUMENT.val.JpegCompression.use = False
-config.ARGUMENT.val.JpegCompression.high = 100
-config.ARGUMENT.val.JpegCompression.low = 80
-config.ARGUMENT.val.GaussianBlur = CN()
-config.ARGUMENT.val.GaussianBlur.use = False
-config.ARGUMENT.val.GaussianBlur.high = 0.3
-config.ARGUMENT.val.GaussianBlur.low = 0.03
-config.ARGUMENT.val.CropToFixedSize = CN()
-config.ARGUMENT.val.CropToFixedSize.use = False
-config.ARGUMENT.val.CropToFixedSize.height = 256
-config.ARGUMENT.val.CropToFixedSize.width = 256
-config.ARGUMENT.val.CropToFixedSize.position = 'center' # uniform | normal | center | ...
+config.AUGMENT.val = CN()
+config.AUGMENT.val.use = False
+config.AUGMENT.val.resize = CN()
+config.AUGMENT.val.resize.use = False
+config.AUGMENT.val.resize.height = 32
+config.AUGMENT.val.resize.width = 32
+config.AUGMENT.val.grayscale = CN()
+config.AUGMENT.val.grayscale.use = False
+config.AUGMENT.val.fliplr = CN()
+config.AUGMENT.val.fliplr.use = False
+config.AUGMENT.val.fliplr.p = 1.0
+config.AUGMENT.val.flipud = CN()
+config.AUGMENT.val.flipud.use = False
+config.AUGMENT.val.flipud.p = 1.0
+config.AUGMENT.val.rote = CN()
+config.AUGMENT.val.rote.use = False
+config.AUGMENT.val.rote.degrees = [0,0]
+config.AUGMENT.val.JpegCompression = CN()
+config.AUGMENT.val.JpegCompression.use = False
+config.AUGMENT.val.JpegCompression.high = 100
+config.AUGMENT.val.JpegCompression.low = 80
+config.AUGMENT.val.GaussianBlur = CN()
+config.AUGMENT.val.GaussianBlur.use = False
+config.AUGMENT.val.GaussianBlur.high = 0.3
+config.AUGMENT.val.GaussianBlur.low = 0.03
+config.AUGMENT.val.CropToFixedSize = CN()
+config.AUGMENT.val.CropToFixedSize.use = False
+config.AUGMENT.val.CropToFixedSize.height = 256
+config.AUGMENT.val.CropToFixedSize.width = 256
+config.AUGMENT.val.CropToFixedSize.position = 'center' # uniform | normal | center | ...
 #-------------------Normal------------------------
-config.ARGUMENT.val.normal = CN()
-config.ARGUMENT.val.normal.use = False
-config.ARGUMENT.val.normal.mean = [0.485, 0.456, 0.406]
-config.ARGUMENT.val.normal.std = [0.229, 0.224, 0.225]
+config.AUGMENT.val.normal = CN()
+config.AUGMENT.val.normal.use = False
+config.AUGMENT.val.normal.mean = [0.485, 0.456, 0.406]
+config.AUGMENT.val.normal.std = [0.229, 0.224, 0.225]
 # *************************************************************************
 
 # configure the model related things
@@ -283,17 +284,17 @@ config.VAL.result_output = './output/results'
 
 
 def _get_cfg_defaults():
-    '''
-    Get the config template
+    """
+    Get the config template.
     NOT USE IN OTHER FILES!!
-    '''
+    """
     return config.clone()
 
 
 def update_config(yaml_path, opts):
-    '''
-    Make the template update based on the yaml file
-    '''
+    """
+    Make the template update based on the yaml file.
+    """
     print('=>Merge the config with {}\t'.format(yaml_path))
     cfg = _get_cfg_defaults()
     cfg.merge_from_file(yaml_path)

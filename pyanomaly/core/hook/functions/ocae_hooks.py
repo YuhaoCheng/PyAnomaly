@@ -37,20 +37,20 @@ __all__ = ['ClusterHook', 'OCEvaluateHook']
 class ClusterHook(HookBase):
     def after_step(self, current_step):
         # import ipdb; ipdb.set_trace()
-        if current_step % self.trainer.config.TRAIN.eval_step == 0 and current_step!= 0:
-            self.trainer.logger.info('Start clsuter the feature')
-            frame_num = self.trainer.config.DATASET.train_clip_length
-            frame_step = self.trainer.config.DATASET.train_clip_step
+        if current_step % self.engine.config.TRAIN.eval_step == 0 and current_step!= 0:
+            self.engine.logger.info('Start clsuter the feature')
+            frame_num = self.engine.config.DATASET.train.clip_length
+            frame_step = self.engine.config.DATASET.train.clip_step
             feature_record = []
-            for video_name in self.trainer.cluster_dataset_keys:
-                dataset = self.trainer.cluster_dataset_dict[video_name]
+            for video_name in self.engine.cluster_dataset_keys:
+                dataset = self.engine.cluster_dataset_dict[video_name]
                 data_loader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, num_workers=1)
                 # import ipdb; ipdb.set_trace()
                 for test_input, anno, meta in data_loader:
                     future = data[:, :, 2, :, :].cuda() # t+1 frame 
                     current = data[:, :, 1, :, :].cuda() # t frame
                     past = data[:, :, 0, :, :].cuda() # t frame
-                    bboxs = get_batch_dets(self.trainer.Detector, current)
+                    bboxs = get_batch_dets(self.engine.Detector, current)
                     for index, bbox in enumerate(bboxs):
                         # import ipdb; ipdb.set_trace()
                         if bbox.numel() == 0:
@@ -71,9 +71,9 @@ class ClusterHook(HookBase):
                         A_input = A_input.sum(1)
                         _, _, C_input = frame_gradient(current2past)
                         C_input = C_input.sum(1)
-                        A_feature, _, _ = self.trainer.A(A_input)
-                        B_feature, _, _ = self.trainer.B(current_object)
-                        C_feature, _, _ = self.trainer.C(C_input)
+                        A_feature, _, _ = self.engine.A(A_input)
+                        B_feature, _, _ = self.engine.B(current_object)
+                        C_feature, _, _ = self.engine.C(C_input)
                         
                         A_flatten_feature = A_feature.flatten(start_dim=1)
                         B_flatten_feature = B_feature.flatten(start_dim=1)
@@ -86,14 +86,14 @@ class ClusterHook(HookBase):
                             temp = abc_f.squeeze(0).cpu().numpy()
                             feature_record.append(temp)
                         # import ipdb; ipdb.set_trace()
-                self.trainer.logger.info(f'Finish the video:{video_name}')
-            self.trainer.logger.info(f'Finish extract feature, the sample:{len(feature_record)}')
+                self.engine.logger.info(f'Finish the video:{video_name}')
+            self.engine.logger.info(f'Finish extract feature, the sample:{len(feature_record)}')
             device = torch.device('cuda:0')
             cluster_input = torch.from_numpy(np.array(feature_record))
             # cluster_input = np.array(feature_record)
             time = mmcv.Timer()
             # import ipdb; ipdb.set_trace()
-            cluster_centers = cluster_input.new_zeros(size=[self.trainer.config.TRAIN.cluster.k, 3072])
+            cluster_centers = cluster_input.new_zeros(size=[self.engine.config.TRAIN.cluster.k, 3072])
             cluster_score = 0.0
             cluster_model = None
             for _ in range(1):
@@ -103,7 +103,7 @@ class ClusterHook(HookBase):
                 # if temp > cluster_score:
                     # cluster_model = model
                 # print(f'the temp score is {temp}')
-                cluster_ids_x, cluster_center = kmeans(X=cluster_input, num_clusters=self.trainer.config.TRAIN.cluster.k, distance='euclidean', device=device)
+                cluster_ids_x, cluster_center = kmeans(X=cluster_input, num_clusters=self.engine.config.TRAIN.cluster.k, distance='euclidean', device=device)
                 cluster_centers += cluster_center
             # import ipdb; ipdb.set_trace()
             # cluster_centers =  cluster_centers / 10
@@ -115,19 +115,19 @@ class ClusterHook(HookBase):
             # import ipdb; ipdb.set_trace()
             # pusedo_labels = np.split(pusedo_labels, pusedo_labels.shape[0], 0)
 
-            pusedo_dataset = os.path.join(self.trainer.config.TRAIN.pusedo_data_path, 'pusedo')
+            pusedo_dataset = os.path.join(self.engine.config.TRAIN.pusedo_data_path, 'pusedo')
             if not os.path.exists(pusedo_dataset):
                 os.mkdir(pusedo_dataset)
             
-            np.savez_compressed(os.path.join(pusedo_dataset, f'{self.trainer.config.DATASET.name}_dummy.npz'), data=cluster_input, label=pusedo_labels)
+            np.savez_compressed(os.path.join(pusedo_dataset, f'{self.engine.config.DATASET.name}_dummy.npz'), data=cluster_input, label=pusedo_labels)
             print(f'The save time is {time.since_last_check() / 60} min')
             # binary_labels = MultiLabelBinarizer().fit_transform(pusedo_labels)
             # self.trainer.ovr_model = OneVsRestClassifier(LinearSVC(random_state = 0)).fit(cluster_input,binary_labels)
             # self.trainer.ovr_model = OneVsRestClassifier(LinearSVC(random_state = 0), n_jobs=16).fit(cluster_input, pusedo_labels)
-            self.trainer.ovr_model = self.trainer.ovr_model.fit(cluster_input, pusedo_labels)
+            self.engine.ovr_model = self.engine.ovr_model.fit(cluster_input, pusedo_labels)
             # self.trainer.saved_model['OVR'] = self.trainer.ovr_model
             print(f'The train ovr: {time.since_last_check() / 60} min')
-            joblib.dump(self.trainer.ovr_model, self.trainer.ovr_model_path)
+            joblib.dump(self.engine.ovr_model, self.engine.ovr_model_path)
             # import ipdb; ipdb.set_trace()
             
 
@@ -138,28 +138,28 @@ class OCEvaluateHook(EvaluateHook):
         !!! Will change, e.g. accuracy, mAP.....
         !!! Or can call other methods written by the official
         '''
-        self.trainer.set_requires_grad(self.trainer.A, False)
-        self.trainer.set_requires_grad(self.trainer.B, False)
-        self.trainer.set_requires_grad(self.trainer.C, False)
-        self.trainer.set_requires_grad(self.trainer.Detector, False)
-        self.trainer.A.eval()
-        self.trainer.B.eval()
-        self.trainer.C.eval()
-        self.trainer.Detector.eval()
-        
-        frame_num = self.trainer.config.DATASET.test_clip_length
-        tb_writer = self.trainer.kwargs['writer_dict']['writer']
-        global_steps = self.trainer.kwargs['writer_dict']['global_steps_{}'.format(self.trainer.kwargs['model_type'])]
+        # self.trainer.set_requires_grad(self.trainer.A, False)
+        # self.trainer.set_requires_grad(self.trainer.B, False)
+        # self.trainer.set_requires_grad(self.trainer.C, False)
+        # self.trainer.set_requires_grad(self.trainer.Detector, False)
+        # self.trainer.A.eval()
+        # self.trainer.B.eval()
+        # self.trainer.C.eval()
+        # self.trainer.Detector.eval()
+        self.engine.set_all(False)
+        frame_num = self.engine.config.DATASET.test_clip_length
+        tb_writer = self.engine.kwargs['writer_dict']['writer']
+        global_steps = self.engine.kwargs['writer_dict']['global_steps_{}'.format(self.engine.kwargs['model_type'])]
         score_records = []
         # psnr_records = []
         total = 0
-        random_video_sn = torch.randint(0, len(self.trainer.test_dataset_keys), (1,))
+        random_video_sn = torch.randint(0, len(self.engine.test_dataset_keys), (1,))
         # random_video_sn = 0
-        for sn, video_name in enumerate(self.trainer.test_dataset_keys):
+        for sn, video_name in enumerate(self.engine.test_dataset_keys):
             # _temp_test_folder = os.path.join(self.testing_data_folder, dir)
             # need to improve
             # dataset = AvenueTestOld(_temp_test_folder, clip_length=frame_num)
-            dataset = self.trainer.test_dataset_dict[video_name]
+            dataset = self.engine.test_dataset_dict[video_name]
             len_dataset = dataset.pics_len
             test_iters = len_dataset - frame_num + 1
             test_counter = 0
@@ -175,7 +175,7 @@ class OCEvaluateHook(EvaluateHook):
                 future = test_input[:, :, 2, :, :].cuda()
                 current = test_input[:, :, 1, :, :].cuda()
                 past = test_input[:, :, 0, :, :].cuda()
-                bboxs = get_batch_dets(self.trainer.Detector, current)
+                bboxs = get_batch_dets(self.engine.Detector, current)
                 for index, bbox in enumerate(bboxs):
                     # import ipdb; ipdb.set_trace()
                     if bbox.numel() == 0:
@@ -193,9 +193,9 @@ class OCEvaluateHook(EvaluateHook):
                     A_input = A_input.sum(1)
                     _, _, C_input = frame_gradient(current2past)
                     C_input = C_input.sum(1)
-                    A_feature, temp_a, _ = self.trainer.A(A_input)
-                    B_feature, temp_b, _ = self.trainer.B(current_object)
-                    C_feature, temp_c, _ = self.trainer.C(C_input)
+                    A_feature, temp_a, _ = self.engine.A(A_input)
+                    B_feature, temp_b, _ = self.engine.B(current_object)
+                    C_feature, temp_c, _ = self.engine.C(C_input)
 
                     # import ipdb; ipdb.set_trace()
                     if sn == random_video_sn and frame_sn == random_frame_sn:
@@ -207,7 +207,7 @@ class OCEvaluateHook(EvaluateHook):
                             'eval_oc_input_c': C_input.detach(),
                             'eval_oc_output_c': temp_c.detach(),
                         })
-                        tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.trainer.normalize.param['val'])
+                        tensorboard_vis_images(vis_objects, tb_writer, global_steps, normalize=self.engine.normalize.param['val'])
 
                     A_flatten_feature = A_feature.flatten(start_dim=1)
                     B_flatten_feature = B_feature.flatten(start_dim=1)
@@ -220,8 +220,8 @@ class OCEvaluateHook(EvaluateHook):
                         feature_record_object.append(temp)
                 
                 predict_input = np.array(feature_record_object)
-                self.trainer.ovr_model = joblib.load(self.trainer.ovr_model_path)
-                g_i = self.trainer.ovr_model.decision_function(predict_input) # the svm score of each object in one frame
+                self.engine.ovr_model = joblib.load(self.engine.ovr_model_path)
+                g_i = self.engine.ovr_model.decision_function(predict_input) # the svm score of each object in one frame
                 frame_score = oc_score(g_i)
 
                 # test_psnr = psnr_error(g_output, test_target)
@@ -236,9 +236,9 @@ class OCEvaluateHook(EvaluateHook):
                     print(f'finish test video set {video_name}')
                     break
         
-        self.trainer.pkl_path = save_score_results(self.trainer.config, self.trainer.logger, verbose=self.trainer.verbose, config_name=self.trainer.config_name, current_step=current_step, time_stamp=self.trainer.kwargs["time_stamp"],score=score_records)
-        results = self.trainer.evaluate_function(self.trainer.pkl_path, self.trainer.logger, self.trainer.config)
-        self.trainer.logger.info(results)
+        self.engine.pkl_path = save_score_results(self.engine.config, self.engine.logger, verbose=self.engine.verbose, config_name=self.engine.config_name, current_step=current_step, time_stamp=self.engine.kwargs["time_stamp"],score=score_records)
+        results = self.engine.evaluate_function(self.engine.pkl_path, self.engine.logger, self.engine.config)
+        self.engine.logger.info(results)
         tb_writer.add_text('AUC of ROC curve', f'AUC is {results.auc:.5f}',global_steps)
         return results.auc
 

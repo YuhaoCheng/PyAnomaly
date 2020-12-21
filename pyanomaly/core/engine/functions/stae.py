@@ -52,8 +52,8 @@ class STAETrainer(BaseTrainer):
 
         # True Process =================Start===================
         output_rec,  output_pred = self.STAE(input_rec)
-        loss_rec = self.rec_loss(output_rec, input_rec)
-        loss_pred = self.pred_loss(output_pred, input_pred)
+        loss_rec = self.RecLoss(output_rec, input_rec)
+        loss_pred = self.WeightedPredLoss(output_pred, input_pred)
         # print(f'loss_rec:{loss_rec}')
         # print(f'loss_pred:{loss_pred}')
 

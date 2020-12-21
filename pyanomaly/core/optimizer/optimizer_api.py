@@ -80,7 +80,7 @@ class OptimizerAPI(object):
         optimizer_dict = OrderedDict()
 
         if mode == OptimizerAPI._MODE[0]:
-            optimizer_name = 'optimizer'+'_'.join(include_parts)
+            optimizer_name = 'optimizer_'+''.join(include_parts)
             model_combination = []
             for temp in include_parts:
                 model_combination.append(model[temp])

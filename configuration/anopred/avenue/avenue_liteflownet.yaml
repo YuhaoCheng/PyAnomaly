@@ -37,7 +37,7 @@ DATASET:
     name: 'ScoreAUCMetrics'
     result_type: 'score'
 
-ARGUMENT:
+AUGMENT:
   train:
     use: true
     resize:

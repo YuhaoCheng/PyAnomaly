@@ -9,6 +9,7 @@ More introduction of the toolbox is in [INTRO](./docs/intro.md)
 
 ### News
 
+- [Dec 2020] Add the API document, please refer to [API](./docs/api.md) for more information 
 - [Nov 2020] Change the methods to get model, make it much easier to use
 - [Jun 2020] The repo is open!!
 
@@ -22,6 +23,8 @@ Please refer to the [INSTALL](./docs/install.md)
 Specifically usage please refer to [USAGE](./docs/usage.md)
 
 The introduction of some useful tools is in [TOOLS](./docs/tools.md)
+
+The API document is in [API](./docs/api.md)
 
 ### License
 This project is released under the [Apache 2.0 license](./LICENSE).

@@ -12,10 +12,24 @@ __all__ = ['VideoAnomalyDatasetFactory']
 
 @DATASET_FACTORY_REGISTRY.register()
 class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetClusterDataset):
-    NORMAL = ['stae', 'amc', 'anopcn', 'anopred']
-    NEED_W = ['memae']
-    NEED_CLUSTER = ['ocae']
+    """
+    The factory class to produce the video anomaly dataset class. 
+    """
+
+    NORMAL = ['stae', 'memae', 'anopcn', 'anopred'] # These methods only need the normal dataset
+    NEED_W = ['amc'] # These methods need the extra dataset to compute some parameters 
+    NEED_CLUSTER = ['ocae'] # These methods need the extra dataset to cluster
+
     def __init__(self, cfg, aug_dict, is_training=True) -> None:
+        """
+        The initialization method
+        Args:
+            cfg: The config object
+            aug_dict(dict): The dictionary of the image transformation
+            is_training(bool): The flag indicate whether the produced dataset is used for the training process
+        Returns:
+            None
+        """
         super(VideoAnomalyDatasetFactory, self).__init__(cfg, aug_dict, is_training)
         self.aug_dict = aug_dict
         self.ingredient = DATASET_REGISTRY.get(self.dataset_name)
@@ -23,18 +37,46 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
         self._jude_need_w()
     
     def _jude_need_w(self):
+        """
+        The method to decide whether the metods require the dataset to produce the W
+        Args:
+            None
+        Returns:
+            None
+        """
         if self.model_name in VideoAnomalyDatasetFactory.NEED_W:
             self.need_w_flag = True
         else:
             self.need_w_flag = False
 
     def _jude_need_cluster(self):
+        """
+        The method to decide whether the metods require the dataset to cluster
+        Args:
+            None
+        Returns:
+            None
+        """
         if self.model_name in VideoAnomalyDatasetFactory.NEED_CLUSTER:
             self.need_cluster_flag = True
         else:
             self.need_cluster_flag = False
 
     def _produce_train_dataset(self):
+        """
+        The method to produce the dataset used for the training process.
+        Args:
+            None
+        Returns:
+            train_dataset_dict(OrderedDict): The dataset dictionary contains the torch.data.Dataloader object used for training process
+            For example:
+            {
+                'video_keys': 'all',
+                'video_datasets': {
+                    'all': torch.data.Dataset_object
+                }
+            }
+        """
         train_dataset_dict = OrderedDict()
         train_dataset = self.ingredient(self.dataset_params.train.data_path, clip_length=self.dataset_params.train.clip_length, 
                                         sampled_clip_length=self.dataset_params.train.sampled_clip_length, 
@@ -46,6 +88,22 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
         return train_dataset_dict
     
     def _produce_val_dataset(self):
+        """
+        The method to produce the dataset used for the val/test process
+        Args:
+            None
+        Returns:
+            test_dataset_dict(OrederedDict): The dataset dictionary contains torch.data.Dataloader objects used for training process
+            For example:
+            {
+                'video_keys': ['01', '02', '03'],
+                'video_datasets': {
+                    '01': torch.data.Dataloader,
+                    '02': torch.data.Dataloader,
+                    '03': torch.data.Dataloader
+                }
+            }
+        """
         dataset_dict = OrderedDict()
         video_dirs = os.listdir(self.dataset_params.val.data_path)
         video_dirs.sort()
@@ -63,6 +121,22 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
         return test_dataset_dict
     
     def _produce_w_dataset(self):
+        """
+        The method to produce the dataset used for computing the weights
+        Args:
+            None
+        Returns:
+            test_dataset_dict(OrederedDict): The dataset dictionary contains torch.data.Dataloader objects used for training process
+            For example:
+            {
+                'video_keys': ['01', '02', '03'],
+                'video_datasets': {
+                    '01': torch.data.Dataloader,
+                    '02': torch.data.Dataloader,
+                    '03': torch.data.Dataloader
+                }
+            }
+        """
         dataset_dict = OrderedDict()
         video_dirs = os.listdir(self.dataset_params.train.data_path)
         video_dirs.sort()
@@ -79,6 +153,22 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
         return w_dataset_dict
 
     def _produce_cluster_dataset(self):
+        """
+        The method to produce the dataset used for clustering
+        Args:
+            None
+        Returns:
+            test_dataset_dict(OrederedDict): The dataset dictionary contains torch.data.Dataloader objects used for training process
+            For example:
+            {
+                'video_keys': ['01', '02', '03'],
+                'video_datasets': {
+                    '01': torch.data.Dataloader,
+                    '02': torch.data.Dataloader,
+                    '03': torch.data.Dataloader
+                }
+            }
+        """
         dataset_dict = OrderedDict()
         video_dirs = os.listdir(self.dataset_params.train_path)
         video_dirs.sort()
@@ -96,6 +186,26 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
     
 
     def _build(self):
+        """
+        The method is used for manufacturing the dataloader bundle
+        Args:
+            None
+        Returns:
+            dataset_dict(OrederedDict): The dataloader bundle contians all of requriments for a specifical method both in training and val/test process
+            For example:
+            {
+                'val_dataset_dict':{
+                    'general_dataset_dict': test_dataset_dict,
+                    ...
+                },
+                'train_data_dict':{
+                    'general_dataset_dict': train_dataset_dict,
+                    'w_dataset_dict': w_dataset_dict,
+                    'cluster_dataset_dict': cluster_dataset_dict,
+                    ...
+                }
+            }
+        """
         dataset_dict = OrderedDict()
         test_dataset_dict = self._produce_val_dataset()
         dataset_dict['val_dataset_dict'] = OrderedDict()
@@ -115,5 +225,12 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
         return dataset_dict
 
     def __call__(self):
+        """
+        The method is used for calling the build-method
+        Args:
+            None
+        Returns:
+            dataset_dict(OrederedDict): As the return of self._build()
+        """
         dataset_dict = self._build()
         return dataset_dict

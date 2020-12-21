@@ -13,8 +13,11 @@ from collections import OrderedDict
 # logger = logging.getLogger(__name__)
 
 class BaseTrainer(AbstractTrainer):
+    """The base class of trainers
+    All of other methods' trainer must be the sub-class of this.
+    """
     def __init__(self, *defaults, **kwargs):
-        '''
+        """Initialization Method.
         Args:
             defaults(tuple): the default will have:
                 0 0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
@@ -31,10 +34,8 @@ class BaseTrainer(AbstractTrainer):
                 parallel(bool): True-> data parallel
                 pertrain(bool): True-> use the pretarin model
                 dataloaders_dict: will to replace the train_dataloader and test_dataloader
-                extra param:
-                    test_dataset_keys: the dataset keys of each video
-                    test_dataset_dict: the dataset dict of whole test videos
-        '''
+                hooks
+        """
         self._hooks = []
         # self._eval_hooks = []
         self._register_hooks(kwargs['hooks'])
@@ -46,23 +47,15 @@ class BaseTrainer(AbstractTrainer):
         
         if kwargs['pretrain']:
             self.load_pretrain()
-        # =============================the old version to get iter of dataloader========================
-        # self.train_dataloader = defaults[1]
-        # self._train_loader_iter = iter(self.train_dataloader)
-
-        # self.val_dataloader = defaults[2]
-        # self._val_loader_iter = iter(self.val_dataloader)
-        # ==============================================================================================
+        
         dataloaders_dict = defaults[1]
         self._dataloaders_dict = dataloaders_dict
         self.train_dataloaders_dict = dataloaders_dict['train']
         self._train_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['all'])
-        # self.val_dataloaders_dict = dataloaders_dict['test']
         # temporal, but it is wrong !!!
-        # self._val_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['video_datasets']['all'])
-        # self._val_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['all'])
         self.val_dataloaders_dict = dataloaders_dict['val']
         self.val_dataset_keys = list(dataloaders_dict['val']['general_dataset_dict'].keys())
+
         # get the optimizer
         self.optimizer = defaults[2]
 
@@ -80,8 +73,8 @@ class BaseTrainer(AbstractTrainer):
         self.result_path = ''
         self.kwargs = kwargs
         self.normalize = ParamSet(name='normalize', 
-                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
-                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
+                                  train={'use':self.config.AUGMENT.train.normal.use, 'mean':self.config.AUGMENT.train.normal.mean, 'std':self.config.AUGMENT.train.normal.std}, 
+                                  val={'use':self.config.AUGMENT.val.normal.use, 'mean':self.config.AUGMENT.val.normal.mean, 'std':self.config.AUGMENT.val.normal.std})
 
         self.steps = ParamSet(name='steps', log=self.config.TRAIN.log_step, vis=self.config.TRAIN.vis_step, eval=self.config.TRAIN.eval_step, save=self.config.TRAIN.save_step, 
                               max=self.config.TRAIN.max_steps, dynamic_steps=self.config.TRAIN.dynamic_steps)
@@ -132,12 +125,27 @@ class BaseTrainer(AbstractTrainer):
             self.fine_tune()
     
     def _load_file(self, model_keys, model_file):
+        """Method to load the data into pytorch structure.
+        Args:
+            model_keys: The keys of model
+            model_file: The data of the model
+        """
         for item in model_keys:
             item = str(item)
             getattr(self, item).load_state_dict(model_file[item]['state_dict'])
         self.logger.info('Finish load!')
 
     def load_pretrain(self):
+        """Load the pretrain model.
+        Using this method to load the pretrain model or checkpoint. 
+        This method only loads the model file, not loads optimizer and etc.
+
+        Args:
+            None
+        Returns:
+            None
+        
+        """
         model_path = self.config.MODEL.pretrain_model
 
         if  model_path is '':
@@ -157,6 +165,9 @@ class BaseTrainer(AbstractTrainer):
                 self._load_file(self.model.keys(), pretrain_model)
     
     def resume(self):
+        """Load files used for resume training.
+        The method loads the model file and the optimzier file.
+        """
         self.logger.info('=> Resume the previous training')
         checkpoint_path = self.config.TRAIN.resume.checkpoint_path
         self.logger.info(f'=> Load the checkpoint from {checkpoint_path}')
@@ -167,6 +178,10 @@ class BaseTrainer(AbstractTrainer):
         self._load_file(self.optimizer.keys(), checkpoint['optimizer_state_dict'])
     
     def fine_tune(self):
+        """Set the fine-tuning layers
+        This method will set the not fine-tuning layers freezon and the fine-tuning layers activate.
+
+        """
         # need to improve
         layer_list = self.config.TRAIN.finetune.layer_list
         self.logger.info('=> Freeze layers except start with:{}'.format(layer_list))
@@ -186,42 +201,32 @@ class BaseTrainer(AbstractTrainer):
         self.logger.info('Finish Setting freeze layers')
     
     def data_parallel(self, model):
-        '''
-        Data parallel the model
-        '''
+        """Parallel the models.
+        Data parallel the model by using torch.nn.DataParallel
+        Args:
+            model: torch.nn.Module
+        Returns:
+            model_parallel
+        """
         self.logger.info('<!_!> ==> Data Parallel')
         gpus = [int(i) for i in self.config.SYSTEM.gpus]
         model_parallel = torch.nn.DataParallel(model.cuda(), device_ids=gpus)
         return model_parallel
     
     def set_all(self, is_train):
-        """
+        """Set all train or eval.
         Set all of models in this trainer in eval or train model
         Args:
             is_train: bool. True=train mode; False=eval mode
         Returns:
             None
         """
-        for item in self.trainer.model.keys():
+        for item in self.model.keys():
             self.set_requires_grad(getattr(self, str(item)), is_train)
             if is_train:
                 getattr(self, str(item)).train()
             else:
                 getattr(self, str(item)).eval()
-    
-    
-    '''
-    Run the whole process:
-    1. print the log information ( before_step)
-    2. execute training process (train)
-    3. evaluate(including the validation and test) -
-                                                   |  --> (after_step)
-    4. save model                                  -
-    '''
-    
-    def before_step(self, current_step):
-        pass
-
     
     def after_step(self, current_step):
         # acc = 0.0
@@ -234,30 +239,45 @@ class BaseTrainer(AbstractTrainer):
         
         self.save(self.config.TRAIN.max_steps)
 
-    def save(self, current_epoch, best=False):
-        '''
-        self.saved_model: is the model or a dict of combination of models
-        self.saved_optimizer: is the optimizer or a dict of combination of optimizers
-        self.saved_loss: the loss  or a dict of the combination  of loss 
-        '''
+    def save(self, current_step, best=False):
+        """Save method.
+        The method is used to save the model or checkpoint. The following attributes are related to this function.
+            self.saved_model: the model or a dict of combination of models
+            self.saved_optimizer:  the optimizer or a dict of combination of optimizers
+            self.saved_loss: the loss  or a dict of the combination  of loss
+
+        Args:
+            current_step(int): The current step. 
+            best(bool): indicate whether is the best model
+
+        """
         if best:
-            engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_epoch, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose),best=best)
+            engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_step, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose),best=best)
             self.result_path = engine_save_model(self.config, self.kwargs['config_name'], self.saved_model, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
         else:
-            engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_epoch, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
+            engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_step, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
 
     @abc.abstractmethod
     def custom_setup(self):
+        """Extra setup method.
+        This method help users to define some extra methods
+        """
         pass
 
     @abc.abstractmethod
     def train(self,current_step):
+        """Actual training function.
+        Re-write by sub-class to implement the training functions.
+
+        Args:
+            current_step(int): The current step
+        """
         pass
     
  
 class BaseInference(AbstractInference):
     def __init__(self, *defaults, **kwargs):
-        '''
+        """
         Args:
             defaults(tuple): the default will have:
                 0 0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
@@ -277,7 +297,7 @@ class BaseInference(AbstractInference):
                 extra param:
                     test_dataset_keys: the dataset keys of each video
                     test_dataset_dict: the dataset dict of whole test videos
-        '''
+        """
         self._hooks = []
         # self._eval_hooks = []
         self._register_hooks(kwargs['hooks'])
@@ -348,8 +368,12 @@ class BaseInference(AbstractInference):
         self.custom_setup()
 
     
-    
     def _load_file(self, model_keys, model_file):
+        """Method to load the data into pytorch structure.
+        Args:
+            model_keys: The keys of model
+            model_file: The data of the model
+        """
         for item in model_keys:
             item = str(item)
             getattr(self, item).load_state_dict(model_file[item]['state_dict'])
