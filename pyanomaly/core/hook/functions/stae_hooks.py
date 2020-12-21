@@ -18,7 +18,11 @@ __all__ = ['STAEEvaluateHook']
 
 @HOOK_REGISTRY.register()
 class STAEEvaluateHook(EvaluateHook):
-    def 
+    def _vis(self):
+        """
+        Vis the image during the inference 
+        """
+        pass
     def evaluate(self, current_step):
         """STAE evaluation method. 
 
