@@ -1,6 +1,6 @@
 SYSTEM:
-  multigpus: false
-  num_gpus: 2
+  # multigpus: false
+  # num_gpus: 2
   gpus: [0,1]
   cudnn:
     benchmark: true
@@ -25,7 +25,7 @@ DATASET:
     clip_step: 1
     execute_test: false
     gt_path: './data/Avenue'
-  test:
+  val:
     data_path: './data/avenue/testing/frames'
     clip_length: 7
     sampled_clip_length: 3
@@ -96,7 +96,7 @@ AUGMENT:
 MODEL:
   name: 'ocae'
   type: 'ame2e'
-  parts: ['meta_CAE', 'A', 'meta_CAE', 'B', 'meta_CAE', 'C']
+  parts: ['meta_A', 'CAE', 'meta_B', 'CAE', 'meta_C', 'CAE']
   hooks:
     train: ['ClusterHook', 'OCEvaluateHook', 'VisScoreHook']
     val: ['OCEvaluateHook']
@@ -116,7 +116,7 @@ TRAIN:
   eval_step: 958
   save_step: 958
   epochs: 1
-  loss: ['loss_ALoss_cuda', 1, 'IntensityLoss', [], 'loss_Bloss_cuda', 2, 'IntensityLoss', [],
+  losses: ['loss_ALoss_cuda', 1, 'IntensityLoss', [], 'loss_Bloss_cuda', 2, 'IntensityLoss', [],
         'loss_Closs_cuda', 1, 'IntensityLoss',[]]
   mode: 'general'
   general:
@@ -138,7 +138,7 @@ TRAIN:
       warmup_factor: 0.001
       warmup_iters: 1000
       warmup_method: 'linear'
-  split: ''
+  # split: ''
   model_output: './output/models'
   checkpoint_output: './output/checkpoint'
   pusedo_data_path: ''
@@ -146,7 +146,7 @@ TRAIN:
     k: 10
 VAL:
   engine_name: 'OCAEInference'
-  name: ''
+  # name: ''
   path: ''
   batch_size: 2
   result_output: './output/results'
