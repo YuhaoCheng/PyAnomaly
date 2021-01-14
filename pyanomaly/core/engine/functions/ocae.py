@@ -23,6 +23,7 @@ from ..abstract.base_engine import BaseTrainer, BaseInference
 from pyanomaly.core.utils import AverageMeter, multi_obj_grid_crop, frame_gradient, get_batch_dets, tensorboard_vis_images, ParamSet, make_info_message
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from ..engine_registry import ENGINE_REGISTRY
+
 try:
     from sklearn.externals import joblib
 except:
