@@ -4,8 +4,9 @@
 """
 import torch
 from pyanomaly.core.utils import AverageMeter, ParamSet
-from ..utils import engine_save_checkpoint
-from ..utils import engine_save_model
+# from ..utils import engine_save_checkpoint
+# from ..utils import engine_save_model
+from ..utils import engine_save
 from .abstract_engine import AbstractTrainer, AbstractInference
 import abc
 from collections import OrderedDict
@@ -42,6 +43,8 @@ class BaseTrainer(AbstractTrainer):
         # logger & config
         self.logger = defaults[4]
         self.config = defaults[5]
+        # devices
+        self.engine_gpus = self.config.SYSTEM.gpus
 
         self.model = defaults[0]
         
@@ -88,9 +91,10 @@ class BaseTrainer(AbstractTrainer):
         self.lr_scheduler_dict = kwargs['lr_scheduler_dict']
 
         # initialize the saved objects
-        self.saved_model = OrderedDict()
-        self.saved_optimizer = OrderedDict()
-        self.saved_loss = OrderedDict()
+        # self.saved_model = OrderedDict()
+        # self.saved_optimizer = OrderedDict()
+        # self.saved_loss = OrderedDict()
+        self.saved_stuff = OrderedDict()
 
         # Get the models
         for item_key in self.model.keys():
@@ -124,16 +128,16 @@ class BaseTrainer(AbstractTrainer):
         if self.config.TRAIN.finetune.use:
             self.fine_tune()
     
-    def _load_file(self, model_keys, model_file):
-        """Method to load the data into pytorch structure.
-        Args:
-            model_keys: The keys of model
-            model_file: The data of the model
-        """
-        for item in model_keys:
-            item = str(item)
-            getattr(self, item).load_state_dict(model_file[item]['state_dict'])
-        self.logger.info('Finish load!')
+    # def _load_file(self, model_keys, model_file):
+    #     """Method to load the data into pytorch structure.
+    #     Args:
+    #         model_keys: The keys of model
+    #         model_file: The data of the model
+    #     """
+    #     for item in model_keys:
+    #         item = str(item)
+    #         getattr(self, item).load_state_dict(model_file[item]['state_dict'])
+    #     self.logger.info('Finish load!')
 
     def load_pretrain(self):
         """Load the pretrain model.
@@ -213,20 +217,20 @@ class BaseTrainer(AbstractTrainer):
         model_parallel = torch.nn.DataParallel(model.cuda(), device_ids=gpus)
         return model_parallel
     
-    def set_all(self, is_train):
-        """Set all train or eval.
-        Set all of models in this trainer in eval or train model
-        Args:
-            is_train: bool. True=train mode; False=eval mode
-        Returns:
-            None
-        """
-        for item in self.model.keys():
-            self.set_requires_grad(getattr(self, str(item)), is_train)
-            if is_train:
-                getattr(self, str(item)).train()
-            else:
-                getattr(self, str(item)).eval()
+    # def set_all(self, is_train):
+    #     """Set all train or eval.
+    #     Set all of models in this trainer in eval or train model
+    #     Args:
+    #         is_train: bool. True=train mode; False=eval mode
+    #     Returns:
+    #         None
+    #     """
+    #     for item in self.model.keys():
+    #         self.set_requires_grad(getattr(self, str(item)), is_train)
+    #         if is_train:
+    #             getattr(self, str(item)).train()
+    #         else:
+    #             getattr(self, str(item)).eval()
     
     def after_step(self, current_step):
         # acc = 0.0
@@ -239,24 +243,37 @@ class BaseTrainer(AbstractTrainer):
         
         self.save(self.config.TRAIN.max_steps)
 
+    # def save(self, current_step, best=False):
+    #     """Save method.
+    #     The method is used to save the model or checkpoint. The following attributes are related to this function.
+    #         self.saved_model: the model or a dict of combination of models
+    #         self.saved_optimizer:  the optimizer or a dict of combination of optimizers
+    #         self.saved_loss: the loss  or a dict of the combination  of loss
+
+    #     Args:
+    #         current_step(int): The current step. 
+    #         best(bool): indicate whether is the best model
+
+    #     """
+    #     if best:
+    #         engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_step, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose),best=best)
+    #         self.result_path = engine_save_model(self.config, self.kwargs['config_name'], self.saved_model, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
+    #     else:
+    #         engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_step, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
     def save(self, current_step, best=False):
         """Save method.
         The method is used to save the model or checkpoint. The following attributes are related to this function.
-            self.saved_model: the model or a dict of combination of models
-            self.saved_optimizer:  the optimizer or a dict of combination of optimizers
-            self.saved_loss: the loss  or a dict of the combination  of loss
-
+            self.saved_stuff(dict): the dictionary of saving things, such as model, optimizer, loss, step. 
         Args:
             current_step(int): The current step. 
             best(bool): indicate whether is the best model
 
         """
         if best:
-            engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_step, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose),best=best)
-            self.result_path = engine_save_model(self.config, self.kwargs['config_name'], self.saved_model, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
+            result_dict = engine_save(self.config, self.kwargs['config_name'], self.saved_stuff, current_step, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=True, save_model=True)
+            self.result_path = result_dict['model_file']
         else:
-            engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_step, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
-
+            result_dict = engine_save(self.config, self.kwargs['config_name'], self.saved_stuff, current_step, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=False, save_model=False)
     @abc.abstractmethod
     def custom_setup(self):
         """Extra setup method.
@@ -304,6 +321,8 @@ class BaseInference(AbstractInference):
         # logger & config
         self.logger = defaults[4]
         self.config = defaults[5]
+        # devices
+        self.engine_gpus = self.config.SYSTEM.gpus
 
         self.model = defaults[0]
         
@@ -367,36 +386,42 @@ class BaseInference(AbstractInference):
 
         self.custom_setup()
 
-    
-    def _load_file(self, model_keys, model_file):
-        """Method to load the data into pytorch structure.
-        Args:
-            model_keys: The keys of model
-            model_file: The data of the model
+    def load_model(self, model_path):
+        """Load the model from the model file.
         """
-        for item in model_keys:
-            item = str(item)
-            getattr(self, item).load_state_dict(model_file[item]['state_dict'])
-        self.logger.info('Finish load!')
+        self.logger.info(f'=>Loading the Test model in {model_path}')
+        model_file = torch.load(model_path)
+        self._load_file(self.model.keys(), model_file)
+    
+    # def _load_file(self, model_keys, model_file):
+    #     """Method to load the data into pytorch structure.
+    #     Args:
+    #         model_keys: The keys of model
+    #         model_file: The data of the model
+    #     """
+    #     for item in model_keys:
+    #         item = str(item)
+    #         getattr(self, item).load_state_dict(model_file[item]['state_dict'])
+    #     self.logger.info('Finish load!')
 
-    def load_pretrain(self):
-        model_path = self.config.MODEL.pretrain_model
+    # def load_pretrain(self):
+    #     model_path = self.config.MODEL.pretrain_model
 
-        if  model_path is '':
-            self.logger.info('=>Not have the pre-train model! Training from the scratch')
-        else:
-            self.logger.info(f'=>Loading the model in {model_path}')
-            pretrain_model = torch.load(model_path)
-            if 'epoch' in pretrain_model.keys():
-                self.logger.info('(|_|) ==> Use the check point file')
-                # self.model.load_state_dict(pretrain_model['model_state_dict'])
-                # model_file = pretrain_model['model_state_dict']
-                self._load_file(self.model.keys(), pretrain_model)
-            else:
-                self.logger.info('(+_+) ==> Use the model file')
-                # self.model.load_state_dict(pretrain_model['state_dict'])
-                # model_file = pretrain_model['state_dict']
-                self._load_file(self.model.keys(), pretrain_model)
+    #     if  model_path is '':
+    #         self.logger.info('=>Not have the pre-train model! Training from the scratch')
+    #     else:
+    #         self.logger.info(f'=>Loading the model in {model_path}')
+    #         pretrain_model = torch.load(model_path)
+    #         if 'epoch' in pretrain_model.keys():
+    #             self.logger.info('(|_|) ==> Use the check point file')
+    #             # self.model.load_state_dict(pretrain_model['model_state_dict'])
+    #             # model_file = pretrain_model['model_state_dict']
+    #             self._load_file(self.model.keys(), pretrain_model)
+    #         else:
+    #             self.logger.info('(+_+) ==> Use the model file')
+    #             # self.model.load_state_dict(pretrain_model['state_dict'])
+    #             # model_file = pretrain_model['state_dict']
+    #             self._load_file(self.model.keys(), pretrain_model)
 
 
     # def load(self):
@@ -408,30 +433,30 @@ class BaseInference(AbstractInference):
     #             self.model[k].load_state_dict(temp[k[0]])
     #     else:
     #         self.model.load_state_dict(torch.load(self.model_path))
-    def set_all(self, is_train):
-        """
-        Set all of models in this trainer in eval or train model
-        Args:
-            is_train: bool. True=train mode; False=eval mode
-        Returns:
-            None
-        """
-        for item in self.trainer.model.keys():
-            self.set_requires_grad(getattr(self, str(item)), is_train)
-            if is_train:
-                getattr(self, str(item)).train()
-            else:
-                getattr(self, str(item)).eval()
+    # def set_all(self, is_train):
+    #     """
+    #     Set all of models in this trainer in eval or train model
+    #     Args:
+    #         is_train: bool. True=train mode; False=eval mode
+    #     Returns:
+    #         None
+    #     """
+    #     for item in self.trainer.model.keys():
+    #         self.set_requires_grad(getattr(self, str(item)), is_train)
+    #         if is_train:
+    #             getattr(self, str(item)).train()
+    #         else:
+    #             getattr(self, str(item)).eval()
     
 
-    def data_parallel(self, model):
-        '''
-        Data parallel the model
-        '''
-        self.logger.info('<!_!> ==> Data Parallel')
-        gpus = [int(i) for i in self.config.SYSTEM.gpus]
-        model_parallel = torch.nn.DataParallel(model, device_ids=gpus).cuda()
-        return model_parallel
+    # def data_parallel(self, model):
+    #     '''
+    #     Data parallel the model
+    #     '''
+    #     self.logger.info('<!_!> ==> Data Parallel')
+    #     gpus = [int(i) for i in self.config.SYSTEM.gpus]
+    #     model_parallel = torch.nn.DataParallel(model, device_ids=gpus).cuda()
+    #     return model_parallel
 
 
     @abc.abstractmethod

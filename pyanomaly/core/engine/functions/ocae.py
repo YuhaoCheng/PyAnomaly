@@ -110,7 +110,7 @@ class OCAETrainer(BaseTrainer):
             self.loss_meter_ABC.update(loss_all.detach())
             if self.config.TRAIN.general.scheduler.use:
                 self.optimizer_ABC_scheduler.step()
-        
+            
             # ======================End==================
 
         self.batch_time.update(time.time() - start)
@@ -135,13 +135,21 @@ class OCAETrainer(BaseTrainer):
         start = time.time()
         
         # self.saved_model = {'A':self.A, 'B':self.B, 'C':self.C}
-        self.saved_model['A'] = self.A
-        self.saved_model['B'] = self.B
-        self.saved_model['C'] = self.C
-        # self.saved_optimizer = {'optim_ABC': self.optim_ABC}
-        self.saved_optimizer['optimizer_ABC'] = self.optimizer_ABC
-        # self.saved_loss = {'loss_ABC':self.loss_meter_ABC.val}
-        self.saved_loss['loss_ABC'] = self.loss_meter_ABC.val
+        # self.saved_model['A'] = self.A
+        # self.saved_model['B'] = self.B
+        # self.saved_model['C'] = self.C
+        # # self.saved_optimizer = {'optim_ABC': self.optim_ABC}
+        # self.saved_optimizer['optimizer_ABC'] = self.optimizer_ABC
+        # # self.saved_loss = {'loss_ABC':self.loss_meter_ABC.val}
+        # self.saved_loss['loss_ABC'] = self.loss_meter_ABC.val
+
+        self.saved_stuff['step'] = global_steps
+        self.saved_stuff['loss'] = self.loss_meter_ABC.val
+        self.saved_stuff['A'] = self.A
+        self.saved_stuff['B'] = self.B
+        self.saved_stuff['C'] = self.C
+        self.saved_stuff['optimizer_ABC'] = self.optimizer_ABC
+
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
 
