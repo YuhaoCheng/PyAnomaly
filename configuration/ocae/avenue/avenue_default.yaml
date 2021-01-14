@@ -98,7 +98,8 @@ MODEL:
   type: 'ame2e'
   parts: ['meta_A', 'CAE', 'meta_B', 'CAE', 'meta_C', 'CAE', 'auxiliary_Detector', 'Detector']
   hooks:
-    train: ['ClusterHook', 'OCEvaluateHook', 'VisScoreHook']
+    # train: ['ClusterHook', 'OCEvaluateHook', 'VisScoreHook']
+    train: ['ClusterHook', 'OCEvaluateHook']
     val: ['OCEvaluateHook']
   auxiliary:
     detector:
@@ -110,11 +111,13 @@ TRAIN:
   batch_size: 16
   start_step: 0
   max_steps: 38320
-  log_step: 5
+  log_step: 50
   vis_step: 958
   mini_eval_step: 600
-  eval_step: 958
-  save_step: 958
+  eval_step: 100
+  # eval_step: 958
+  save_step: 100
+  # save_step: 958
   epochs: 1
   losses: ['loss_ALoss_cuda', 1, 'IntensityLoss', [], 'loss_BLoss_cuda', 2, 'IntensityLoss', [],
         'loss_CLoss_cuda', 1, 'IntensityLoss',[]]

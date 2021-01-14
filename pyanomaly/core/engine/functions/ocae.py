@@ -40,7 +40,8 @@ class OCAETrainer(BaseTrainer):
         # basic meter
         self.loss_meter_ABC = AverageMeter(name='loss_ABC')
 
-        self.ovr_model_path = os.path.join(self.config.TRAIN.model_output, f'ocae_cfg@{self.config_name}#{self.verbose}.npy') 
+        self.ovr_model_path = os.path.join(self.config.TRAIN.model_output, f'ocae_cfg@{self.config_name}#{self.verbose}.npy')
+        self.cluster_dataset_keys = self.train_dataloaders_dict['cluster_dataset_dict'].keys()
         # import ipdb; ipdb.set_trace()
 
     def train(self,current_step):
