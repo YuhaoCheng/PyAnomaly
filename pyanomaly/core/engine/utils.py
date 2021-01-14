@@ -106,7 +106,7 @@ class EngineAverageMeter(object):
 #     if best:
 #         torch.save(checkpoint, output_best)
 #         logger.info(f'\033[1;32m =>Save Best checkpoint:{file_name} \033[0m')
-def engine_save(cfg, cfg_name, saved_stuff, step, time_stamp, metric, flag='inter', verbose='None', best=False, save_model=False):
+def engine_save(saved_stuff, current_step, metric, save_cfg=None, flag='inter', verbose='None', best=False, save_model=False):
     """Save the checkpoint file.
     Save the checkpoint of training, in order to resume the training process. 
     The saving ckpt path is: OUTPUT_DIR / DATASET.DATASET / MODEL.NAME / cfg@xxx / time_stamp / xxx.pth
@@ -120,8 +120,15 @@ def engine_save(cfg, cfg_name, saved_stuff, step, time_stamp, metric, flag='inte
         'optimizer_state_dict': xxx
     }
     Args:
-        cfg: The configuration object
-        cfg_name: the name of the configuration file
+        save_cfg(namedtuple): The configuration object of the saving process. It must contain the follows:
+            save_cfg.output_dir: the output directory of the model or checkpoint
+            save_cfg.low: the lowest value of the metric to save
+            save_cfg.cfg_name: the name of the configuration
+            save_cfg.dataset_name: the name of the dataset
+            save_cfg.model_name: the name of the model
+            save_cfg.time_stamp: the time when the engine start
+        cfg_name: the name of the configuration file  # will be deprecated in the future
+        current_step(int): Which step stores the ckpt or model
         saved_stuff(dict): The saving things incules the model, epoch, loss, optimizer. At least, it contains the model. For example:
             {
                 'step': 0,
@@ -129,13 +136,15 @@ def engine_save(cfg, cfg_name, saved_stuff, step, time_stamp, metric, flag='inte
                 $model_name: xxxx,
                 $optimizer_name: xxx
             }
-        time_stamp(str): the start time of using the project
+        
+        time_stamp(str): the start time of using the project # will be deprecated in the future
         metric(float): the value of the accuracy or other metric
         flag(str): if the cheeckpoint is final, the value of it is 'final'. else, the value of it is 'inter'
         verbose(str): some comments 
         best(bool): if the ckpt is the best one, it will be True; else it will be False
         save_model: if the engine saves the model(network), it will be True; else it will be False
     """
+    assert save_cfg != None, 'The save_cfg should not be none'
     # set a the lowest metric
     low = 20.0 # in order to filter the really low accuracy
     if metric < low:
@@ -143,10 +152,10 @@ def engine_save(cfg, cfg_name, saved_stuff, step, time_stamp, metric, flag='inte
         return {'ckpt_file': None, 'model_file': None}
     
     # create and check the output directionary
-    output_ckpt = Path(cfg.TRAIN.checkpoint_output) / cfg.DATASET.name / cfg.MODEL.name /('cfg@' + cfg_name) / time_stamp
+    output_ckpt = Path(save_cfg.output_dir) / save_cfg.dataset_name / save_cfg.model_name /('cfg@' + save_cfg.cfg_name) / save_cfg.time_stamp
     output_ckpt.mkdir(parents=True, exist_ok=True)
     logger.info(f'=>Save the checkpoint in:{output_ckpt}')
-    output_model = Path(cfg.TRAIN.model_output) / cfg.DATASET.name / cfg.MODEL.name 
+    output_model = Path(save_cfg.output_dir) / save_cfg.dataset_name / save_cfg.model_name 
     output_model.mkdir(parents=True, exist_ok=True)
     logger.info(f'=>Save the model in:{output_model}')
 
@@ -172,10 +181,10 @@ def engine_save(cfg, cfg_name, saved_stuff, step, time_stamp, metric, flag='inte
             checkpoint[key] = stuff.state_dict()
     
     # make the ckpt file name
-    file_name_ckpt = f'{flag}_step{step}#{metric:.3f}^{verbose}.pth.tar'
-    file_name_ckpt_best = f'best_ckpt_{cfg.DATASET.name}_{cfg.MODEL.name}#{metric:.3f}_cfg@{cfg_name}.pth'
+    file_name_ckpt = f'{flag}_step{current_step}#{metric:.3f}^{verbose}.pth.tar'
+    file_name_ckpt_best = f'best_ckpt_{save_cfg.dataset_name}_{save_cfg.model_name}#{metric:.3f}_cfg@{save_cfg.cfg_name}.pth'
     ckpt = output_ckpt / file_name_ckpt
-    ckpt_best = Path(cfg.TRAIN.checkpoint_output) / file_name_ckpt_best
+    ckpt_best = Path(save_cfg.output_dir) / file_name_ckpt_best
 
     if best:
         torch.save(checkpoint, ckpt_best)
@@ -190,10 +199,10 @@ def engine_save(cfg, cfg_name, saved_stuff, step, time_stamp, metric, flag='inte
     mdl_str = 'None'
     if save_model:
         # make the model name
-        model_name = f'cfg@{cfg_name}#{time_stamp}#{metric:.3f}^{verbose}.pth'
-        model_name_best = f'best_{cfg.DATASET.name}_{cfg.MODEL.name}#{metric:.3f}_cfg@{cfg_name}.pth'
+        model_name = f'cfg@{save_cfg.cfg_name}#{save_cfg.time_stamp}#{metric:.3f}^{verbose}.pth'
+        model_name_best = f'best_{save_cfg.dataset_name}_{save_cfg.model_name}#{metric:.3f}_cfg@{save_cfg.cfg_name}.pth'
         mdl = output_model / model_name    # mdl addr. model
-        mdl_best = Path(cfg.TRAIN.model_output) / model_name_best
+        mdl_best = Path(save_cfg.output_dir) / model_name_best
         if best:
             torch.save(checkpoint, mdl_best)
             logger.info(f'\033[1;31m =>Saved Best Model name:{mdl_best} \033[0m')

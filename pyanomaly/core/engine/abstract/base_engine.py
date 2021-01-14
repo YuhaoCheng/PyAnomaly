@@ -4,12 +4,10 @@
 """
 import torch
 from pyanomaly.core.utils import AverageMeter, ParamSet
-# from ..utils import engine_save_checkpoint
-# from ..utils import engine_save_model
 from ..utils import engine_save
 from .abstract_engine import AbstractTrainer, AbstractInference
 import abc
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 # import logging
 # logger = logging.getLogger(__name__)
 
@@ -45,6 +43,10 @@ class BaseTrainer(AbstractTrainer):
         self.config = defaults[5]
         # devices
         self.engine_gpus = self.config.SYSTEM.gpus
+
+         # set the configuration of the saving process
+        save_cfg_template = namedtuple('save_cfg_template', ['output_dir', 'low',  'cfg_name', 'dataset_name', 'model_name', 'time_stamp'])
+        self.save_cfg = save_cfg_template(output_dir=self.config.TRAIN.checkpoint_output, low=0.0, cfg_name=kwargs['config_name'], dataset_name=self.config.DATASET.name, model_name=self.config.MODEL.name, time_stamp=kwargs['time_stamp'])
 
         self.model = defaults[0]
         
@@ -128,17 +130,6 @@ class BaseTrainer(AbstractTrainer):
         if self.config.TRAIN.finetune.use:
             self.fine_tune()
     
-    # def _load_file(self, model_keys, model_file):
-    #     """Method to load the data into pytorch structure.
-    #     Args:
-    #         model_keys: The keys of model
-    #         model_file: The data of the model
-    #     """
-    #     for item in model_keys:
-    #         item = str(item)
-    #         getattr(self, item).load_state_dict(model_file[item]['state_dict'])
-    #     self.logger.info('Finish load!')
-
     def load_pretrain(self):
         """Load the pretrain model.
         Using this method to load the pretrain model or checkpoint. 
@@ -181,6 +172,7 @@ class BaseTrainer(AbstractTrainer):
         # self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self._load_file(self.optimizer.keys(), checkpoint['optimizer_state_dict'])
     
+
     def fine_tune(self):
         """Set the fine-tuning layers
         This method will set the not fine-tuning layers freezon and the fine-tuning layers activate.
@@ -217,20 +209,6 @@ class BaseTrainer(AbstractTrainer):
         model_parallel = torch.nn.DataParallel(model.cuda(), device_ids=gpus)
         return model_parallel
     
-    # def set_all(self, is_train):
-    #     """Set all train or eval.
-    #     Set all of models in this trainer in eval or train model
-    #     Args:
-    #         is_train: bool. True=train mode; False=eval mode
-    #     Returns:
-    #         None
-    #     """
-    #     for item in self.model.keys():
-    #         self.set_requires_grad(getattr(self, str(item)), is_train)
-    #         if is_train:
-    #             getattr(self, str(item)).train()
-    #         else:
-    #             getattr(self, str(item)).eval()
     
     def after_step(self, current_step):
         # acc = 0.0
@@ -241,26 +219,9 @@ class BaseTrainer(AbstractTrainer):
         for h in self._hooks:
             h.after_train()
         
-        self.save(self.config.TRAIN.max_steps)
+        self.save(self.config.TRAIN.max_steps, flag='final')
 
-    # def save(self, current_step, best=False):
-    #     """Save method.
-    #     The method is used to save the model or checkpoint. The following attributes are related to this function.
-    #         self.saved_model: the model or a dict of combination of models
-    #         self.saved_optimizer:  the optimizer or a dict of combination of optimizers
-    #         self.saved_loss: the loss  or a dict of the combination  of loss
-
-    #     Args:
-    #         current_step(int): The current step. 
-    #         best(bool): indicate whether is the best model
-
-    #     """
-    #     if best:
-    #         engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_step, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose),best=best)
-    #         self.result_path = engine_save_model(self.config, self.kwargs['config_name'], self.saved_model, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
-    #     else:
-    #         engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_step, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
-    def save(self, current_step, best=False):
+    def save(self, current_step, best=False, flag='inter'):
         """Save method.
         The method is used to save the model or checkpoint. The following attributes are related to this function.
             self.saved_stuff(dict): the dictionary of saving things, such as model, optimizer, loss, step. 
@@ -270,10 +231,14 @@ class BaseTrainer(AbstractTrainer):
 
         """
         if best:
-            result_dict = engine_save(self.config, self.kwargs['config_name'], self.saved_stuff, current_step, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=True, save_model=True)
+            # result_dict = engine_save(self.config, self.kwargs['config_name'], self.saved_stuff, current_step, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=True, save_model=True)
+            result_dict = engine_save(self.saved_stuff, current_step, self.accuarcy, save_cfg=self.save_cfg, flag=flag, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=True, save_model=True)
             self.result_path = result_dict['model_file']
         else:
-            result_dict = engine_save(self.config, self.kwargs['config_name'], self.saved_stuff, current_step, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=False, save_model=False)
+            # result_dict = engine_save(self.config, self.kwargs['config_name'], self.saved_stuff, current_step, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=False, save_model=False)
+            result_dict = engine_save(self.saved_stuff, current_step, self.accuarcy, save_cfg=self.save_cfg, flag=flag, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=False, save_model=False)
+    
+        
     @abc.abstractmethod
     def custom_setup(self):
         """Extra setup method.
