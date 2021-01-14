@@ -1,7 +1,7 @@
 SYSTEM:
   # multigpus: false
   # num_gpus: 2
-  gpus: [0,1]
+  gpus: [0]
   cudnn:
     benchmark: true
     deterministic: false
@@ -18,7 +18,7 @@ DATASET:
   seed: 2020
   read_format: 'opencv'
   train:
-    data_path: './data/avenue/training/frames'
+    data_path: './data/Avenue/training/frames'
     clip_length: 7
     sampled_clip_length: 3
     frame_step: 3
@@ -26,7 +26,7 @@ DATASET:
     execute_test: false
     gt_path: './data/Avenue'
   val:
-    data_path: './data/avenue/testing/frames'
+    data_path: './data/Avenue/testing/frames'
     clip_length: 7
     sampled_clip_length: 3
     frame_step: 3
@@ -96,7 +96,7 @@ AUGMENT:
 MODEL:
   name: 'ocae'
   type: 'ame2e'
-  parts: ['meta_A', 'CAE', 'meta_B', 'CAE', 'meta_C', 'CAE']
+  parts: ['meta_A', 'CAE', 'meta_B', 'CAE', 'meta_C', 'CAE', 'auxiliary_Detector', 'Detector']
   hooks:
     train: ['ClusterHook', 'OCEvaluateHook', 'VisScoreHook']
     val: ['OCEvaluateHook']
@@ -116,8 +116,8 @@ TRAIN:
   eval_step: 958
   save_step: 958
   epochs: 1
-  losses: ['loss_ALoss_cuda', 1, 'IntensityLoss', [], 'loss_Bloss_cuda', 2, 'IntensityLoss', [],
-        'loss_Closs_cuda', 1, 'IntensityLoss',[]]
+  losses: ['loss_ALoss_cuda', 1, 'IntensityLoss', [], 'loss_BLoss_cuda', 2, 'IntensityLoss', [],
+        'loss_CLoss_cuda', 1, 'IntensityLoss',[]]
   mode: 'general'
   general:
     optimizer:

@@ -15,8 +15,9 @@ __all__ = ['CAE']
 
 @META_ARCH_REGISTRY.register()
 class CAE(nn.Module):
-    def __init__(self, c_in):
+    def __init__(self, cfg):
         super(CAE,self).__init__()
+        c_in = 1
         self.encoder = nn.Sequential(
             nn.Conv2d(c_in, 32, kernel_size=(3,3), padding=1,stride=1),
             nn.ReLU(inplace=True),

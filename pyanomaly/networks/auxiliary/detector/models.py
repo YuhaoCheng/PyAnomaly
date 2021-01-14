@@ -17,14 +17,14 @@ class Detector(nn.Module):
         super(Detector, self).__init__()
         auxiliary_cfg = cfg.MODEL.auxiliary.detector
         detector_cfg = get_cfg()
-        file_name = auxiliary_cfg.detector_config
+        file_name = auxiliary_cfg.config
         detector_cfg.merge_from_file(model_zoo.get_config_file(file_name))
         detector_cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
         detector_cfg.MODEL.ROI_HEADS.NMS_THRESH_TEST = 0.8
 
         self.det_model = build_model(detector_cfg)
         
-        DetectionCheckpointer(self.det_model).load(auxiliary_cfg.detector_model_path)
+        DetectionCheckpointer(self.det_model).load(auxiliary_cfg.model_path)
         self.det_model.train(False)
     
     def forward(self, input):
