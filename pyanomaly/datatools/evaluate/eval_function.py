@@ -13,6 +13,8 @@ import pickle
 from sklearn import metrics
 import json
 from collections import OrderedDict
+import logging
+logger = logging.getLogger(__name__)
 
 from .utils import load_pickle_results
 from ..abstract import GroundTruthLoader, AbstractEvalMethod
@@ -102,26 +104,45 @@ class ScoreAUCMetrics(AbstractEvalMethod):
         
 
     def eval_method(self, result, gt, verbose):
-        fpr, tpr, thresholds = metrics.roc_curve(gt, result, pos_label=self.pos_label)
-        auc = metrics.auc(fpr, tpr)
-        results = RecordResult(fpr, tpr, thresholds, auc, self.dataset_name, self._result_name, verbose)
+        # import ipdb; ipdb.set_trace()
+        temp_result = result[0] # Because the store scores using the append methods 
+        assert len(temp_result) == len(gt)
+        temp_video_num = len(gt)
+        results = RecordResult(self.dataset_name, self._result_name, verbose=verbose)
+        for i in range(temp_video_num):
+            # fpr, tpr, thresholds = metrics.roc_curve(gt, result, pos_label=self.pos_label)
+            fpr, tpr, thresholds = metrics.roc_curve(gt[i], temp_result[i], pos_label=self.pos_label)
+            auc = metrics.auc(fpr, tpr)
+            # results = RecordResult(fpr, tpr, thresholds, auc, self.dataset_name, self._result_name, verbose)\
+            results.update(auc)
+        
+        assert results.count == temp_video_num, f'The length of the results is not equal to the gt, {results.count} vs. {temp_video_num}'
 
         return results
 
     def compute(self, result_file_dict):
-        '''
-        result_file_dict = {'train':{description1:sigma0_result_file, description2:sigma1_result_file, .....}, 'val':{description1:sigma0_result_file, description2:sigma1_result_file}}
-        '''
+        """Compute the metrics.
+        Load the results stored in the file, compute the results and return the optimal result.
+        Args:
+            result_file_dict: The dictionary to store the results' files
+            For example:
+            {'train':{'description1':sigma0_result_file, 'description2':sigma1_result_file, .....}, 
+            'val':{'description1':sigma0_result_file, 'description2':sigma1_result_file}
+            }
+        """
         for part in self.parts:
             #=====================Need to change, temporal=========================
             if part == 'train':
-                continue
+                continue      # because the train not have the label
             #=======================================================================
             gt = self.gt_dict[part]
             result_file = result_file_dict[part]
+            # import ipdb; ipdb.set_trace()
             for key, item in result_file.items():
                 self._result_name = item
-                score_records, num_videos = self.load_results(result_file)
+                # score_records, num_videos = self.load_results(result_file)
+                score_records, num_videos = self.load_results(item)
+                logger.info(f'Compute Metric of {item}')
                 assert num_videos == len(gt), f'the number of saved videos does not match the ground truth, {num_videos} != {len(gt)}'
                 temp_result = self.eval_method(score_records, gt, str(key))
                 if temp_result > self.optimal_resulst:

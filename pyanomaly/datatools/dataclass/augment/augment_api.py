@@ -15,8 +15,8 @@ class AugmentAPI(object):
         self.normalize = True
         self._use_default_train = False
         self._use_default_val = False
-        self.train_aug_cfg = self.cfg.get('ARGUMENT')['train']
-        self.test_aug_cfg = self.cfg.get('ARGUMENT')['val']
+        self.train_aug_cfg = self.cfg.get('AUGMENT')['train']
+        self.val_aug_cfg = self.cfg.get('AUGMENT')['val']
 
     def build(self):
         aug_dict = OrderedDict()
@@ -26,14 +26,14 @@ class AugmentAPI(object):
             train_aug = self._compose_transforms(self.train_aug_cfg, 'train')
         else:
             train_aug = None
-        if self.test_aug_cfg.use:
-            del self.test_aug_cfg['use']
-            test_aug = self._compose_transforms(self.test_aug_cfg, 'test')
+        if self.val_aug_cfg.use:
+            del self.val_aug_cfg['use']
+            val_aug = self._compose_transforms(self.val_aug_cfg, 'val')
         else:
-            test_aug = None
+            val_aug = None
         
         aug_dict['train_aug'] = train_aug
-        aug_dict['test_aug'] = test_aug
+        aug_dict['val_aug'] = val_aug
 
         return aug_dict
 

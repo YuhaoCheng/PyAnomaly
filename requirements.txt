@@ -3,7 +3,7 @@ cupy-cuda101
 tensorboard
 torchvision
 torchsnooper
-tsnecuda
+# tsnecuda
 scikit-image
 scikit-learn
 opencv-python

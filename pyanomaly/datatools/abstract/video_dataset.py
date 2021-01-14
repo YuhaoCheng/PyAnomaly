@@ -74,7 +74,6 @@ class AbstractVideoDataset(Dataset):
                 self.videos[video_name]['cursor'] = 0
                 self.total_clips += (len(self.videos[video_name]['frames']) - self.clip_length)
             self.videos_keys = self.videos.keys()
-            # print(f'\033[1;34m The clip number of {self.cfg.DATASET.name}#{self.flag}is:{self.total_clips} \033[0m')
         else:
             self.total_clips_onevideo = 0
             # the dir is the path of one video
@@ -89,7 +88,6 @@ class AbstractVideoDataset(Dataset):
             self.total_clips_onevideo += (len(self.videos[video_name]['frames']) - self.clip_length)
             self.pics_len = len(self.videos[video_name]['frames'])
             self.videos_keys = self.videos.keys()
-            # print(f'\033[1;34m The clip number of one video {video_name}#{self.flag} is:{self.total_clips_onevideo} of {self.cfg.DATASET.name}\033[0m') 
     
     def __getitem__(self, indice):
         raise Exception(f'No inplement at {AbstractVideoDataset._NAME}')
@@ -121,7 +119,7 @@ class FrameLevelVideoDataset(AbstractVideoDataset):
         #     self.aug_params = self.cfg.ARGUMENT.val
         #     self.flag = 'Val'
 
-        self.aug_params = self.cfg.get('ARGUMENT')[self.phase]
+        self.aug_params = self.cfg.get('AUGMENT')[self.phase]
         self.dataset_params = self.cfg.DATASET
         # set up the keys of the dataset
         self.setup()

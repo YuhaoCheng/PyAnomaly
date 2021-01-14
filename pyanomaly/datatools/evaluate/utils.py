@@ -126,13 +126,17 @@ def find_max_patch(diff_map_appe, diff_map_flow, kernel_size=16, stride=4, aggre
     max_patch_appe = avg_pool(diff_map_appe)
     max_patch_flow = avg_pool(diff_map_flow)
     # import ipdb; ipdb.set_trace()
-    assert len(max_patch_appe.shape) == 3, f'the shape of max_patch_appe is {max_patch_appe.shape}'
-    assert len(max_patch_flow.shape) == 3, f'the shape of max_patch_flow is {max_patch_flow.shape}'
+    assert len(max_patch_appe.shape) == 4, f'the shape of max_patch_appe is {max_patch_appe.shape}'
+    # assert len(max_patch_appe.shape) == 3, f'the shape of max_patch_appe is {max_patch_appe.shape}'
+    assert len(max_patch_flow.shape) == 4, f'the shape of max_patch_flow is {max_patch_flow.shape}'
+    # assert len(max_patch_flow.shape) == 3, f'the shape of max_patch_flow is {max_patch_flow.shape}'
 
     if aggregation:
         # Will sum the channel dim
-        max_patch_appe = torch.mean(max_patch_appe, dim=0) 
-        max_patch_flow = torch.mean(max_patch_flow, dim=0)
+        # max_patch_appe = torch.mean(max_patch_appe, dim=0) 
+        max_patch_appe = torch.mean(max_patch_appe, dim=1) 
+        max_patch_flow = torch.mean(max_patch_flow, dim=1)
+        # max_patch_flow = torch.mean(max_patch_flow, dim=0)
 
     max_appe_value = torch.max(max_patch_appe)
     max_flow_value = torch.max(max_patch_flow)
@@ -180,8 +184,8 @@ def find_max_patch(diff_map_appe, diff_map_flow, kernel_size=16, stride=4, aggre
     #             # std_appe_2 = curr_std_appe
     #             # mean_appe_2 = curr_mean_appe
     
-    app_h, app_w =  torch.where(torch.eq(max_patch_appe, max_appe_value))
-    flow_h, flow_w =  torch.where(torch.eq(max_patch_flow, max_flow_value))
+    # app_h, app_w =  torch.where(torch.eq(max_patch_appe, max_appe_value))
+    # flow_h, flow_w =  torch.where(torch.eq(max_patch_flow, max_flow_value))
     
     max_appe_final = max_appe_value
     max_flow_final = max_flow_value
@@ -189,7 +193,8 @@ def find_max_patch(diff_map_appe, diff_map_flow, kernel_size=16, stride=4, aggre
     # max_flow_final = torch.div(max_flow_value, kernel_size**2) 
     # import ipdb; ipdb.set_trace()
     # return max_patch_appe, max_patch_flow
-    return max_appe_final, max_flow_final, (app_h, app_w), (flow_h, flow_w)
+    # return max_appe_final, max_flow_final, (app_h, app_w), (flow_h, flow_w)
+    return max_appe_final, max_flow_final 
     # return max_val_appe_std, max_val_flow_std, (app_h, app_w), (flow_h, flow_w)
 
 def calc_w(w_dict):

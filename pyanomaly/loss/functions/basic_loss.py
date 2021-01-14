@@ -64,7 +64,7 @@ def conv2d_samepad(in_dim, in_ch, out_ch, ks, stride, dilation=1, bias=True):
 
 @LOSS_REGISTRY.register()
 class L2Loss(nn.Module):
-    def __init__(self, loss_cfg, eps=1e-8):
+    def __init__(self, eps=1e-8):
         super(L2Loss, self).__init__()
         self.eps = eps
     
@@ -77,7 +77,7 @@ class L2Loss(nn.Module):
 
 @LOSS_REGISTRY.register()
 class IntensityLoss(nn.Module):
-    def __init__(self, loss_cfg):
+    def __init__(self, loss_cfg=None):
         super(IntensityLoss, self).__init__()
         self.l_num =2
     def forward(self, gen_frames, gt_frames):
@@ -87,7 +87,7 @@ class IntensityLoss(nn.Module):
 
 @LOSS_REGISTRY.register()
 class GradientLoss(nn.Module):
-    def __init__(self, loss_cfg):
+    def __init__(self, loss_cfg=None):
         super(GradientLoss, self).__init__()
         # channels = gen_frames.size(1)
         channels = 3
