@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-import detectron2
-from detectron2.engine import DefaultPredictor
+# import detectron2
+# from detectron2.engine import DefaultPredictor
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.modeling import build_model
 from detectron2.config import get_cfg
@@ -12,8 +12,13 @@ from pyanomaly.networks.model_registry import AUX_ARCH_REGISTRY
 @AUX_ARCH_REGISTRY.register()
 class Detector(nn.Module):
     """The detector module.
+    The model is the encapsulation of the Detecton2. We use the configuration of the detectron2 to specify the model we want to use.
     """
     def __init__(self, cfg):
+        """Initialization method.
+        Args:
+            cfg: The configuration object of PyAnomaly.
+        """
         super(Detector, self).__init__()
         auxiliary_cfg = cfg.MODEL.auxiliary.detector
         detector_cfg = get_cfg()

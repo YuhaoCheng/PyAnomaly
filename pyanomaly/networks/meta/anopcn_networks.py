@@ -262,7 +262,7 @@ class AnoPcn(nn.Module):
     
     # @torchsnooper.snoop()
     def forward(self, x, target):
-        # input是video_clip
+        # input is the video clip
         prediction = self.pcm(x)
         pe = torch.sub(target,prediction) # pe = prediction error
         re = self.erm(pe) # re = recontruction error
