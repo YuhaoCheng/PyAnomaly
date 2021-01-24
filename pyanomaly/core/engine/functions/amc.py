@@ -150,4 +150,10 @@ class AMCInference(BaseInference):
     def inference(self):
         for h in self._hooks:
             h.inference()
+
+@ENGINE_REGISTRY.register()
+class AMCService(object):
+
+    def service():
+        pass
     
