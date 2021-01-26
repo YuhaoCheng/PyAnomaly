@@ -17,6 +17,9 @@ import torchvision.transforms as T
 import torchvision.transforms.functional as tf
 from torch.utils.data import DataLoader
 
+import logging
+logger = logging.getLogger(__name__)
+
 from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images, vis_optical_flow, make_info_message, ParamSet
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from ..abstract.base_engine import BaseTrainer, BaseInference
@@ -63,17 +66,9 @@ class AMCTrainer(BaseTrainer):
         self.set_requires_grad(self.D, False)
         output_flow_G,  output_frame_G = self.G(input_data)
         gt_flow_esti_tensor = torch.cat([input_data, target], 1)
-        # gt_flow_esti_tensor = torch.cat([input_data_original, target_original], 1)
-        # flow_gt, _ = flow_batch_estimate(self.F, gt_flow_esti_tensor, optical_size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format, normalize=self.config.ARGUMENT.train.normal.use, mean=self.config.ARGUMENT.train.normal.mean, std=self.config.ARGUMENT.train.normal.std)
         flow_gt_vis, flow_gt  = flow_batch_estimate(self.F, gt_flow_esti_tensor, self.normalize.param['train'],
                                                     optical_size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format)
         fake_g = self.D(torch.cat([target, output_flow_G], dim=1))
-
-        # loss_g_adv = self.gan_loss(fake_g, True)
-        # loss_op = self.op_loss(output_flow_G, flow_gt)
-        # loss_int = self.int_loss(output_frame_G, target)
-        # loss_gd = self.gd_loss(output_frame_G, target)
-        # loss_g_all = self.loss_lamada['intentsity_loss'] * loss_int + self.loss_lamada['gradient_loss'] * loss_gd + self.loss_lamada['opticalflow_loss'] * loss_op + self.loss_lamada['gan_loss'] * loss_g_adv
 
         loss_g_adv = self.GANLoss(fake_g, True)
         loss_op = self.OpticalflowSqrtLoss(output_flow_G, flow_gt)
@@ -95,8 +90,6 @@ class AMCTrainer(BaseTrainer):
         # import ipdb; ipdb.set_trace()
         real_d = self.D(torch.cat([target, flow_gt],dim=1))
         fake_d = self.D(torch.cat([target, output_flow_G.detach()], dim=1))
-        # loss_d_1 = self.gan_loss(real_d, True)
-        # loss_d_2 = self.gan_loss(fake_d, False)
         loss_d_1 = self.GANLoss(real_d, True)
         loss_d_2 = self.GANLoss(fake_d, False)
         loss_d = (loss_d_1  + loss_d_2) * 0.5 
@@ -112,10 +105,11 @@ class AMCTrainer(BaseTrainer):
         if (current_step % self.steps.param['log'] == 0):
             msg = make_info_message(current_step, self.steps.param['max'], self.kwargs['model_type'], self.batch_time, 
                                     self.config.TRAIN.batch_size, self.data_time, [self.loss_meter_G, self.loss_meter_D])
-            self.logger.info(msg)
+            logger.info(msg)
         
         writer.add_scalar('Train_loss_G', self.loss_meter_G.val, global_steps)
         writer.add_scalar('Train_loss_D', self.loss_meter_D.val, global_steps)
+
         if (current_step % self.steps.param['vis'] == 0):
             temp = vis_optical_flow(output_flow_G.detach(), output_format=self.config.DATASET.optical_format, output_size=(output_flow_G.shape[-2], output_flow_G.shape[-1]), 
                                     normalize=self.normalize.param['train'])
@@ -151,9 +145,13 @@ class AMCInference(BaseInference):
         for h in self._hooks:
             h.inference()
 
+
+
 @ENGINE_REGISTRY.register()
 class AMCService(object):
-
-    def service():
+    def custom_setup(self):
         pass
+
+    def execute(self, data):
+        output_dict = OrderedDict()
     

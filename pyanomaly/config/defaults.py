@@ -282,6 +282,10 @@ config.VAL.batch_size = 1
 config.VAL.model_file = ''
 config.VAL.result_output = './output/results'
 
+# configure the service function
+config.SERVICE = CN()
+config.SERVICE.use = False
+config.SERVICE.engine_name = 'BaseService'
 
 def _get_cfg_defaults():
     """

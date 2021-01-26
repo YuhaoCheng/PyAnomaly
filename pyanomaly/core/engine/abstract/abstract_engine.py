@@ -3,10 +3,12 @@
 @contact: yuhao.cheng[at]outlook.com
 """
 import time
-from collections import OrderedDict
+import torch
 import weakref
+from collections import OrderedDict
 from pyanomaly.core.hook.abstract import HookBase
 import abc
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -252,3 +254,19 @@ class AbstractInference(AbstractEngine):
         pass
 
 
+class AbstractService(AbstractEngine):
+    """Abstract Service class.
+    The abstract defination of method and frame work during the service process. All of inference must be the sub-class of this class.
+    """
+    @abc.abstractmethod
+    def __init__(self, *args,**kwargs):
+        """Initialization Method.
+        """
+        pass
+    
+    def execute(self):
+        """Start the inference process.
+
+        Define the order to execute the function in a inference.
+        """
+        pass
