@@ -8,14 +8,14 @@ from ..utils import engine_save
 from .abstract_engine import AbstractTrainer, AbstractInference
 import abc
 from collections import OrderedDict, namedtuple
-# import logging
-# logger = logging.getLogger(__name__)
+import logging
+logger = logging.getLogger(__name__)
 
 class BaseTrainer(AbstractTrainer):
     """The base class of trainers
     All of other methods' trainer must be the sub-class of this.
     """
-    def __init__(self, *defaults, **kwargs):
+    def __init__(self,**kwargs):
         """Initialization Method.
         Args:
             defaults(tuple): the default will have:
@@ -39,8 +39,9 @@ class BaseTrainer(AbstractTrainer):
         # self._eval_hooks = []
         self._register_hooks(kwargs['hooks'])
         # logger & config
-        self.logger = defaults[4]
-        self.config = defaults[5]
+        # self.logger = defaults[4]
+        self.config = kwargs['config']
+
         # devices
         self.engine_gpus = self.config.SYSTEM.gpus
 
@@ -48,12 +49,12 @@ class BaseTrainer(AbstractTrainer):
         save_cfg_template = namedtuple('save_cfg_template', ['output_dir', 'low',  'cfg_name', 'dataset_name', 'model_name', 'time_stamp'])
         self.save_cfg = save_cfg_template(output_dir=self.config.TRAIN.checkpoint_output, low=0.0, cfg_name=kwargs['config_name'], dataset_name=self.config.DATASET.name, model_name=self.config.MODEL.name, time_stamp=kwargs['time_stamp'])
 
-        self.model = defaults[0]
+        self.model = kwargs['model_dict']
         
         if kwargs['pretrain']:
             self.load_pretrain()
         
-        dataloaders_dict = defaults[1]
+        dataloaders_dict = kwargs['dataloaders_dict']
         self._dataloaders_dict = dataloaders_dict
         self.train_dataloaders_dict = dataloaders_dict['train']
         self._train_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['all'])
@@ -62,10 +63,10 @@ class BaseTrainer(AbstractTrainer):
         self.val_dataset_keys = list(dataloaders_dict['val']['general_dataset_dict'].keys())
 
         # get the optimizer
-        self.optimizer = defaults[2]
+        self.optimizer = kwargs['optimizer_dict']
 
         # get the loss_fucntion
-        self.loss_function = defaults[3]
+        self.loss_function = kwargs['loss_function_dict']
 
         # basic meter
         self.batch_time =  AverageMeter(name='batch_time')
@@ -144,17 +145,17 @@ class BaseTrainer(AbstractTrainer):
         model_path = self.config.MODEL.pretrain_model
 
         if  model_path is '':
-            self.logger.info('=>Not have the pre-train model! Training from the scratch')
+            logger.info('=>Not have the pre-train model! Training from the scratch')
         else:
-            self.logger.info(f'=>Loading the model in {model_path}')
+            logger.info(f'=>Loading the model in {model_path}')
             pretrain_model = torch.load(model_path)
             if 'epoch' in pretrain_model.keys():
-                self.logger.info('(|_|) ==> Use the check point file')
+                logger.info('(|_|) ==> Use the check point file')
                 # self.model.load_state_dict(pretrain_model['model_state_dict'])
                 # model_file = pretrain_model['model_state_dict']
                 self._load_file(self.model.keys(), pretrain_model)
             else:
-                self.logger.info('(+_+) ==> Use the model file')
+                logger.info('(+_+) ==> Use the model file')
                 # self.model.load_state_dict(pretrain_model['state_dict'])
                 # model_file = pretrain_model['state_dict']
                 self._load_file(self.model.keys(), pretrain_model)
@@ -163,9 +164,9 @@ class BaseTrainer(AbstractTrainer):
         """Load files used for resume training.
         The method loads the model file and the optimzier file.
         """
-        self.logger.info('=> Resume the previous training')
+        logger.info('=> Resume the previous training')
         checkpoint_path = self.config.TRAIN.resume.checkpoint_path
-        self.logger.info(f'=> Load the checkpoint from {checkpoint_path}')
+        logger.info(f'=> Load the checkpoint from {checkpoint_path}')
         checkpoint = torch.load(checkpoint_path)
         # self.model.load_state_dict(checkpoint['model_state_dict'])
         self._load_file(self.model.keys(), checkpoint['model_state_dict'])
@@ -180,7 +181,7 @@ class BaseTrainer(AbstractTrainer):
         """
         # need to improve
         layer_list = self.config.TRAIN.finetune.layer_list
-        self.logger.info('=> Freeze layers except start with:{}'.format(layer_list))
+        logger.info('=> Freeze layers except start with:{}'.format(layer_list))
         for n, p in self.model.named_parameters():
             parts = n.split('.')
             # consider the data parallel situation
@@ -204,7 +205,7 @@ class BaseTrainer(AbstractTrainer):
         Returns:
             model_parallel
         """
-        self.logger.info('<!_!> ==> Data Parallel')
+        logger.info('<!_!> ==> Data Parallel')
         gpus = [int(i) for i in self.config.SYSTEM.gpus]
         model_parallel = torch.nn.DataParallel(model.cuda(), device_ids=gpus)
         return model_parallel
@@ -258,7 +259,7 @@ class BaseTrainer(AbstractTrainer):
     
  
 class BaseInference(AbstractInference):
-    def __init__(self, *defaults, **kwargs):
+    def __init__(self, **kwargs):
         """
         Args:
             defaults(tuple): the default will have:
@@ -284,26 +285,26 @@ class BaseInference(AbstractInference):
         # self._eval_hooks = []
         self._register_hooks(kwargs['hooks'])
         # logger & config
-        self.logger = defaults[4]
-        self.config = defaults[5]
+        # self.logger = defaults[4]
+        self.config = kwargs['config']
         # devices
         self.engine_gpus = self.config.SYSTEM.gpus
 
-        self.model = defaults[0]
+        self.model = kwargs['model_dict']
         
         if kwargs['pretrain']:
             self.load_pretrain()
         
-        dataloaders_dict = defaults[1]
+        dataloaders_dict = kwargs['dataloaders_dict']
 
         self.val_dataloaders_dict = dataloaders_dict['train']
         self.val_dataset_keys = list(dataloaders_dict['test']['general_dataset_dict'].keys())
 
         # get the optimizer
-        self.optimizer = defaults[2]
+        self.optimizer = kwargs['optimizer_dict']
 
         # get the loss_fucntion
-        self.loss_function = defaults[3]
+        self.loss_function = kwargs['loss_function_dict']
 
         # basic meter
         self.batch_time =  AverageMeter(name='batch_time')
@@ -354,74 +355,9 @@ class BaseInference(AbstractInference):
     def load_model(self, model_path):
         """Load the model from the model file.
         """
-        self.logger.info(f'=>Loading the Test model in {model_path}')
+        logger.info(f'=>Loading the Test model in {model_path}')
         model_file = torch.load(model_path)
         self._load_file(self.model.keys(), model_file)
-    
-    # def _load_file(self, model_keys, model_file):
-    #     """Method to load the data into pytorch structure.
-    #     Args:
-    #         model_keys: The keys of model
-    #         model_file: The data of the model
-    #     """
-    #     for item in model_keys:
-    #         item = str(item)
-    #         getattr(self, item).load_state_dict(model_file[item]['state_dict'])
-    #     self.logger.info('Finish load!')
-
-    # def load_pretrain(self):
-    #     model_path = self.config.MODEL.pretrain_model
-
-    #     if  model_path is '':
-    #         self.logger.info('=>Not have the pre-train model! Training from the scratch')
-    #     else:
-    #         self.logger.info(f'=>Loading the model in {model_path}')
-    #         pretrain_model = torch.load(model_path)
-    #         if 'epoch' in pretrain_model.keys():
-    #             self.logger.info('(|_|) ==> Use the check point file')
-    #             # self.model.load_state_dict(pretrain_model['model_state_dict'])
-    #             # model_file = pretrain_model['model_state_dict']
-    #             self._load_file(self.model.keys(), pretrain_model)
-    #         else:
-    #             self.logger.info('(+_+) ==> Use the model file')
-    #             # self.model.load_state_dict(pretrain_model['state_dict'])
-    #             # model_file = pretrain_model['state_dict']
-    #             self._load_file(self.model.keys(), pretrain_model)
-
-
-    # def load(self):
-    #     if type(self.model) == type(dict()):
-    #         for k, v in self.model.items():
-    #             temp = torch.load(self.model_path)
-    #             if k[0] == 'F':
-    #                 continue
-    #             self.model[k].load_state_dict(temp[k[0]])
-    #     else:
-    #         self.model.load_state_dict(torch.load(self.model_path))
-    # def set_all(self, is_train):
-    #     """
-    #     Set all of models in this trainer in eval or train model
-    #     Args:
-    #         is_train: bool. True=train mode; False=eval mode
-    #     Returns:
-    #         None
-    #     """
-    #     for item in self.trainer.model.keys():
-    #         self.set_requires_grad(getattr(self, str(item)), is_train)
-    #         if is_train:
-    #             getattr(self, str(item)).train()
-    #         else:
-    #             getattr(self, str(item)).eval()
-    
-
-    # def data_parallel(self, model):
-    #     '''
-    #     Data parallel the model
-    #     '''
-    #     self.logger.info('<!_!> ==> Data Parallel')
-    #     gpus = [int(i) for i in self.config.SYSTEM.gpus]
-    #     model_parallel = torch.nn.DataParallel(model, device_ids=gpus).cuda()
-    #     return model_parallel
 
 
     @abc.abstractmethod

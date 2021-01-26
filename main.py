@@ -76,7 +76,7 @@ def main(args, cfg, logger, writer_dict, cfg_name, time_stamp, log_file_name, is
     # Get the engine
     engine_api = EngineAPI(cfg, is_training)
     engine = engine_api.build()
-    trainer = engine(model_dict, dataloaders_dict, optimizer_dict, loss_function_dict, logger, cfg, parallel=parallel_flag, 
+    trainer = engine(model_dict=model_dict, dataloaders_dict=dataloaders_dict, optimizer_dict=optimizer_dict, loss_function_dict=loss_function_dict, logger=logger, config=cfg, parallel=parallel_flag, 
                     pretrain=False,verbose=args.verbose, time_stamp=time_stamp, model_type=cfg.MODEL.name, writer_dict=writer_dict, config_name=cfg_name, loss_lamada=loss_lamada,
                     hooks=hooks, evaluate_function=evaluate_function,
                     lr_scheduler_dict=lr_scheduler_dict
