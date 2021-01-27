@@ -3,12 +3,14 @@
 @contact: yuhao.cheng[at]outlook.com
 """
 import torch
+import abc
+import logging
+from collections import OrderedDict, namedtuple
+
 from pyanomaly.core.utils import AverageMeter, ParamSet
 from ..utils import engine_save
 from .abstract_engine import AbstractTrainer, AbstractInference, AbstractService
-import abc
-from collections import OrderedDict, namedtuple
-import logging
+
 logger = logging.getLogger(__name__)
 
 class BaseTrainer(AbstractTrainer):
@@ -273,7 +275,7 @@ class BaseTrainer(AbstractTrainer):
  
 class BaseInference(AbstractInference):
     def __init__(self, **kwargs):
-        """
+        """Initialization Method.
         Args:
             defaults(tuple): the default will have:
                 0 0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
@@ -284,15 +286,26 @@ class BaseInference(AbstractInference):
                 3 4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
                 4 5->logger: the logger of the whole training process
                 5 6->config: the config object of the whole process
-
             kwargs(dict): the default will have:
-                verbose(str):
-                parallel(bool): True-> data parallel
-                pertrain(bool): True-> use the pretarin model
-                dataloaders_dict: will to replace the train_dataloader and test_dataloader
-                extra param:
-                    test_dataset_keys: the dataset keys of each video
-                    test_dataset_dict: the dataset dict of whole test videos
+                model_dict: The directionary of the moddel
+                dataloaders_dict: 
+                optimizer_dict: 
+                loss_function_dict:
+                logger:
+                cfg: 
+                parallel=parallel_flag, 
+                pretrain=cfg.MODEL.PRETRAINED.USE
+                verbose=args.verbose, 
+                time_stamp=time_stamp, 
+                model_type=cfg.MODEL.NAME, 
+                writer_dict=writer_dict, 
+                config_name=cfg_name, 
+                loss_lamada=loss_lamada,
+                hooks=hooks, 
+                evaluate_function=evaluate_function,
+                lr_scheduler_dict=lr_scheduler_dict,
+                final_output_dir=final_output_dir, 
+                cpu=args.cpu
         """
         self._hooks = []
         # self._eval_hooks = []
@@ -383,31 +396,31 @@ class BaseInference(AbstractInference):
 
 
 class BaseService(AbstractService):
+    """The BaseService class
+    The 'service' means that the user only want to use the model to run on the real data instaed of the data from the dataset.
+    So, in this class, it just provide the function to get the model, and regularize the pipeline to use the model. 
+    """
     def __init__(self, **kwargs):
-        """
+        """Initialization Method.
         Args:
-            defaults(tuple): the default will have:
-                0 0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
-                - 1->train_dataloader: the dataloader    # Will be deprecated in the future
-                - 2->val_dataloader: the dataloader     # Will be deprecated in the future
-                1 -->dataloader_dict: the dict of all the dataloader will be used in the process
-                2 3->optimizer:{'optimizer_g':op_g, 'optimizer_d'}
-                3 4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
-                4 5->logger: the logger of the whole training process
-                5 6->config: the config object of the whole process
-
             kwargs(dict): the default will have:
-                verbose(str):
-                parallel(bool): True-> data parallel
-                pertrain(bool): True-> use the pretarin model
-                dataloaders_dict: will to replace the train_dataloader and test_dataloader
-                extra param:
-                    test_dataset_keys: the dataset keys of each video
-                    test_dataset_dict: the dataset dict of whole test videos
+                model_dict: The directionary of the moddel
+                config: 
+                parallel=parallel_flag, 
+                pretrain=cfg.MODEL.PRETRAINED.USE
+                verbose=args.verbose, 
+                time_stamp=time_stamp, 
+                model_type=cfg.MODEL.NAME, 
+                config_name=cfg_name, 
+                hooks=hooks, 
+                evaluate_function=evaluate_function,
+                final_output_dir=final_output_dir, 
+                cpu=args.cpu
         """
         self._hooks = []
         self._register_hooks(kwargs['hooks'])
         self.config = kwargs['config']
+
         # devices
         self.engine_gpus = self.config.SYSTEM.gpus
 
@@ -418,15 +431,16 @@ class BaseService(AbstractService):
         else:
             self.model_path = self.config.VAL.model_file
 
-        # get the optimizer
-        self.optimizer = kwargs['optimizer_dict']
+        # # get the optimizer
+        # self.optimizer = kwargs['optimizer_dict']
 
-        # get the loss_fucntion
-        self.loss_function = kwargs['loss_function_dict']
+        # # get the loss_fucntion
+        # self.loss_function = kwargs['loss_function_dict']
 
-        # basic meter
+        # basic meter, will be deprecated in the future.
         self.batch_time =  AverageMeter(name='batch_time')
         self.data_time = AverageMeter(name='data_time')
+
 
         # others
         self.verbose = kwargs['verbose']
@@ -439,10 +453,10 @@ class BaseService(AbstractService):
         self.evaluate_function = kwargs['evaluate_function']
         
         # hypyer-parameters of loss
-        self.loss_lamada = kwargs['loss_lamada']
+        # self.loss_lamada = kwargs['loss_lamada']
 
         # the lr scheduler
-        self.lr_scheduler_dict = kwargs['lr_scheduler_dict']
+        # self.lr_scheduler_dict = kwargs['lr_scheduler_dict']
 
         # initialize the saved objects
         # None
@@ -456,8 +470,6 @@ class BaseService(AbstractService):
                 temp_model = self.model[item_key].cuda()
             self.__setattr__(attr_name, temp_model)
         
-        # get the optimizer
-        # None
         
         # get the losses
         for item_key in self.loss_function.keys():

@@ -22,7 +22,15 @@ logger = logging.getLogger(__name__)
 
 from pyanomaly.core.utils import AverageMeter, flow_batch_estimate, tensorboard_vis_images, vis_optical_flow, make_info_message, ParamSet
 from pyanomaly.datatools.evaluate.utils import psnr_error
-from ..abstract.base_engine import BaseTrainer, BaseInference
+
+from pyanomaly.datatools.evaluate.utils import (
+    simple_diff, 
+    find_max_patch, 
+    amc_score, 
+    calc_w
+    )
+
+from ..abstract.base_engine import BaseTrainer, BaseInference, BaseService
 
 from ..engine_registry import ENGINE_REGISTRY
 
@@ -148,10 +156,41 @@ class AMCInference(BaseInference):
 
 
 @ENGINE_REGISTRY.register()
-class AMCService(object):
+class AMCService(BaseService):
     def custom_setup(self):
+        self.optical_format = self.config.DATASET.optical_format
+        self.optical_szie = self.engine.config.DATASET.optical_size
+        self.wf = 1.0
+        self.wi = 1.0
+        self.threshold = 0.0 # the threshold to judge whether the frame is the anomaly
         pass
+
+    def get_clip_by_stride(self, video, stride=2):
+        """Get the clip list by the stride
+        """
+        clip_list = []
+        return clip_list
 
     def execute(self, data):
         output_dict = OrderedDict()
+        # data.shape = [N,C,D,H,W], data is a whole vide, D=the length of the video
+        clip_list = self.get_clip_by_stride(data) # the length of the length is the length of the video
+        scores = np.empty(shape=(len(clip_list), ), dtype=np.float32)
+
+        for index, clip in enumerate(clip_list):
+            first_frame = clip[:, :, 0, :, :].cuda()
+            second_frame = clip[:, :, 1, :, :].cuda()
+
+            generated_flow, generated_frame = self.G(first_frame)
+            gtFlowEstim = torch.cat([first_frame, second_frame], 1)
+            _, gtFlow = flow_batch_estimate(self.F, gtFlowEstim, self.normalize.param['val'], output_format=self.optical_format, optical_size=self.optical_size)
+
+            score, _, _ = amc_score(second_frame, generated_frame, gtFlow, generated_flow, self.wf, self.wi)
+            score = score.tolist()
+            scores[index] = score
+
+        result_mask = scores.gt(self.threshold)
+        output_dict['result_dict'] = result_mask
+        
+        return output_dict
     

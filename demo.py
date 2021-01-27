@@ -1,3 +1,4 @@
+import torchvision
 from pathlib import Path
 from pyanomaly.config import update_config
 
@@ -34,7 +35,8 @@ def main(args, cfg, logger, cfg_name, time_stamp, is_training):
         None
 
     """
-    
+    video_path = ''
+
     # the system setting
     parallel_flag = system_setup(args, cfg)
     
@@ -46,7 +48,7 @@ def main(args, cfg, logger, cfg_name, time_stamp, is_training):
     ea = EvaluateAPI(cfg, is_training)
     evaluate_function = ea()
 
-    # Build hook
+    # # Build hook
     ha = HookAPI(cfg)
     hooks = ha(is_training)
 
@@ -58,14 +60,20 @@ def main(args, cfg, logger, cfg_name, time_stamp, is_training):
                      hooks=hooks, evaluate_function=evaluate_function
                     )
     logger.info('Finish initializing the model')
-
+    
+    video, video_info = torchvision.io.read_video(video_path)
     # import ipdb; ipdb.set_trace()
-    service.execute()
+    result_dict = service.execute(video)
     
     # model_result_path = trainer.result_path
 
     # logger.info(f'The model path is {model_result_path}')
     logger.info('Finish Using the anomaly detection service')
+
+def make_result(result_dict, video_path):
+    result_image = None
+
+    return result_image
 
 if __name__ == '__main__':
     args = parse_args()
