@@ -1,7 +1,7 @@
-pyanomaly
+PyAnomaly
 =========
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
 
    pyanomaly
