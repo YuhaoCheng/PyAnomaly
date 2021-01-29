@@ -91,7 +91,7 @@ AUGMENT:
 MODEL:
   name: 'amc'
   type: 'ame2e'
-  parts: ['meta_G', 'AMCGenerator', 'meta_D', 'AMCDiscriminiator', 'auxiliary_F', 'FlowNet2']
+  parts: ['meta_G', 'AMCGenerator', 'meta_D', 'AMCDiscriminiator', 'auxiliary_F', 'FlowNet2', 'auxiliary_PoseNet', 'PoseResNet']
   hooks:
     train: ['AMCEvaluateHook', 'VisScoreHook']
     val: ['AMCEvaluateHook']
@@ -107,6 +107,8 @@ MODEL:
     pose:
       name: 'simplebaseline'
       model_path: './pretrained_model/pose_resnet_50_384x288.pth.tar'
+    tracker:
+      name: 'mmtracking'
 
 TRAIN:
   engine_name: 'AMCTrainer'

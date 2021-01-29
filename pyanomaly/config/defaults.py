@@ -204,6 +204,12 @@ config.MODEL.auxiliary.pose.MODEL.EXTRA.NUM_DECONV_FILTERS = [256, 256, 256]
 config.MODEL.auxiliary.pose.MODEL.EXTRA.NUM_DECONV_KERNELS = [4, 4, 4]
 config.MODEL.auxiliary.pose.MODEL.EXTRA.FINAL_CONV_KERNEL = 1
 
+# Configure the tracking model
+config.MODEL.auxiliary.tracker = CN()
+config.MODEL.auxiliary.tracker.require_grad = False
+config.MODEL.auxiliary.tracker.name = ''
+config.MODEL.auxiliary.tacker.model_path = ''
+
 # configure the training process
 #-----------------basic-----------------
 config.TRAIN = CN()
