@@ -34,15 +34,24 @@ from ..abstract.base_engine import BaseTrainer, BaseInference, BaseService
 
 from ..engine_registry import ENGINE_REGISTRY
 
-__all__ = ['AMCTrainer', 'AMCInference']
+__all__ = ['MATrainer', 'AMCInference']
 
 @ENGINE_REGISTRY.register()
-class AMCTrainer(BaseTrainer):
-    NAME = ["AMC.TRAIN"]    
+class MATrainer(BaseTrainer):
+    """
+    G
+    D_frame
+    D_pattern
+    AE_act
+    AE_obj
+    PatternNet
+    """
+    NAME = ["MA.TRAIN"]    
     def custom_setup(self):
         # create loss meters
         self.loss_meter_G = AverageMeter(name='Loss_G')
         self.loss_meter_D = AverageMeter(name='Loss_D')
+        
 
         self.optical = ParamSet(name='optical', size=self.config.DATASET.optical_size, output_format=self.config.DATASET.optical_format)
         # import ipdb; ipdb.set_trace()

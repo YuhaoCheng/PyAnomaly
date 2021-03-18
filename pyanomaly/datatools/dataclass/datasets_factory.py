@@ -170,7 +170,7 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
             }
         """
         dataset_dict = OrderedDict()
-        video_dirs = os.listdir(self.dataset_params.train_path)
+        video_dirs = os.listdir(self.dataset_params.train.data_path)
         video_dirs.sort()
         for video_dir in video_dirs:
             _temp_folder = os.path.join(self.dataset_params.train.data_path, video_dir)

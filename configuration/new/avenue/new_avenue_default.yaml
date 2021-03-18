@@ -1,41 +1,35 @@
 SYSTEM:
-  # multigpus: false
-  # num_gpus: 2
-  gpus: [0]
+  gpus: [0,1]
   cudnn:
-    benchmark: true
-    deterministic: false
+    benchmark: false
+    deterministic: true
     enable: true
-  distributed:
-    use: false
-LOG:
-  log_output_dir: './output/log'
-  tb_output_dir: './output/tensorboard'
-  vis_dir: './output/vis'
   
 DATASET:
   name: 'Avenue'
   seed: 2020
   read_format: 'opencv'
+  channel_num: 3
+  channel_name: 'rgb'
+  optical_format: 'Y'
   train:
     data_path: './data/Avenue/training/frames'
-    clip_length: 7
-    sampled_clip_length: 3
-    frame_step: 3
+    clip_length: 2
+    sampled_clip_length: 2
+    frame_step: 1
     clip_step: 1
-    execute_test: false
     gt_path: './data/Avenue'
   val:
     data_path: './data/Avenue/testing/frames'
-    clip_length: 7
-    sampled_clip_length: 3
-    frame_step: 3
+    clip_length: 2
+    sampled_clip_length: 2
+    frame_step: 1
     clip_step: 1
     gt_path: './data/Avenue'
   number_of_class: 1
-  score_normalize: true
+  score_normalize: false
   score_type: 'abnormal'
-  decidable_idx: 4
+  decidable_idx: 1
   decidable_idx_back: 0
   smooth:
     guassian: true
@@ -45,24 +39,25 @@ DATASET:
   evaluate_function:
     name: 'ScoreAUCMetrics'
     result_type: 'score'
+
 AUGMENT:
   train:
     use: true
     resize:
       use: true
-      height: 256
-      width: 256
+      height: 128
+      width: 192
     grayscale:
       use: false
     normal:
       use: true
-      mean: []
-      std: []
+      mean: [0.5, 0.5, 0.5]
+      std: [0.5,0.5,0.5]
     fliplr:
-      use: true
+      use: false
       p: 0.5
     flipud:
-      use: true
+      use: false
       p: 0.5
     rote:
       use: false
@@ -84,74 +79,69 @@ AUGMENT:
     use: true
     resize:
       use: true
-      height: 256
-      width: 256
+      height: 128
+      width: 192
     grayscale:
       use: false
     normal:
       use: true
-      mean: []
-      std: []
+      mean: [0.5,0.5,0.5]
+      std: [0.5,0.5,0.5]
 
 MODEL:
-  name: 'ocae'
+  name: 'amc'
   type: 'ame2e'
-  parts: ['meta_A', 'CAE', 'meta_B', 'CAE', 'meta_C', 'CAE', 'auxiliary_Detector', 'Detector']
+  parts: ['meta_G', 'AMCGenerator', 'meta_D', 'AMCDiscriminiator', 'auxiliary_F', 'FlowNet2', 'auxiliary_PoseNet', 'PoseResNet']
   hooks:
-    # train: ['ClusterHook', 'OCEvaluateHook', 'VisScoreHook']
-    train: ['ClusterHook', 'OCEvaluateHook']
-    val: ['OCEvaluateHook']
+    train: ['AMCEvaluateHook', 'VisScoreHook']
+    val: ['AMCEvaluateHook']
+  discriminator_channels: [128,256,512,512]
   auxiliary:
+    optical_flow:
+      name: 'flownet2'
+      model_path: './pretrained_model/FlowNet2_checkpoint.pth.tar'
     detector:
       name: 'detectron2'
       config: 'COCO-Detection/faster_rcnn_X_101_32x8d_FPN_3x.yaml'
       model_path: "./pretrained_model/faster_rcnn_X_101_FPN_model_final_68b088.pkl"
+    pose:
+      name: 'simplebaseline'
+      model_path: './pretrained_model/pose_resnet_50_384x288.pth.tar'
+    tracker:
+      name: 'mmtracking'
+
 TRAIN:
-  engine_name: 'OCAETrainer'
+  engine_name: 'AMCTrainer'
   batch_size: 16
   start_step: 0
   max_steps: 38320
-  log_step: 50
+  log_step: 10
   vis_step: 958
-  mini_eval_step: 600
-  eval_step: 100
+  # mini_eval_step: 400
   # eval_step: 958
-  save_step: 100
-  # save_step: 958
-  epochs: 1
-  losses: ['loss_ALoss_cuda', 1, 'IntensityLoss', [], 'loss_BLoss_cuda', 2, 'IntensityLoss', [],
-        'loss_CLoss_cuda', 1, 'IntensityLoss',[]]
-  mode: 'general'
-  general:
+  eval_step: 10
+  save_step: 958
+  losses: ['loss_GANLoss_cuda', 0.25, 'GANLoss', [['gan_mode', vanilla], ['target_real_label', 1.0], ['target_fake_label', 0.0]], 'loss_GradientLoss_cuda', 1.0, 'GradientLoss', [], 
+           'loss_IntentsityLoss_cuda', 1.0, 'IntensityLoss', [], 'loss_OpticalflowSqrtLoss_cuda', 2.0, 'L2Loss', []]
+  mode: 'adversarial'
+  adversarial:
     optimizer:
-      include: ['A', 'B', 'C']
+      include: ['G', 'D']
       name: 'adam'
-      lrs: [1e-3]
-      momentum: 0.9
+      lrs: [0.0002, 0.00002]
+      betas: [0.5, 0.9]
       weight_decay: 0.0001
-      nesterov: false
     scheduler:
-      use: true
-      name: 'MultiStepLR'
-      step_size: 1000
-      steps: [63800]
+      use: false
+      name: 'stepLR'
+      step_size: 1916
+      steps: [10000, 15000]
       gamma: 0.1
       T_max: 300
       eta_min: 0
       warmup_factor: 0.001
       warmup_iters: 1000
       warmup_method: 'linear'
-  # split: ''
-  model_output: './output/models'
-  checkpoint_output: './output/checkpoint'
-  pusedo_data_path: ''
-  cluster:
-    k: 10
-VAL:
-  engine_name: 'OCAEInference'
-  # name: ''
-  path: ''
-  batch_size: 2
-  result_output: './output/results'
-  
 
+VAL:
+  engine_name: 'AMCInference'

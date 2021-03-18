@@ -6,7 +6,7 @@ from pathlib import Path
 from collections import OrderedDict
 from torch.utils.tensorboard import SummaryWriter
 
-def create_logger(root_path, cfg, cfg_name, phase='trian', verbose='None'):
+def create_logger(root_path, cfg, cfg_name, phase='trian', verbose='None', level=logging.DEBUG):
     '''
     Create the root logger. 
     The rest of log file is using the same time as this time
@@ -63,13 +63,13 @@ def create_logger(root_path, cfg, cfg_name, phase='trian', verbose='None'):
     fmt = '%(asctime)-15s:%(message)s'
     datefmt = '%Y-%m-%d-%H:%M'
     formatter = logging.Formatter(fmt=fmt,datefmt=datefmt)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(level)
     console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
+    console.setLevel(level)
     console.setFormatter(formatter)
 
     file_handler = logging.FileHandler(final_log_file)
-    file_handler.setLevel(logging.INFO)
+    file_handler.setLevel(level)
     file_handler.setFormatter(formatter)
 
     logger.addHandler(console)
@@ -78,7 +78,7 @@ def create_logger(root_path, cfg, cfg_name, phase='trian', verbose='None'):
     # set up the path of the tensorboard
     tensorboard_log_dir = Path(cfg.LOG.tb_output_dir) / dataset / model / f'cfg@{cfg_name}' / phase / verbose / time_str
     tensorboard_log_dir.mkdir(parents=True, exist_ok=True)
-    print(f'\033[1;31m => Create the tensorboard folder:{tensorboard_log_dir} \033[0m')
+    print(f'\033[1;31m=> Create the tensorboard folder:{tensorboard_log_dir} \033[0m')
 
     return logger, str(final_output_dir), str(tensorboard_log_dir), cfg_name, time_str, str(final_log_file)
 

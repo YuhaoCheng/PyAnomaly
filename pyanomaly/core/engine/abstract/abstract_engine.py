@@ -3,9 +3,14 @@
 @contact: yuhao.cheng[at]outlook.com
 """
 import time
+import torch
 import weakref
+from collections import OrderedDict
 from pyanomaly.core.hook.abstract import HookBase
 import abc
+
+import logging
+logger = logging.getLogger(__name__)
 
 class AbstractEngine(object):
     """Abstract engine class.
@@ -14,8 +19,9 @@ class AbstractEngine(object):
     def __init__(self):
         """Initialization Method.
         """
-        self._hooks = []
-    
+        self._hooks = [] # the hooks of the engine
+        self.engine_gpus = [] # the list of gpus which will be used in the parallel
+
     def _get_time(self):
         """Get the current time.
         
@@ -50,7 +56,104 @@ class AbstractEngine(object):
             if net is not None:
                 for param in net.parameters():
                     param.requires_grad = requires_grad
+    
+    def set_all(self, is_train):
+        """Set all train or eval.
+        Set all of models in this trainer in eval or train model
+        self.model is the model dict from the outside.
+        Args:
+            is_train(bool): True=train mode; False=eval mode
+        Returns:
+            None
+        """
+        for item in self.model.keys():
+            # import ipdb; ipdb.set_trace()
+            self.set_requires_grad(getattr(self, str(item)), is_train)
+            if is_train:
+                getattr(self, str(item)).train()
+            else:
+                getattr(self, str(item)).eval()
+    
+    def data_parallel(self, model):
+        """Parallel the models.
+        Data parallel the model by using torch.nn.DataParallel
+        Args:
+            model: torch.nn.Module
+        Returns:
+            model_parallel
+        """
+        logger.info('<!_!> ==> Data Parallel')
+        gpus = [int(i) for i in self.engine_gpus]
+        model_parallel = torch.nn.DataParallel(model.cuda(), device_ids=gpus)
+        return model_parallel
 
+
+    def _load_file(self, model_keys, model_file):
+        """Method to load the data into pytorch structure.
+        This function satifies many situations
+        Args:
+            model_keys: The keys of the trainer's model
+            model_file: The data of the model
+        """
+        def load_state(item, saved_model_file, parallel=False):
+            # import ipdb; ipdb.set_trace()
+            temp_list = list(saved_model_file.keys())
+            temp = temp_list[0]
+            logger.info(f'=> The first key in model file is {temp}')
+            # import ipdb; ipdb.set_trace()
+            if not parallel:
+                # if the trainer NOT uses the data parallel to train
+                if temp.startswith('module.'):
+                    # if the saved model file is in the Dataparallel 
+                    new_state_dict = OrderedDict()
+                    for k, v in saved_model_file.items():
+                        name = k[7:]
+                        new_state_dict[name] = v
+                    logger.info('(|+_+|) => Change the DataParallel Model File to Normal')
+                    getattr(self, item).load_state_dict(new_state_dict)
+                else:
+                    getattr(self, item).load_state_dict(saved_model_file)
+            else:
+                # if the trainer uses the data parallel to train
+                if not temp.startswith('module.'):
+                    # if the saved model file is in the Dataparallel
+                    new_state_dict = OrderedDict()
+                    for k, v in saved_model_file.items():
+                        # name = k[7:]
+                        name = 'module.' + k
+                        new_state_dict[name] = v
+                    logger.info('(|+_+|) => Change the Normal Model File to DataParallel')
+                    getattr(self, item).load_state_dict(new_state_dict)
+                else:
+                    getattr(self, item).load_state_dict(saved_model_file)
+        
+        # import ipdb; ipdb.set_trace()
+        parallel_flag = self.kwargs['parallel']
+        for item in model_keys:
+            item = str(item)
+            if 'state_dict' in model_file.keys():
+                logger.info('\033[5;31m!! Directly use the file, the state_dict is in file\033[0m')
+                # getattr(self, item).load_state_dict(model_file['state_dict'])
+                load_state(item, model_file['state_dict'], parallel_flag)
+                continue
+
+            if item not in model_file.keys():
+                # The name of the layer is the key in model file. For example:
+                # {'conv1.weight':....., 'conv1.bias':.....}
+                logger.info('\033[5;31m!! Directly use the file\033[0m')
+                # getattr(self, item).load_state_dict(model_file)
+                load_state(item, model_file, parallel_flag)
+            elif item in model_file.keys():
+                if 'state_dict' in model_file[item].keys():
+                    # The name of the 
+                    # getattr(self, item).load_state_dict(model_file[item]['state_dict'])
+                    load_state(item, model_file[item]['state_dict'], parallel_flag)
+                else:
+                    logger.info('\033[5;31m!! Not have the state_dict \033[0m')
+                    # getattr(self, item).load_state_dict(model_file[item])
+                    load_state(item, model_file[item], parallel_flag)
+           
+        logger.info('Finish load the weights into the networks!')
 
 class AbstractTrainer(AbstractEngine):
     """Abstract trainer class.
@@ -151,3 +254,19 @@ class AbstractInference(AbstractEngine):
         pass
 
 
+class AbstractService(AbstractEngine):
+    """Abstract Service class.
+    The abstract defination of method and frame work during the service process. All of inference must be the sub-class of this class.
+    """
+    @abc.abstractmethod
+    def __init__(self, *args,**kwargs):
+        """Initialization Method.
+        """
+        pass
+    
+    def execute(self):
+        """Start the inference process.
+
+        Define the order to execute the function in a inference.
+        """
+        pass

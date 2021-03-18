@@ -168,6 +168,7 @@ config.MODEL.discriminator_channels = []
 config.MODEL.pretrain_model = ''
 
 # This part defines the auxiliary of the whole model, most of time these models are frozen
+# Configure the optical flow model
 config.MODEL.auxiliary = CN()
 config.MODEL.auxiliary.optical_flow = CN()
 config.MODEL.auxiliary.optical_flow.require_grad = False
@@ -175,11 +176,39 @@ config.MODEL.auxiliary.optical_flow.rgb_max = 255.0
 config.MODEL.auxiliary.optical_flow.fp16 = False
 config.MODEL.auxiliary.optical_flow.name = 'flownet2' # the flownet type 'flownet2' | 'liteflownet'
 config.MODEL.auxiliary.optical_flow.model_path = ''
+
+# Configure the detection model
 config.MODEL.auxiliary.detector = CN()
 config.MODEL.auxiliary.detector.require_grad = False
 config.MODEL.auxiliary.detector.name = 'detectron2'
 config.MODEL.auxiliary.detector.config = ''
 config.MODEL.auxiliary.detector.model_path = ''
+
+# Configure the pose-estimation model
+config.MODEL.auxiliary.pose = CN()
+config.MODEL.auxiliary.pose.require_grad = False
+config.MODEL.auxiliary.pose.name = 'simplebaseline'
+config.MODEL.auxiliary.pose.model_path = '' # the final model file
+config.MODEL.auxiliary.pose.MODEL = CN()
+config.MODEL.auxiliary.pose.MODEL.INIT_WEIGHTS  = True
+config.MODEL.auxiliary.pose.MODEL.PRETRAINED = CN()
+config.MODEL.auxiliary.pose.MODEL.PRETRAINED.USE = False
+config.MODEL.auxiliary.pose.MODEL.PRETRAINED.PRETRAIN_MODEL = ''
+config.MODEL.auxiliary.pose.MODEL.NUM_JOINTS = 17
+config.MODEL.auxiliary.pose.MODEL_STYLE = 'pytorch'
+config.MODEL.auxiliary.pose.MODEL.EXTRA = CN()
+config.MODEL.auxiliary.pose.MODEL.EXTRA.NUM_LAYERS = 50
+config.MODEL.auxiliary.pose.MODEL.EXTRA.DECONV_WITH_BIAS = False
+config.MODEL.auxiliary.pose.MODEL.EXTRA.NUM_DECONV_LAYERS = 3
+config.MODEL.auxiliary.pose.MODEL.EXTRA.NUM_DECONV_FILTERS = [256, 256, 256]
+config.MODEL.auxiliary.pose.MODEL.EXTRA.NUM_DECONV_KERNELS = [4, 4, 4]
+config.MODEL.auxiliary.pose.MODEL.EXTRA.FINAL_CONV_KERNEL = 1
+
+# Configure the tracking model
+config.MODEL.auxiliary.tracker = CN()
+config.MODEL.auxiliary.tracker.require_grad = False
+config.MODEL.auxiliary.tracker.name = ''
+config.MODEL.auxiliary.tacker.model_path = ''
 
 # configure the training process
 #-----------------basic-----------------
@@ -282,6 +311,10 @@ config.VAL.batch_size = 1
 config.VAL.model_file = ''
 config.VAL.result_output = './output/results'
 
+# configure the service function
+config.SERVICE = CN()
+config.SERVICE.use = False
+config.SERVICE.engine_name = 'BaseService'
 
 def _get_cfg_defaults():
     """

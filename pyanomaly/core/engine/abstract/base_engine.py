@@ -3,20 +3,21 @@
 @contact: yuhao.cheng[at]outlook.com
 """
 import torch
-from pyanomaly.core.utils import AverageMeter, ParamSet
-from ..utils import engine_save_checkpoint
-from ..utils import engine_save_model
-from .abstract_engine import AbstractTrainer, AbstractInference
 import abc
-from collections import OrderedDict
-# import logging
-# logger = logging.getLogger(__name__)
+import logging
+from collections import OrderedDict, namedtuple
+
+from pyanomaly.core.utils import AverageMeter, ParamSet
+from ..utils import engine_save
+from .abstract_engine import AbstractTrainer, AbstractInference, AbstractService
+
+logger = logging.getLogger(__name__)
 
 class BaseTrainer(AbstractTrainer):
     """The base class of trainers
     All of other methods' trainer must be the sub-class of this.
     """
-    def __init__(self, *defaults, **kwargs):
+    def __init__(self,**kwargs):
         """Initialization Method.
         Args:
             defaults(tuple): the default will have:
@@ -28,27 +29,47 @@ class BaseTrainer(AbstractTrainer):
                 3 4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
                 4 5->logger: the logger of the whole training process
                 5 6->config: the config object of the whole process
-
             kwargs(dict): the default will have:
-                verbose(str):
-                parallel(bool): True-> data parallel
-                pertrain(bool): True-> use the pretarin model
-                dataloaders_dict: will to replace the train_dataloader and test_dataloader
-                hooks
+                model_dict: The directionary of the moddel
+                dataloaders_dict: 
+                optimizer_dict: 
+                loss_function_dict:
+                logger:
+                cfg: 
+                parallel=parallel_flag, 
+                pretrain=cfg.MODEL.PRETRAINED.USE
+                verbose=args.verbose, 
+                time_stamp=time_stamp, 
+                model_type=cfg.MODEL.NAME, 
+                writer_dict=writer_dict, 
+                config_name=cfg_name, 
+                loss_lamada=loss_lamada,
+                hooks=hooks, 
+                evaluate_function=evaluate_function,
+                lr_scheduler_dict=lr_scheduler_dict,
+                final_output_dir=final_output_dir, 
+                cpu=args.cpu
         """
         self._hooks = []
         # self._eval_hooks = []
         self._register_hooks(kwargs['hooks'])
         # logger & config
-        self.logger = defaults[4]
-        self.config = defaults[5]
+        # self.logger = defaults[4]
+        self.config = kwargs['config']
 
-        self.model = defaults[0]
+        # devices
+        self.engine_gpus = self.config.SYSTEM.gpus
+
+         # set the configuration of the saving process
+        save_cfg_template = namedtuple('save_cfg_template', ['output_dir', 'low',  'cfg_name', 'dataset_name', 'model_name', 'time_stamp'])
+        self.save_cfg = save_cfg_template(output_dir=self.config.TRAIN.checkpoint_output, low=0.0, cfg_name=kwargs['config_name'], dataset_name=self.config.DATASET.name, model_name=self.config.MODEL.name, time_stamp=kwargs['time_stamp'])
+
+        self.model = kwargs['model_dict']
         
         if kwargs['pretrain']:
             self.load_pretrain()
         
-        dataloaders_dict = defaults[1]
+        dataloaders_dict = kwargs['dataloaders_dict']
         self._dataloaders_dict = dataloaders_dict
         self.train_dataloaders_dict = dataloaders_dict['train']
         self._train_loader_iter = iter(self.train_dataloaders_dict['general_dataset_dict']['all'])
@@ -57,10 +78,10 @@ class BaseTrainer(AbstractTrainer):
         self.val_dataset_keys = list(dataloaders_dict['val']['general_dataset_dict'].keys())
 
         # get the optimizer
-        self.optimizer = defaults[2]
+        self.optimizer = kwargs['optimizer_dict']
 
         # get the loss_fucntion
-        self.loss_function = defaults[3]
+        self.loss_function = kwargs['loss_function_dict']
 
         # basic meter
         self.batch_time =  AverageMeter(name='batch_time')
@@ -88,9 +109,10 @@ class BaseTrainer(AbstractTrainer):
         self.lr_scheduler_dict = kwargs['lr_scheduler_dict']
 
         # initialize the saved objects
-        self.saved_model = OrderedDict()
-        self.saved_optimizer = OrderedDict()
-        self.saved_loss = OrderedDict()
+        # self.saved_model = OrderedDict()
+        # self.saved_optimizer = OrderedDict()
+        # self.saved_loss = OrderedDict()
+        self.saved_stuff = OrderedDict()
 
         # Get the models
         for item_key in self.model.keys():
@@ -124,17 +146,6 @@ class BaseTrainer(AbstractTrainer):
         if self.config.TRAIN.finetune.use:
             self.fine_tune()
     
-    def _load_file(self, model_keys, model_file):
-        """Method to load the data into pytorch structure.
-        Args:
-            model_keys: The keys of model
-            model_file: The data of the model
-        """
-        for item in model_keys:
-            item = str(item)
-            getattr(self, item).load_state_dict(model_file[item]['state_dict'])
-        self.logger.info('Finish load!')
-
     def load_pretrain(self):
         """Load the pretrain model.
         Using this method to load the pretrain model or checkpoint. 
@@ -149,17 +160,17 @@ class BaseTrainer(AbstractTrainer):
         model_path = self.config.MODEL.pretrain_model
 
         if  model_path is '':
-            self.logger.info('=>Not have the pre-train model! Training from the scratch')
+            logger.info('=>Not have the pre-train model! Training from the scratch')
         else:
-            self.logger.info(f'=>Loading the model in {model_path}')
+            logger.info(f'=>Loading the model in {model_path}')
             pretrain_model = torch.load(model_path)
             if 'epoch' in pretrain_model.keys():
-                self.logger.info('(|_|) ==> Use the check point file')
+                logger.info('(|_|) ==> Use the check point file')
                 # self.model.load_state_dict(pretrain_model['model_state_dict'])
                 # model_file = pretrain_model['model_state_dict']
                 self._load_file(self.model.keys(), pretrain_model)
             else:
-                self.logger.info('(+_+) ==> Use the model file')
+                logger.info('(+_+) ==> Use the model file')
                 # self.model.load_state_dict(pretrain_model['state_dict'])
                 # model_file = pretrain_model['state_dict']
                 self._load_file(self.model.keys(), pretrain_model)
@@ -168,15 +179,16 @@ class BaseTrainer(AbstractTrainer):
         """Load files used for resume training.
         The method loads the model file and the optimzier file.
         """
-        self.logger.info('=> Resume the previous training')
+        logger.info('=> Resume the previous training')
         checkpoint_path = self.config.TRAIN.resume.checkpoint_path
-        self.logger.info(f'=> Load the checkpoint from {checkpoint_path}')
+        logger.info(f'=> Load the checkpoint from {checkpoint_path}')
         checkpoint = torch.load(checkpoint_path)
         # self.model.load_state_dict(checkpoint['model_state_dict'])
         self._load_file(self.model.keys(), checkpoint['model_state_dict'])
         # self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self._load_file(self.optimizer.keys(), checkpoint['optimizer_state_dict'])
     
+
     def fine_tune(self):
         """Set the fine-tuning layers
         This method will set the not fine-tuning layers freezon and the fine-tuning layers activate.
@@ -184,7 +196,7 @@ class BaseTrainer(AbstractTrainer):
         """
         # need to improve
         layer_list = self.config.TRAIN.finetune.layer_list
-        self.logger.info('=> Freeze layers except start with:{}'.format(layer_list))
+        logger.info('=> Freeze layers except start with:{}'.format(layer_list))
         for n, p in self.model.named_parameters():
             parts = n.split('.')
             # consider the data parallel situation
@@ -208,25 +220,11 @@ class BaseTrainer(AbstractTrainer):
         Returns:
             model_parallel
         """
-        self.logger.info('<!_!> ==> Data Parallel')
+        logger.info('<!_!> ==> Data Parallel')
         gpus = [int(i) for i in self.config.SYSTEM.gpus]
         model_parallel = torch.nn.DataParallel(model.cuda(), device_ids=gpus)
         return model_parallel
     
-    def set_all(self, is_train):
-        """Set all train or eval.
-        Set all of models in this trainer in eval or train model
-        Args:
-            is_train: bool. True=train mode; False=eval mode
-        Returns:
-            None
-        """
-        for item in self.model.keys():
-            self.set_requires_grad(getattr(self, str(item)), is_train)
-            if is_train:
-                getattr(self, str(item)).train()
-            else:
-                getattr(self, str(item)).eval()
     
     def after_step(self, current_step):
         # acc = 0.0
@@ -237,26 +235,26 @@ class BaseTrainer(AbstractTrainer):
         for h in self._hooks:
             h.after_train()
         
-        self.save(self.config.TRAIN.max_steps)
+        self.save(self.config.TRAIN.max_steps, flag='final')
 
-    def save(self, current_step, best=False):
+    def save(self, current_step, best=False, flag='inter'):
         """Save method.
         The method is used to save the model or checkpoint. The following attributes are related to this function.
-            self.saved_model: the model or a dict of combination of models
-            self.saved_optimizer:  the optimizer or a dict of combination of optimizers
-            self.saved_loss: the loss  or a dict of the combination  of loss
-
+            self.saved_stuff(dict): the dictionary of saving things, such as model, optimizer, loss, step. 
         Args:
             current_step(int): The current step. 
             best(bool): indicate whether is the best model
 
         """
         if best:
-            engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_step, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose),best=best)
-            self.result_path = engine_save_model(self.config, self.kwargs['config_name'], self.saved_model, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
+            # result_dict = engine_save(self.config, self.kwargs['config_name'], self.saved_stuff, current_step, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=True, save_model=True)
+            result_dict = engine_save(self.saved_stuff, current_step, self.accuarcy, save_cfg=self.save_cfg, flag=flag, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=True, save_model=True)
+            self.result_path = result_dict['model_file']
         else:
-            engine_save_checkpoint(self.config, self.kwargs['config_name'], self.saved_model, current_step, self.saved_loss, self.saved_optimizer, self.logger, self.kwargs['time_stamp'], self.accuarcy, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=best)
-
+            # result_dict = engine_save(self.config, self.kwargs['config_name'], self.saved_stuff, current_step, self.kwargs['time_stamp'], self.accuarcy, flag='best', verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=False, save_model=False)
+            result_dict = engine_save(self.saved_stuff, current_step, self.accuarcy, save_cfg=self.save_cfg, flag=flag, verbose=(self.kwargs['model_type'] + '#' + self.verbose), best=False, save_model=False)
+    
+        
     @abc.abstractmethod
     def custom_setup(self):
         """Extra setup method.
@@ -276,8 +274,8 @@ class BaseTrainer(AbstractTrainer):
     
  
 class BaseInference(AbstractInference):
-    def __init__(self, *defaults, **kwargs):
-        """
+    def __init__(self, **kwargs):
+        """Initialization Method.
         Args:
             defaults(tuple): the default will have:
                 0 0->model:{'Generator':net_g, 'Driscriminator':net_d, 'FlowNet':net_flow}
@@ -288,38 +286,51 @@ class BaseInference(AbstractInference):
                 3 4->loss_function: {'g_adverserial_loss':.., 'd_adverserial_loss':..., 'gradient_loss':.., 'opticalflow_loss':.., 'intentsity_loss':.. }
                 4 5->logger: the logger of the whole training process
                 5 6->config: the config object of the whole process
-
             kwargs(dict): the default will have:
-                verbose(str):
-                parallel(bool): True-> data parallel
-                pertrain(bool): True-> use the pretarin model
-                dataloaders_dict: will to replace the train_dataloader and test_dataloader
-                extra param:
-                    test_dataset_keys: the dataset keys of each video
-                    test_dataset_dict: the dataset dict of whole test videos
+                model_dict: The directionary of the moddel
+                dataloaders_dict: 
+                optimizer_dict: 
+                loss_function_dict:
+                logger:
+                cfg: 
+                parallel=parallel_flag, 
+                pretrain=cfg.MODEL.PRETRAINED.USE
+                verbose=args.verbose, 
+                time_stamp=time_stamp, 
+                model_type=cfg.MODEL.NAME, 
+                writer_dict=writer_dict, 
+                config_name=cfg_name, 
+                loss_lamada=loss_lamada,
+                hooks=hooks, 
+                evaluate_function=evaluate_function,
+                lr_scheduler_dict=lr_scheduler_dict,
+                final_output_dir=final_output_dir, 
+                cpu=args.cpu
         """
         self._hooks = []
         # self._eval_hooks = []
         self._register_hooks(kwargs['hooks'])
         # logger & config
-        self.logger = defaults[4]
-        self.config = defaults[5]
+        # self.logger = defaults[4]
+        self.config = kwargs['config']
+        # devices
+        self.engine_gpus = self.config.SYSTEM.gpus
 
-        self.model = defaults[0]
+        self.model = kwargs['model_dict']
         
         if kwargs['pretrain']:
             self.load_pretrain()
         
-        dataloaders_dict = defaults[1]
+        dataloaders_dict = kwargs['dataloaders_dict']
 
         self.val_dataloaders_dict = dataloaders_dict['train']
         self.val_dataset_keys = list(dataloaders_dict['test']['general_dataset_dict'].keys())
 
         # get the optimizer
-        self.optimizer = defaults[2]
+        self.optimizer = kwargs['optimizer_dict']
 
         # get the loss_fucntion
-        self.loss_function = defaults[3]
+        self.loss_function = kwargs['loss_function_dict']
 
         # basic meter
         self.batch_time =  AverageMeter(name='batch_time')
@@ -367,71 +378,12 @@ class BaseInference(AbstractInference):
 
         self.custom_setup()
 
-    
-    def _load_file(self, model_keys, model_file):
-        """Method to load the data into pytorch structure.
-        Args:
-            model_keys: The keys of model
-            model_file: The data of the model
+    def load_model(self, model_path):
+        """Load the model from the model file.
         """
-        for item in model_keys:
-            item = str(item)
-            getattr(self, item).load_state_dict(model_file[item]['state_dict'])
-        self.logger.info('Finish load!')
-
-    def load_pretrain(self):
-        model_path = self.config.MODEL.pretrain_model
-
-        if  model_path is '':
-            self.logger.info('=>Not have the pre-train model! Training from the scratch')
-        else:
-            self.logger.info(f'=>Loading the model in {model_path}')
-            pretrain_model = torch.load(model_path)
-            if 'epoch' in pretrain_model.keys():
-                self.logger.info('(|_|) ==> Use the check point file')
-                # self.model.load_state_dict(pretrain_model['model_state_dict'])
-                # model_file = pretrain_model['model_state_dict']
-                self._load_file(self.model.keys(), pretrain_model)
-            else:
-                self.logger.info('(+_+) ==> Use the model file')
-                # self.model.load_state_dict(pretrain_model['state_dict'])
-                # model_file = pretrain_model['state_dict']
-                self._load_file(self.model.keys(), pretrain_model)
-
-
-    # def load(self):
-    #     if type(self.model) == type(dict()):
-    #         for k, v in self.model.items():
-    #             temp = torch.load(self.model_path)
-    #             if k[0] == 'F':
-    #                 continue
-    #             self.model[k].load_state_dict(temp[k[0]])
-    #     else:
-    #         self.model.load_state_dict(torch.load(self.model_path))
-    def set_all(self, is_train):
-        """
-        Set all of models in this trainer in eval or train model
-        Args:
-            is_train: bool. True=train mode; False=eval mode
-        Returns:
-            None
-        """
-        for item in self.trainer.model.keys():
-            self.set_requires_grad(getattr(self, str(item)), is_train)
-            if is_train:
-                getattr(self, str(item)).train()
-            else:
-                getattr(self, str(item)).eval()
-    
-
-    def data_parallel(self, model):
-        '''
-        Data parallel the model
-        '''
-        self.logger.info('<!_!> ==> Data Parallel')
-        gpus = [int(i) for i in self.config.SYSTEM.gpus]
-        model_parallel = torch.nn.DataParallel(model, device_ids=gpus).cuda()
-        return model_parallel
+        logger.info(f'=>Loading the Test model in {model_path}')
+        model_file = torch.load(model_path)
+        self._load_file(self.model.keys(), model_file)
 
 
     @abc.abstractmethod
@@ -440,5 +392,105 @@ class BaseInference(AbstractInference):
 
     @abc.abstractmethod
     def inference(self, current_step):
+        pass
+
+
+class BaseService(AbstractService):
+    """The BaseService class
+    The 'service' means that the user only want to use the model to run on the real data instaed of the data from the dataset.
+    So, in this class, it just provide the function to get the model, and regularize the pipeline to use the model. 
+    """
+    def __init__(self, **kwargs):
+        """Initialization Method.
+        Args:
+            kwargs(dict): the default will have:
+                model_dict: The directionary of the moddel
+                config: 
+                parallel=parallel_flag, 
+                pretrain=cfg.MODEL.PRETRAINED.USE
+                verbose=args.verbose, 
+                time_stamp=time_stamp, 
+                model_type=cfg.MODEL.NAME, 
+                config_name=cfg_name, 
+                hooks=hooks, 
+                evaluate_function=evaluate_function,
+                final_output_dir=final_output_dir, 
+                cpu=args.cpu
+        """
+        self._hooks = []
+        self._register_hooks(kwargs['hooks'])
+        self.config = kwargs['config']
+
+        # devices
+        self.engine_gpus = self.config.SYSTEM.gpus
+
+        self.model = kwargs['model_dict']
+        
+        if self.config.VAL.model_file == '':
+            raise Exception("Not have the Trained model file")
+        else:
+            self.model_path = self.config.VAL.model_file
+
+        # # get the optimizer
+        # self.optimizer = kwargs['optimizer_dict']
+
+        # # get the loss_fucntion
+        # self.loss_function = kwargs['loss_function_dict']
+
+        # basic meter, will be deprecated in the future.
+        self.batch_time =  AverageMeter(name='batch_time')
+        self.data_time = AverageMeter(name='data_time')
+
+
+        # others
+        self.verbose = kwargs['verbose']
+        self.config_name = kwargs['config_name']
+        self.kwargs = kwargs
+        self.normalize = ParamSet(name='normalize', 
+                                  train={'use':self.config.ARGUMENT.train.normal.use, 'mean':self.config.ARGUMENT.train.normal.mean, 'std':self.config.ARGUMENT.train.normal.std}, 
+                                  val={'use':self.config.ARGUMENT.val.normal.use, 'mean':self.config.ARGUMENT.val.normal.mean, 'std':self.config.ARGUMENT.val.normal.std})
+
+        self.evaluate_function = kwargs['evaluate_function']
+        
+        # hypyer-parameters of loss
+        # self.loss_lamada = kwargs['loss_lamada']
+
+        # the lr scheduler
+        # self.lr_scheduler_dict = kwargs['lr_scheduler_dict']
+
+        # initialize the saved objects
+        # None
+
+        # Get the models
+        for item_key in self.model.keys():
+            attr_name = str(item_key)
+            if self.kwargs['parallel']:
+                temp_model = self.data_parallel(self.model[item_key])
+            else:
+                temp_model = self.model[item_key].cuda()
+            self.__setattr__(attr_name, temp_model)
+        
+        
+        # get the losses
+        for item_key in self.loss_function.keys():
+            attr_name = str(item_key)
+            self.__setattr__(attr_name, self.loss_function[attr_name])
+
+        self.custom_setup()
+        self.load_model(self.model_path)
+
+    def load_model(self, model_path):
+        """Load the model from the model file.
+        """
+        logger.info(f'=>Loading the Test model in {model_path}')
+        model_file = torch.load(model_path)
+        self._load_file(self.model.keys(), model_file)
+
+    @abc.abstractmethod
+    def custom_setup(self):
+        pass
+
+    @abc.abstractmethod
+    def execute(self):
         pass
     

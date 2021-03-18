@@ -23,6 +23,7 @@ from ..abstract.base_engine import BaseTrainer, BaseInference
 from pyanomaly.core.utils import AverageMeter, multi_obj_grid_crop, frame_gradient, get_batch_dets, tensorboard_vis_images, ParamSet, make_info_message
 from pyanomaly.datatools.evaluate.utils import psnr_error
 from ..engine_registry import ENGINE_REGISTRY
+
 try:
     from sklearn.externals import joblib
 except:
@@ -39,7 +40,9 @@ class OCAETrainer(BaseTrainer):
         # basic meter
         self.loss_meter_ABC = AverageMeter(name='loss_ABC')
 
-        self.ovr_model_path = os.path.join(self.config.TRAIN.model_output, f'ocae_cfg@{self.config_name}#{self.verbose}.npy') 
+        self.ovr_model_path = os.path.join(self.config.TRAIN.model_output, f'ocae_cfg@{self.config_name}#{self.verbose}.npy')
+        self.cluster_dataset_keys = self.train_dataloaders_dict['cluster_dataset_dict'].keys()
+        # import ipdb; ipdb.set_trace()
 
     def train(self,current_step):
         # Pytorch [N, C, D, H, W]
@@ -96,19 +99,19 @@ class OCAETrainer(BaseTrainer):
             # loss_A = self.a_loss(output_recGradient_A, input_objectGradient_A)
             # loss_B = self.b_loss(output_recObject_B, input_currentObject_B)
             # loss_C = self.c_loss(output_recGradient_C, input_objectGradient_C)
-            loss_A = self.a_loss(output_recGradient_A, original_A)
-            loss_B = self.b_loss(output_recObject_B, original_B)
-            loss_C = self.c_loss(output_recGradient_C, original_C)
+            loss_A = self.ALoss(output_recGradient_A, original_A)
+            loss_B = self.BLoss(output_recObject_B, original_B)
+            loss_C = self.CLoss(output_recGradient_C, original_C)
 
-            loss_all = self.loss_lamada['Aloss'] * loss_A + self.loss_lamada['Bloss'] * loss_B + self.loss_lamada['Closs'] * loss_C
-            self.optim_ABC.zero_grad()
+            loss_all = self.loss_lamada['ALoss'] * loss_A + self.loss_lamada['BLoss'] * loss_B + self.loss_lamada['CLoss'] * loss_C
+            self.optimizer_ABC.zero_grad()
             loss_all.backward()
-            self.optim_ABC.step()
+            self.optimizer_ABC.step()
             # record
             self.loss_meter_ABC.update(loss_all.detach())
             if self.config.TRAIN.general.scheduler.use:
-                self.lr_abc.step()
-        
+                self.optimizer_ABC_scheduler.step()
+            
             # ======================End==================
 
         self.batch_time.update(time.time() - start)
@@ -133,13 +136,21 @@ class OCAETrainer(BaseTrainer):
         start = time.time()
         
         # self.saved_model = {'A':self.A, 'B':self.B, 'C':self.C}
-        self.saved_model['A'] = self.A
-        self.saved_model['B'] = self.B
-        self.saved_model['C'] = self.C
-        # self.saved_optimizer = {'optim_ABC': self.optim_ABC}
-        self.saved_optimizer['optimizer_ABC'] = self.optim_ABC
-        # self.saved_loss = {'loss_ABC':self.loss_meter_ABC.val}
-        self.saved_loss['loss_ABC'] = self.loss_meter_ABC.val
+        # self.saved_model['A'] = self.A
+        # self.saved_model['B'] = self.B
+        # self.saved_model['C'] = self.C
+        # # self.saved_optimizer = {'optim_ABC': self.optim_ABC}
+        # self.saved_optimizer['optimizer_ABC'] = self.optimizer_ABC
+        # # self.saved_loss = {'loss_ABC':self.loss_meter_ABC.val}
+        # self.saved_loss['loss_ABC'] = self.loss_meter_ABC.val
+
+        self.saved_stuff['step'] = global_steps
+        self.saved_stuff['loss'] = self.loss_meter_ABC.val
+        self.saved_stuff['A'] = self.A
+        self.saved_stuff['B'] = self.B
+        self.saved_stuff['C'] = self.C
+        self.saved_stuff['optimizer_ABC'] = self.optimizer_ABC
+
         self.kwargs['writer_dict']['global_steps_{}'.format(self.kwargs['model_type'])] = global_steps
     
 

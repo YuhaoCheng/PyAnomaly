@@ -130,7 +130,7 @@ class ClusterHook(HookBase):
             joblib.dump(self.engine.ovr_model, self.engine.ovr_model_path)
             # import ipdb; ipdb.set_trace()
             
-
+@HOOK_REGISTRY.register()
 class OCEvaluateHook(EvaluateHook):    
     def evaluate(self, current_step):
         '''

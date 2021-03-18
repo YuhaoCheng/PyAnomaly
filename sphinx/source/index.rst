@@ -1,14 +1,16 @@
-.. pyanomaly documentation master file, created by
-   sphinx-quickstart on Fri Dec 11 14:56:08 2020.
+.. pyanomaly-api documentation master file, created by
+   sphinx-quickstart on Wed Jan 27 15:19:44 2021.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to pyanomaly's documentation!
-=====================================
+Welcome to pyanomaly-api's documentation!
+=========================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+   
+   modules
 
 
 
