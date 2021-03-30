@@ -71,9 +71,7 @@ def main(args, cfg, logger, cfg_name, time_stamp, is_training):
     logger.info('Finish Using the anomaly detection service')
 
 def make_result(result_dict, video_path):
-    result_image = None
-
-    return result_image
+    return None
 
 if __name__ == '__main__':
     args = parse_args()

@@ -46,7 +46,7 @@ class OptimizerAPI(object):
         return t
     
     def _build_multi_optimizers(self, model_list):
-        param_groups = list()
+        param_groups = []
 
         if self.type not in OptimizerAPI._SUPPROT:
             raise Exception(f'Not support: {self.type} in {OptimizerAPI._NAME}')
@@ -58,7 +58,7 @@ class OptimizerAPI(object):
             for model in model_list:
                 param_groups.append({'params':model.parameters()}) 
             t = torch.optim.SGD(model.parameters(), lr=self.lr, momentum=self.params.momentum, weight_decay=self.params.weight_decay,nesterov=self.params.nesterov)
-        
+
         return t
     
     def _build(self, model):
@@ -81,9 +81,7 @@ class OptimizerAPI(object):
 
         if mode == OptimizerAPI._MODE[0]:
             optimizer_name = 'optimizer_'+''.join(include_parts)
-            model_combination = []
-            for temp in include_parts:
-                model_combination.append(model[temp])
+            model_combination = [model[temp] for temp in include_parts]
             optimizer_value = self._build(model_combination)
             optimizer_dict.update({optimizer_name:optimizer_value})
         elif mode == OptimizerAPI._MODE[1]:
@@ -94,6 +92,6 @@ class OptimizerAPI(object):
                 optimizer_dict.update({optimizer_name:optimizer_value})
         else:
             raise Exception(f'Not support the optimizer mode, only support {OptimizerAPI._MODE}')
-        
+
         return optimizer_dict
 

@@ -18,8 +18,7 @@ def initialize(X, num_clusters):
     """
     num_samples = len(X)
     indices = np.random.choice(num_samples, num_clusters, replace=False)
-    initial_state = X[indices]
-    return initial_state
+    return X[indices]
 
 
 def kmeans(
@@ -41,10 +40,10 @@ def kmeans(
     """
     print(f'running k-means on {device}..')
 
-    if distance == 'euclidean':
-        pairwise_distance_function = pairwise_distance
-    elif distance == 'cosine':
+    if distance == 'cosine':
         pairwise_distance_function = pairwise_cosine
+    elif distance == 'euclidean':
+        pairwise_distance_function = pairwise_distance
     else:
         raise NotImplementedError
 
@@ -65,7 +64,7 @@ def kmeans(
         choice_points = torch.argmin(dis, dim=0)
         initial_state = X[choice_points]
         initial_state = initial_state.to(device)
-        
+
     iteration = 0
     # tqdm_meter = tqdm(desc='[running kmeans]')
     while True:
@@ -89,7 +88,7 @@ def kmeans(
             ))
 
         # increment iteration
-        iteration = iteration + 1
+        iteration += 1
 
         # update tqdm meter
         # tqdm_meter.set_postfix(

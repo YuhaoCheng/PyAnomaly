@@ -26,7 +26,7 @@ class WarmupMultiStepLR(torch.optim.lr_scheduler._LRScheduler):
         warmup_method: str = "linear",
         last_epoch: int = -1,
     ):
-        if not list(milestones) == sorted(milestones):
+        if list(milestones) != sorted(milestones):
             raise ValueError(
                 "Milestones should be a list of" " increasing integers. Got {}", milestones
             )

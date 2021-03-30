@@ -34,7 +34,7 @@ def readFlow(fn):
     # print 'fn = %s'%(fn)
     with open(fn, 'rb') as f:
         magic = np.fromfile(f, np.float32, count=1)
-        if 202021.25 != magic:
+        if magic != 202021.25:
             print('Magic number incorrect. Invalid .flo file')
             return None
         else:
@@ -53,8 +53,6 @@ def writeFlow(filename,uv,v=None):
     stacked in depth.
     Original code by Deqing Sun, adapted from Daniel Scharstein.
     """
-    nBands = 2
-
     if v is None:
         assert(uv.ndim == 3)
         assert(uv.shape[2] == 2)
@@ -65,17 +63,18 @@ def writeFlow(filename,uv,v=None):
 
     assert(u.shape == v.shape)
     height,width = u.shape
-    f = open(filename,'wb')
-    # write the header
-    f.write(TAG_CHAR)
-    np.array(width).astype(np.int32).tofile(f)
-    np.array(height).astype(np.int32).tofile(f)
-    # arrange into matrix form
-    tmp = np.zeros((height, width*nBands))
-    tmp[:,np.arange(width)*2] = u
-    tmp[:,np.arange(width)*2 + 1] = v
-    tmp.astype(np.float32).tofile(f)
-    f.close()
+    with open(filename,'wb') as f:
+        # write the header
+        f.write(TAG_CHAR)
+        np.array(width).astype(np.int32).tofile(f)
+        np.array(height).astype(np.int32).tofile(f)
+        nBands = 2
+
+        # arrange into matrix form
+        tmp = np.zeros((height, width*nBands))
+        tmp[:,np.arange(width)*2] = u
+        tmp[:,np.arange(width)*2 + 1] = v
+        tmp.astype(np.float32).tofile(f)
 
 
 
@@ -90,24 +89,22 @@ def writeFlow(filename,uv,v=None):
 
 
 def flow2img(flow_data, output_format):
-	'''
+    '''
 	Make the flow to 3 channel
 	'''
-	if output_format == 'Y':
-		img = flow2Y(flow_data)
-		# if normalize:
-		# 	img = img / 255
-	elif output_format == 'xym':
-		mag, _ = cv2.cartToPolar(flow_data[:, :, 0], flow_data[:, :, 1])
-		img = np.concatenate((flow_data, np.expand_dims(mag, axis=2)), axis=-1)
-	elif output_format == 'hsv':
-		raise Exception('Not finish')
-	elif output_format == 'rgb':
-		raise Exception('Not finish')
-	else:
-		raise Exception('Not support')
+    if output_format == 'Y':
+        img = flow2Y(flow_data)
+        # if normalize:
+        # 	img = img / 255
+    elif output_format == 'xym':
+        mag, _ = cv2.cartToPolar(flow_data[:, :, 0], flow_data[:, :, 1])
+        img = np.concatenate((flow_data, np.expand_dims(mag, axis=2)), axis=-1)
+    elif output_format in ['hsv', 'rgb']:
+        raise Exception('Not finish')
+    else:
+        raise Exception('Not support')
 
-	return img
+    return img
 
 # ref: https://github.com/sampepose/flownet2-tf/
 # blob/18f87081db44939414fc4a48834f9e0da3e69f4c/src/flowlib.py#L240
@@ -154,48 +151,48 @@ def flow2Y(flow_data):
 
 
 def compute_color(u, v):
-	"""
+    """
 	compute optical flow color map
 	:param u: horizontal optical flow
 	:param v: vertical optical flow
 	:return:
 	"""
 
-	height, width = u.shape
-	img = np.zeros((height, width, 3))
+    height, width = u.shape
+    img = np.zeros((height, width, 3))
 
-	NAN_idx = np.isnan(u) | np.isnan(v)
-	u[NAN_idx] = v[NAN_idx] = 0
+    NAN_idx = np.isnan(u) | np.isnan(v)
+    u[NAN_idx] = v[NAN_idx] = 0
 
-	colorwheel = make_color_wheel()
-	ncols = np.size(colorwheel, 0)
+    colorwheel = make_color_wheel()
+    ncols = np.size(colorwheel, 0)
 
-	rad = np.sqrt(u ** 2 + v ** 2)
+    rad = np.sqrt(u ** 2 + v ** 2)
 
-	a = np.arctan2(-v, -u) / np.pi
+    a = np.arctan2(-v, -u) / np.pi
 
-	fk = (a + 1) / 2 * (ncols - 1) + 1
+    fk = (a + 1) / 2 * (ncols - 1) + 1
 
-	k0 = np.floor(fk).astype(int)
+    k0 = np.floor(fk).astype(int)
 
-	k1 = k0 + 1
-	k1[k1 == ncols + 1] = 1
-	f = fk - k0
+    k1 = k0 + 1
+    k1[k1 == ncols + 1] = 1
+    f = fk - k0
 
-	for i in range(0, np.size(colorwheel, 1)):
-		tmp = colorwheel[:, i]
-		col0 = tmp[k0 - 1] / 255
-		col1 = tmp[k1 - 1] / 255
-		col = (1 - f) * col0 + f * col1
+    for i in range(np.size(colorwheel, 1)):
+        tmp = colorwheel[:, i]
+        col0 = tmp[k0 - 1] / 255
+        col1 = tmp[k1 - 1] / 255
+        col = (1 - f) * col0 + f * col1
 
-		idx = rad <= 1
-		col[idx] = 1 - rad[idx] * (1 - col[idx])
-		notidx = np.logical_not(idx)
+        idx = rad <= 1
+        col[idx] = 1 - rad[idx] * (1 - col[idx])
+        notidx = np.logical_not(idx)
 
-		col[notidx] *= 0.75
-		img[:, :, i] = np.uint8(np.floor(255 * col * (1 - NAN_idx)))
+        col[notidx] *= 0.75
+        img[:, :, i] = np.uint8(np.floor(255 * col * (1 - NAN_idx)))
 
-	return img
+    return img
 
 
 def make_color_wheel():

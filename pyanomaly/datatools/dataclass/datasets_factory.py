@@ -232,5 +232,4 @@ class VideoAnomalyDatasetFactory(AbstractDatasetFactory, GetWDataset, GetCluster
         Returns:
             dataset_dict(OrederedDict): As the return of self._build()
         """
-        dataset_dict = self._build()
-        return dataset_dict
+        return self._build()

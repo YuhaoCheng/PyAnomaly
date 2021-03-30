@@ -172,13 +172,11 @@ class AMCService(BaseService):
         self.wf = 1.0
         self.wi = 1.0
         self.threshold = 0.0 # the threshold to judge whether the frame is the anomaly
-        pass
 
     def get_clip_by_stride(self, video, stride=2):
         """Get the clip list by the stride
         """
-        clip_list = []
-        return clip_list
+        return []
 
     def execute(self, data):
         output_dict = OrderedDict()

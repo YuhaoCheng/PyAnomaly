@@ -31,7 +31,7 @@ def load_pickle_results(loss_file, cfg):
     # psnr_records = results['psnr']
     # score_records = results['score']
     score_records = list()
-    psnr_records = list()
+    psnr_records = []
     num_videos = results['num_videos']
     # import ipdb; ipdb.set_trace()
     if cfg.DATASET.smooth.guassian:
@@ -85,15 +85,12 @@ def psnr_error(gen_frames, gt_frames, hat=False):
     for i in range(batch_num):
         num_pixels = gen_frames[i].numel()
         # max_val_hat = gen_frames[i].max()
-        if hat:
-            max_val = gen_frames[i].max()
-        else:
-            max_val = gt_frames[i].max()
+        max_val = gen_frames[i].max() if hat else gt_frames[i].max()
         square_diff = (gt_frames[i] - gen_frames[i])**2
         log_value = torch.log10(max_val ** 2 / ((1. / num_pixels) * torch.sum(square_diff)))
         image_errors = 10 * log_value
         batch_errors += image_errors
-    
+
     batch_errors = torch.div(batch_errors, batch_num)
     return batch_errors
 
@@ -213,9 +210,7 @@ def calc_w(w_dict):
     return wf, wi
 
 def amc_normal_score(wf, sf, wi, si, lambada_s=0.2):
-    final_score = torch.log(wf * sf) + lambada_s * torch.log(wi*si)
-
-    return final_score
+    return torch.log(wf * sf) + lambada_s * torch.log(wi*si)
 
 def amc_score(frame, frame_hat, flow, flow_hat, wf, wi, kernel_size=16, stride=4, lambada_s=0.2):
     '''
@@ -233,10 +228,9 @@ def oc_score(raw_data):
         # temp = np.max(-dummy_objects)
         temp = -np.max(dummy_objects)
         object_score[index] = temp
-    
-    frame_score = np.max(object_score)
+
     # import ipdb; ipdb.set_trace()
-    return frame_score
+    return np.max(object_score)
 
 
 def reconstruction_loss(x_hat, x):
@@ -306,8 +300,7 @@ def precision_recall_auc(loss_file, cfg):
 
         results = RecordResult(recall, precision, thresholds, auc, dataset, sub_loss_file)
 
-        if optimal_results < results:
-            optimal_results = results
+        optimal_results = max(optimal_results, results)
 
         if os.path.isdir(loss_file):
             print(results)
@@ -336,8 +329,7 @@ def compute_eer(loss_file, cfg):
 
         results = RecordResult(fpr, tpr, thresholds, eer, dataset, sub_loss_file)
 
-        if optimal_results > results:
-            optimal_results = results
+        optimal_results = min(optimal_results, results)
 
         if os.path.isdir(loss_file):
             print(results)
@@ -411,7 +403,7 @@ def compute_auc_psnr(loss_file, logger, cfg, score_type='normal'):
 
         scores = np.array([], dtype=np.float32)
         labels = np.array([], dtype=np.int8)
-        
+
         # video normalization
         for i in range(num_videos):
             distance = psnr_records[i]
@@ -430,8 +422,7 @@ def compute_auc_psnr(loss_file, logger, cfg, score_type='normal'):
 
         results = RecordResult(fpr, tpr, thresholds, auc, dataset, sub_loss_file)
 
-        if optimal_results < results:
-            optimal_results = results
+        optimal_results = max(optimal_results, results)
 
         if os.path.isdir(loss_file):
             print(results)
@@ -457,12 +448,10 @@ def compute_auc_score(loss_file, logger, cfg, score_type='normal'):
             score_one_video = np.clip(score_one_video, 0, None)
             scores = np.concatenate((scores, score_one_video[DECIDABLE_IDX:l-DECIDABLE_IDX_BACK]), axis=0)
             labels = np.concatenate((labels, gt[i][DECIDABLE_IDX:l-DECIDABLE_IDX_BACK]), axis=0)
-        
+
         fpr, tpr, thresholds = metrics.roc_curve(labels, scores, pos_label=pos_label)
         auc = metrics.auc(fpr, tpr)
-        results = RecordResult(fpr, tpr, thresholds, auc, dataset, sub_loss_file, sigma)
-
-        return results
+        return RecordResult(fpr, tpr, thresholds, auc, dataset, sub_loss_file, sigma)
         
     if score_type == 'normal':
         pos_label = 0

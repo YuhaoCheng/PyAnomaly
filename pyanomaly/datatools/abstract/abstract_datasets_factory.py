@@ -16,10 +16,7 @@ class AbstractDatasetFactory(object):
         self.aug = aug
         self.is_training = is_training
 
-        if self.is_training:
-            self.phase = 'train'
-        else:
-            self.phase = 'val'
+        self.phase = 'train' if self.is_training else 'val'
     
     @abc.abstractmethod
     def _produce_train_dataset(self):

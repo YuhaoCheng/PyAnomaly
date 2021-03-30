@@ -200,16 +200,15 @@ class BaseTrainer(AbstractTrainer):
         for n, p in self.model.named_parameters():
             parts = n.split('.')
             # consider the data parallel situation
-            if parts[0] == 'module':
-                if parts[1] not in layer_list:
-                    p.requires_grad = False
-                if p.requires_grad:
-                    print(n)
-            else:
-                if parts[0] not in layer_list:
-                    p.requires_grad = False
-                if p.requires_grad:
-                    print(n)
+            if (
+                parts[0] == 'module'
+                and parts[1] not in layer_list
+                or parts[0] != 'module'
+                and parts[0] not in layer_list
+            ):
+                p.requires_grad = False
+            if p.requires_grad:
+                print(n)
         self.logger.info('Finish Setting freeze layers')
     
     def data_parallel(self, model):
@@ -222,8 +221,7 @@ class BaseTrainer(AbstractTrainer):
         """
         logger.info('<!_!> ==> Data Parallel')
         gpus = [int(i) for i in self.config.SYSTEM.gpus]
-        model_parallel = torch.nn.DataParallel(model.cuda(), device_ids=gpus)
-        return model_parallel
+        return torch.nn.DataParallel(model.cuda(), device_ids=gpus)
     
     
     def after_step(self, current_step):

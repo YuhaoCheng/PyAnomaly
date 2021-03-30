@@ -116,8 +116,7 @@ class DataAPI(AbstractBuilder):
         Returns:
             dataset(OrderedDict)
         """
-        dataset = self.factory()
-        return dataset
+        return self.factory()
     
     def _build_sampler(self, _data_len):
         """
@@ -128,10 +127,9 @@ class DataAPI(AbstractBuilder):
             sampler: torch.data.Sampler
         """
         if self.cfg.SYSTEM.distributed.use:
-            sampler = DistTrainSampler(_data_len)
+            return DistTrainSampler(_data_len)
         else:
-            sampler = TrainSampler(_data_len, self.seed)
-        return sampler
+            return TrainSampler(_data_len, self.seed)
     
     def __call__(self):
         """
@@ -141,8 +139,7 @@ class DataAPI(AbstractBuilder):
         Returns:
             None
         """
-        dataloader_dict = self.build()
-        return dataloader_dict
+        return self.build()
 
 
 class EvaluateAPI(object):

@@ -23,11 +23,7 @@ class EngineAPI(object):
         self.cfg = cfg
         self.model_name = self.cfg.MODEL.name
         self.is_training = is_training
-        if self.is_training:
-            self.phase = 'TRAIN'
-        else:
-            self.phase = 'VAL'
-
+        self.phase = 'TRAIN' if self.is_training else 'VAL'
         self.engine_name = self.cfg.get(self.phase)['engine_name']
     
     def build(self):
