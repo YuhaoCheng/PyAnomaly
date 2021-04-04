@@ -33,11 +33,7 @@ class ScoreAUCMetrics(AbstractEvalMethod):
         self.optimal_resulst = RecordResult()
         self.decidable_idx = self.dataset_params.decidable_idx
         self.decidable_idx_back = self.dataset_params.decidable_idx
-        if is_training:
-            self.parts = ['train', 'val']
-        else:
-            self.parts = ['val']
-            
+        self.parts = ['train', 'val'] if is_training else ['val']
         if self.dataset_params.score_type == 'normal':
             self.pos_label = 0
         elif self.dataset_params.score_type == 'abnormal':

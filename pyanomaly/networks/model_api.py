@@ -36,25 +36,24 @@ class ModelAPI(object):
         logger.info('The model type is' + f'\033[1;31m {self.cfg.MODEL.type} \033[0m')
         model_parts = self.cfg.MODEL.parts
         model_type = self.cfg.MODEL.type
-        if model_type in ModelAPI.MODEL_TYPE:
-            model = OrderedDict()
-            logger.info('Model Dict')
-            # 2. get the model based on the registry
-            _model_parts = list(model_parts[i:i+2] for i in range(0, len(model_parts), 2))
-            for couple in _model_parts:
-                model_dict_key = couple[0].split('_')
-                if model_dict_key[0] == 'auxiliary':
-                    model_dict_value = AUX_ARCH_REGISTRY.get(couple[1])(self.cfg)
-                elif model_dict_key[0] == 'meta':
-                    model_dict_value = META_ARCH_REGISTRY.get(couple[1])(self.cfg)
-                elif model_dict_key[0] == 'base':
-                    model_dict_value = BASE_ARCH_REGISTRY.get(couple[1])(self.cfg)
-                else:
-                    raise Exception('Wrong model in line62')
-                # 3. set the grad requirement  --move to the Trainer, for the convenience
-                # 4. get the final model 
-                model[model_dict_key[1]] = model_dict_value
-        else:
+        if model_type not in ModelAPI.MODEL_TYPE:
             raise Exception(f'Not support Model Type, we only support: {ModelAPI.MODEL_TYPE}')
-        
+
+        model = OrderedDict()
+        logger.info('Model Dict')
+            # 2. get the model based on the registry
+        _model_parts = [model_parts[i:i+2] for i in range(0, len(model_parts), 2)]
+        for couple in _model_parts:
+            model_dict_key = couple[0].split('_')
+            if model_dict_key[0] == 'auxiliary':
+                model_dict_value = AUX_ARCH_REGISTRY.get(couple[1])(self.cfg)
+            elif model_dict_key[0] == 'meta':
+                model_dict_value = META_ARCH_REGISTRY.get(couple[1])(self.cfg)
+            elif model_dict_key[0] == 'base':
+                model_dict_value = BASE_ARCH_REGISTRY.get(couple[1])(self.cfg)
+            else:
+                raise Exception('Wrong model in line62')
+            # 3. set the grad requirement  --move to the Trainer, for the convenience
+            # 4. get the final model 
+            model[model_dict_key[1]] = model_dict_value
         return model

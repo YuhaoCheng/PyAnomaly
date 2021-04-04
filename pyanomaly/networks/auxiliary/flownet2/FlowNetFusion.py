@@ -52,16 +52,14 @@ class FlowNetFusion(nn.Module):
         flow2       = self.predict_flow2(out_conv2)
         flow2_up    = self.upsampled_flow2_to_1(flow2)
         out_deconv1 = self.deconv1(out_conv2)
-        
+
         concat1 = torch.cat((out_conv1,out_deconv1,flow2_up),1)
         out_interconv1 = self.inter_conv1(concat1)
         flow1       = self.predict_flow1(out_interconv1)
         flow1_up    = self.upsampled_flow1_to_0(flow1)
         out_deconv0 = self.deconv0(concat1)
-        
+
         concat0 = torch.cat((out_conv0,out_deconv0,flow1_up),1)
         out_interconv0 = self.inter_conv0(concat0)
-        flow0       = self.predict_flow0(out_interconv0)
-
-        return flow0
+        return self.predict_flow0(out_interconv0)
 

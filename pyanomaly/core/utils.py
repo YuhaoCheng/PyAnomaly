@@ -216,13 +216,13 @@ def frame_gradient(x):
     '''
     video_length = x.size(1)
     dx = list()
-    dy = list()
+    dy = []
     for i in range(video_length):
         temp_dx, temp_dy = image_gradient(x[:,i,:,:,:])
         # dx.append(temp_dx.unsqueeze_(1))
         dx.append(temp_dx)
         dy.append(temp_dy)
-    
+
     dx = torch.stack(dx, dim=1)
     dy = torch.stack(dy, dim=1)
     # import ipdb; ipdb.set_trace()
@@ -232,7 +232,7 @@ def frame_gradient(x):
 
 def vis_optical_flow(batch_optical, output_format, output_size, normalize):
     temp = batch_optical.detach().cpu().permute(0,2,3,1).numpy()
-    temp_list = list()
+    temp_list = []
     for i in range(temp.shape[0]):
         np_image = flow2img(temp[i], output_format)
         temp_image = torch.from_numpy(np_image.transpose((2, 0, 1)))
@@ -350,31 +350,33 @@ def tensorboard_vis_images(vis_objects, writer, global_step, normalize):
 
 
 def get_batch_dets(det_model, batch_image):
-        """
+    """
         Use the detecron2
         """
-        image_list = list()
-        batch_size = batch_image.size(0)
-        images = torch.chunk(batch_image, batch_size, dim=0)
-        for image in images:
-            image_list.append({"image":image.squeeze_(0).mul(255).byte()[[2,0,1],:,:]})
-        outputs = det_model(image_list)
-        
-        bboxs = []
-        frame_objects = OrderedDict()
-        max_objects = 0
-        min_objects = 1000
-        for frame_id, out in enumerate(outputs):
-            temp = out['instances'].pred_boxes.tensor.detach()
-            temp.requires_grad = False
-            frame_objects[frame_id] = temp.size(0)
-            if frame_objects[frame_id] > max_objects:
-                max_objects = frame_objects[frame_id]
-            if frame_objects[frame_id] < min_objects:
-                min_objects = frame_objects[frame_id]
-            bboxs.append(temp)
-        
-        return bboxs
+    batch_size = batch_image.size(0)
+    images = torch.chunk(batch_image, batch_size, dim=0)
+    image_list = [
+        {"image": image.squeeze_(0).mul(255).byte()[[2, 0, 1], :, :]}
+        for image in images
+    ]
+
+    outputs = det_model(image_list)
+
+    bboxs = []
+    frame_objects = OrderedDict()
+    max_objects = 0
+    min_objects = 1000
+    for frame_id, out in enumerate(outputs):
+        temp = out['instances'].pred_boxes.tensor.detach()
+        temp.requires_grad = False
+        frame_objects[frame_id] = temp.size(0)
+        if frame_objects[frame_id] > max_objects:
+            max_objects = frame_objects[frame_id]
+        if frame_objects[frame_id] < min_objects:
+            min_objects = frame_objects[frame_id]
+        bboxs.append(temp)
+
+    return bboxs
 
 def save_score_results(score, cfg, logger, verbose=None, config_name='None', current_step=0, time_stamp='time_step'): 
     """Save scores.
@@ -448,14 +450,12 @@ def make_info_message(current_step, max_step, model_type, batch_time, batch_size
         loss_string += f'{loss_name}:{loss_val:.5f}({loss_avg:.5f})'
         if index != (len(loss_list) -1):
             loss_string += '\t'
-    
-    msg = f'Step: [{current_step}/{max_step}]\t' \
+
+    return f'Step: [{current_step}/{max_step}]\t' \
           f'Type: {model_type}\t' \
           f'Time: {batch_time.val:.2f}s ({batch_time.avg:.2f}s)\t' \
           f'Speed: {speed:.1f} samples/s\t' \
           f'Data: {data_time.val:.2f}s ({data_time.avg:.2f}s)\t' + loss_string
-    
-    return msg
 
 
 if __name__ == '__main__':

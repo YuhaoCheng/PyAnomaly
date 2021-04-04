@@ -104,6 +104,4 @@ class AMCDiscriminiator(nn.Module):
         x = F.leaky_relu_(x)
         x = self.conv4(x)
         x = self.bn4(x)
-        x_sigmod = F.sigmoid(x)
-        
-        return x_sigmod
+        return F.sigmoid(x)

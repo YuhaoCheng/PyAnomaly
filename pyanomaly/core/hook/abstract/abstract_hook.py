@@ -74,10 +74,6 @@ class EvaluateHook(HookBase):
                     # save the checkpoint
                     self.engine.save(current_step)
                     self.engine.logger.info('LOL==>the accuracy is not imporved in epcoh{} but save'.format(current_step))
-                else:
-                    pass
-        else:
-            pass
     
     def inference(self):
         acc = self.evaluate(0)

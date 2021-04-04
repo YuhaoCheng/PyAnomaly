@@ -84,8 +84,7 @@ class AbstractEngine(object):
         """
         logger.info('<!_!> ==> Data Parallel')
         gpus = [int(i) for i in self.engine_gpus]
-        model_parallel = torch.nn.DataParallel(model.cuda(), device_ids=gpus)
-        return model_parallel
+        return torch.nn.DataParallel(model.cuda(), device_ids=gpus)
 
 
     def _load_file(self, model_keys, model_file):

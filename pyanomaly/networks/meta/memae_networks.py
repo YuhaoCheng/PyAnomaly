@@ -32,8 +32,7 @@ class MemoryModule3D(nn.Module):
         nn.init.kaiming_uniform_(self.memory)
     
     def hard_shrink_relu(self, input, lambd=0, epsilon=1e-15):
-        output = (F.relu(input-lambd) * input) / (torch.abs(input - lambd) + epsilon)
-        return output
+        return (F.relu(input-lambd) * input) / (torch.abs(input - lambd) + epsilon)
     
     # @torchsnooper.snoop()
     def forward(self, z):

@@ -49,5 +49,4 @@ def parse_args():
     parser.add_argument('--flow_model_path', default='/export/home/chengyh/Anomaly_DA/lib/networks/liteFlownet/network-sintel.pytorch')
     parser.add_argument('opts', help='change the config from the command-line', default=None, nargs=argparse.REMAINDER)
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()

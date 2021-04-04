@@ -145,8 +145,8 @@ class VideoLoader(object):
         '''
         array_type: the output format of the video array. The shape of the video data is [C,D,H,W]
         '''
-        clip_list = list()
-        clip_list_original = list()
+        clip_list = []
+        clip_list_original = []
         for frame_id in range(start, end, step):
             # import ipdb; ipdb.set_trace()
             frame_name = frames_list[frame_id]
@@ -154,7 +154,7 @@ class VideoLoader(object):
             original_frame = original_frame.numpy()
             clip_list.append(frame)
             clip_list_original.append(original_frame)
-        
+
         # Make the clip have the same length, method1: supplement the frames
         if len(clip_list) < clip_length:
             diff = clip_length - len(clip_list)
@@ -168,14 +168,14 @@ class VideoLoader(object):
         # =================================
         clip_np = np.array(clip_list)  # the shape of the clip_np is [D,H,W,C]
         clip_original = self._normalize_original(torch.from_numpy(np.array(clip_list_original)))  # the shape of the clip_original is [C, D, H, W]
-        
+
         assert clip_np.shape[0] == clip_length, f'The clip length is {clip_length}, the real one is {clip_np[0]}'
-        
+
         # Use the data augment for the video
         if self.transforms is not None:
             # type of clip is ndarray
             clip = self._augment(clip_np)
-        
+
         if array_type == 'ndarray':
             if isinstance(clip, np.ndarray):
                 return clip, clip_original
@@ -204,7 +204,7 @@ class VideoLoader(object):
                 raise Exception('Some error in videoloader line 134')
         else:
             raise Exception(f'Get the wrong type {array_type}')
-        
+
         clip = clip.permute(1,0,2,3)
         return clip, clip_original  # the batch shape is [N,C,D,H,W], because the Pytorch conv3D is [N,C,D,H,W]
 
@@ -329,9 +329,7 @@ class GroundTruthLoader(object):
             video_name = os.path.join(dataset_video_folder, video_list[sub_video_number])
             assert os.path.isdir(video_name), f'{video_name} is not directory!'
 
-            length = len(os.listdir(video_name))
-
-            return length
+            return len(os.listdir(video_name))
         
         gt = []
         for i in range(number_videos):
@@ -359,8 +357,7 @@ class GroundTruthLoader(object):
     def _load_shanghai_gt(self):
         video_path_list = sorted(os.listdir(self.gt_path))
 
-        gt = []
-        for video in video_path_list:
-            gt.append(np.load(os.path.join(self.gt_path, video)))
-        return gt
+        return [
+            np.load(os.path.join(self.gt_path, video)) for video in video_path_list
+        ]
 

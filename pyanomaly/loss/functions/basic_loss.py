@@ -28,14 +28,13 @@ def get_loss_args(loss_cfg):
         >>> loss_args
         >>> namedtuple(size_average=None, reduce=None, reduction='mean')
     """
-    args_name = list()
-    args_value = list()
+    args_name = []
+    args_value = []
     for config in loss_cfg:
         args_name.append(config[0])
         args_value.append(config[1])
     loss_args_template = namedtuple('LossArgs', args_name)
-    loss_args = loss_args_template._make(args_value)
-    return loss_args
+    return loss_args_template._make(args_value)
 
 def pad_same(in_dim, ks, stride, dilation=1):
     """
@@ -81,9 +80,8 @@ class IntensityLoss(nn.Module):
         super(IntensityLoss, self).__init__()
         self.l_num =2
     def forward(self, gen_frames, gt_frames):
-        x = torch.mean(torch.pow(torch.abs(gen_frames - gt_frames), self.l_num))
         # x = torch.mean(torch.abs(gen_frames - gt_frames)**self.l_num)
-        return x
+        return torch.mean(torch.pow(torch.abs(gen_frames - gt_frames), self.l_num))
 
 @LOSS_REGISTRY.register()
 class GradientLoss(nn.Module):
@@ -137,8 +135,7 @@ class AMCDiscriminateLoss(nn.Module):
         self.t1 = nn.BCELoss()
         
     def forward(self, outputs, labels):
-        loss  = self.t1(outputs, labels) 
-        return loss
+        return self.t1(outputs, labels)
 
 @LOSS_REGISTRY.register()
 class AMCGenerateLoss(nn.Module):
@@ -146,8 +143,7 @@ class AMCGenerateLoss(nn.Module):
         super(AMCGenerateLoss, self).__init__()
         self.t1 = nn.BCELoss()
     def forward(self, fake_outputs, fake):
-        loss  = self.t1(fake_outputs, fake)
-        return loss
+        return self.t1(fake_outputs, fake)
 
 @LOSS_REGISTRY.register()
 class GANLoss(nn.Module):
@@ -194,10 +190,7 @@ class GANLoss(nn.Module):
             A label tensor filled with ground truth label, and with the size of the input
         """
 
-        if target_is_real:
-            target_tensor = self.real_label
-        else:
-            target_tensor = self.fake_label
+        target_tensor = self.real_label if target_is_real else self.fake_label
         return target_tensor.expand_as(prediction)
 
     def __call__(self, prediction, target_is_real):
@@ -214,10 +207,7 @@ class GANLoss(nn.Module):
             target_tensor = self.get_target_tensor(prediction, target_is_real)
             loss = self.loss(prediction, target_tensor)
         elif self.gan_mode == 'wgangp':
-            if target_is_real:
-                loss = -prediction.mean()
-            else:
-                loss = prediction.mean()
+            loss = -prediction.mean() if target_is_real else prediction.mean()
         return loss
 
 @LOSS_REGISTRY.register()
@@ -227,15 +217,13 @@ class WeightedPredLoss(nn.Module):
         # pass
     
     def forward(self, x, target):
-        error = 0
         pred_len = target.shape[2]
         weight = [i * 1.0 for i in range(pred_len, 0, -1)]
         weighted_error = [torch.mean(torch.pow(x[:,:,i,:,:] - target[:,:,i,:,:], 2)) * weight[i] for i in range(pred_len)]
-        for item in weighted_error:
-            error += item
+        error = sum(weighted_error)
         # error /= pred_len ** 2
         # import ipdb; ipdb.set_trace()
-        
+
         error /= pred_len ** 2
         return error
 
@@ -282,7 +270,6 @@ class MemLoss(nn.Module):
         # self.l_num =2
     def forward(self, att_weights):
         att_weights = att_weights + (att_weights == 0).float() * 1.0
-        x = torch.mean(-att_weights * att_weights.log())
         # import ipdb; ipdb.set_trace()
         # print(f'the memae loss is{x}')
-        return x
+        return torch.mean(-att_weights * att_weights.log())

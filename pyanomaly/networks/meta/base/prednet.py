@@ -254,10 +254,7 @@ class PredNet(nn.Module):
 
     def isNotTopestLayer(self, layerIndex):
         '''judge if the layerIndex is not the topest layer.'''
-        if layerIndex < self.num_layers - 1:
-            return True
-        else:
-            return False
+        return layerIndex < self.num_layers - 1
 
 
     def make_layers(self):
@@ -507,9 +504,7 @@ class PredNet(nn.Module):
             return output_list
         elif self.output_mode == 'prediction':
             return output_list  # 此时的output_list是timestep个预测帧图像
-        elif self.output_mode == 'all':
-            pass
-        else:
+        elif self.output_mode != 'all':
             raise(RuntimeError('Kidding? Unknown output mode!'))
 
 

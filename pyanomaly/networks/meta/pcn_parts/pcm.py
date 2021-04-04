@@ -24,7 +24,7 @@ class SingleStampConvLSTM(nn.Module):
             self._all_layers.append(cell)
 
         # for each sequence, we need to clear the internal_state
-        self.internal_state = list()
+        self.internal_state = []
     
     # @torchsnooper.snoop()
     def forward(self, input, step):
@@ -106,10 +106,7 @@ class PCM(nn.Module):
         for time_stamp in range(len_video):
             # print(time_stamp)
             frame = frames[time_stamp].squeeze(2)
-            if time_stamp == 0:
-                E = torch.zeros_like(frame)
-            else:
-                E = torch.sub(frame, temp)
+            E = torch.zeros_like(frame) if time_stamp == 0 else torch.sub(frame, temp)
             R = self.pep(E)
             x, _ = self.convlstm(R, time_stamp)
             Ihat = self.fr(x)
@@ -118,7 +115,7 @@ class PCM(nn.Module):
             temp = Ihat
             if time_stamp == len_video-1: # 最后一个
                 result = Ihat
-        
+
         return result
 
 
