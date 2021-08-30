@@ -5,7 +5,9 @@ PyAnomaly is the open-source tool for anomaly detection, which provides a tool f
 
 More introduction of the toolbox is in [INTRO](./docs/intro.md)
 
-**!!!!Attention: The new version will be available at May, 2021** 
+~~**!!!!Attention: The new version will be available at May, 2021**~~
+
+The new version will be released on [YuhaoCheng/PyAnomaly2](https://github.com/YuhaoCheng/PyAnomaly2)  and the repo is still under the developing. I will make it as soon as possible. Thanks for you attention. 
 
 
 ### News
