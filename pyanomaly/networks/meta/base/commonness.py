@@ -287,17 +287,16 @@ class PixelDiscriminator(nn.Module):
         self.net=[]
         self.net.append(nn.Conv2d(input_nc,num_filters[0],kernel_size=4,padding=2,stride=2))
         self.net.append(nn.LeakyReLU(0.1))
-        if use_norm:
-            for i in range(1,len(num_filters)-1):
+        for i in range(1,len(num_filters)-1):
+            if use_norm:
                 self.net.extend([nn.Conv2d(num_filters[i-1],num_filters[i],4,2,2,bias=use_bias),
                                  nn.LeakyReLU(0.1),
                                  norm_layer(num_filters[i])])
-        else :
-            for i in range(1,len(num_filters)-1):
+            else:
                 self.net.extend([nn.Conv2d(num_filters[i-1],num_filters[i],4,2,2,bias=use_bias),
                                  nn.LeakyReLU(0.1)])
         self.net.append(nn.Conv2d(num_filters[-1],1,4,1,2))
-        
+
         self.net = nn.Sequential(*self.net)
 
     def forward(self, input):

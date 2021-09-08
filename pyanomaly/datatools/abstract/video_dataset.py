@@ -73,7 +73,6 @@ class AbstractVideoDataset(Dataset):
                 self.videos[video_name]['length'] = len(self.videos[video_name]['frames'])
                 self.videos[video_name]['cursor'] = 0
                 self.total_clips += (len(self.videos[video_name]['frames']) - self.clip_length)
-            self.videos_keys = self.videos.keys()
         else:
             self.total_clips_onevideo = 0
             # the dir is the path of one video
@@ -87,7 +86,8 @@ class AbstractVideoDataset(Dataset):
             self.videos[video_name]['cursor'] = 0
             self.total_clips_onevideo += (len(self.videos[video_name]['frames']) - self.clip_length)
             self.pics_len = len(self.videos[video_name]['frames'])
-            self.videos_keys = self.videos.keys()
+
+        self.videos_keys = self.videos.keys()
     
     def __getitem__(self, indice):
         raise Exception(f'No inplement at {AbstractVideoDataset._NAME}')

@@ -37,97 +37,102 @@ __all__ = ['ClusterHook', 'OCEvaluateHook']
 class ClusterHook(HookBase):
     def after_step(self, current_step):
         # import ipdb; ipdb.set_trace()
-        if current_step % self.engine.config.TRAIN.eval_step == 0 and current_step!= 0:
-            self.engine.logger.info('Start clsuter the feature')
-            frame_num = self.engine.config.DATASET.train.clip_length
-            frame_step = self.engine.config.DATASET.train.clip_step
-            feature_record = []
-            for video_name in self.engine.cluster_dataset_keys:
-                dataset = self.engine.cluster_dataset_dict[video_name]
-                data_loader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, num_workers=1)
-                # import ipdb; ipdb.set_trace()
-                for test_input, anno, meta in data_loader:
-                    future = data[:, :, 2, :, :].cuda() # t+1 frame 
-                    current = data[:, :, 1, :, :].cuda() # t frame
-                    past = data[:, :, 0, :, :].cuda() # t frame
-                    bboxs = get_batch_dets(self.engine.Detector, current)
-                    for index, bbox in enumerate(bboxs):
-                        # import ipdb; ipdb.set_trace()
-                        if bbox.numel() == 0:
-                            # import ipdb; ipdb.set_trace()
-                            # bbox = torch.zeros([1,4])
-                            bbox = bbox.new_zeros([1,4])
-                            # print('NO objects')
-                            # continue
-                        # import ipdb; ipdb.set_trace()
-                        current_object, _ = multi_obj_grid_crop(current[index], bbox)
-                        future_object, _ = multi_obj_grid_crop(future[index], bbox)
-                        future2current = torch.stack([future_object, current_object], dim=1)
+        if (
+            current_step % self.engine.config.TRAIN.eval_step != 0
+            or current_step == 0
+        ):
+            return
 
-                        past_object, _ = multi_obj_grid_crop(past[index], bbox)
-                        current2past = torch.stack([current_object, past_object], dim=1)
-
-                        _, _, A_input = frame_gradient(future2current)
-                        A_input = A_input.sum(1)
-                        _, _, C_input = frame_gradient(current2past)
-                        C_input = C_input.sum(1)
-                        A_feature, _, _ = self.engine.A(A_input)
-                        B_feature, _, _ = self.engine.B(current_object)
-                        C_feature, _, _ = self.engine.C(C_input)
-                        
-                        A_flatten_feature = A_feature.flatten(start_dim=1)
-                        B_flatten_feature = B_feature.flatten(start_dim=1)
-                        C_flatten_feature = C_feature.flatten(start_dim=1)
-                        ABC_feature = torch.cat([A_flatten_feature, B_flatten_feature, C_flatten_feature], dim=1).detach()
+        self.engine.logger.info('Start clsuter the feature')
+        frame_num = self.engine.config.DATASET.train.clip_length
+        frame_step = self.engine.config.DATASET.train.clip_step
+        feature_record = []
+        for video_name in self.engine.cluster_dataset_keys:
+            dataset = self.engine.cluster_dataset_dict[video_name]
+            data_loader = DataLoader(dataset=dataset, batch_size=1, shuffle=False, num_workers=1)
+            # import ipdb; ipdb.set_trace()
+            for test_input, anno, meta in data_loader:
+                future = data[:, :, 2, :, :].cuda() # t+1 frame 
+                current = data[:, :, 1, :, :].cuda() # t frame
+                past = data[:, :, 0, :, :].cuda() # t frame
+                bboxs = get_batch_dets(self.engine.Detector, current)
+                for index, bbox in enumerate(bboxs):
+                    # import ipdb; ipdb.set_trace()
+                    if bbox.numel() == 0:
                         # import ipdb; ipdb.set_trace()
-                        ABC_feature_s = torch.chunk(ABC_feature, ABC_feature.size(0), dim=0)
-                        # feature_record.extend(ABC_feature_s)
-                        for abc_f in ABC_feature_s:
-                            temp = abc_f.squeeze(0).cpu().numpy()
-                            feature_record.append(temp)
-                        # import ipdb; ipdb.set_trace()
-                self.engine.logger.info(f'Finish the video:{video_name}')
-            self.engine.logger.info(f'Finish extract feature, the sample:{len(feature_record)}')
-            device = torch.device('cuda:0')
-            cluster_input = torch.from_numpy(np.array(feature_record))
-            # cluster_input = np.array(feature_record)
-            time = mmcv.Timer()
-            # import ipdb; ipdb.set_trace()
-            cluster_centers = cluster_input.new_zeros(size=[self.engine.config.TRAIN.cluster.k, 3072])
-            cluster_score = 0.0
-            cluster_model = None
-            for _ in range(1):
-                # model = KMeans(n_clusters=self.trainer.config.TRAIN.cluster.k, init='k-means++',n_init=10, algorithm='full',max_iter=300).fit(cluster_input)
-                # labels = model.labels_
-                # temp = calinski_harabaz_score(cluster_input, labels)
-                # if temp > cluster_score:
-                    # cluster_model = model
-                # print(f'the temp score is {temp}')
-                cluster_ids_x, cluster_center = kmeans(X=cluster_input, num_clusters=self.engine.config.TRAIN.cluster.k, distance='euclidean', device=device)
-                cluster_centers += cluster_center
-            # import ipdb; ipdb.set_trace()
-            # cluster_centers =  cluster_centers / 10
-            # model.fit(cluster_input)
-            # pusedo_labels = model.predict(cluster_input)
-            pusedo_labels = kmeans_predict(cluster_input, cluster_centers, 'euclidean', device=device).detach().cpu().numpy()
-            # pusedo_labels = cluster_model.labels_
-            print(f'The cluster time is :{time.since_start()/60} min')
-            # import ipdb; ipdb.set_trace()
-            # pusedo_labels = np.split(pusedo_labels, pusedo_labels.shape[0], 0)
+                        # bbox = torch.zeros([1,4])
+                        bbox = bbox.new_zeros([1,4])
+                        # print('NO objects')
+                        # continue
+                    # import ipdb; ipdb.set_trace()
+                    current_object, _ = multi_obj_grid_crop(current[index], bbox)
+                    future_object, _ = multi_obj_grid_crop(future[index], bbox)
+                    future2current = torch.stack([future_object, current_object], dim=1)
 
-            pusedo_dataset = os.path.join(self.engine.config.TRAIN.pusedo_data_path, 'pusedo')
-            if not os.path.exists(pusedo_dataset):
-                os.mkdir(pusedo_dataset)
-            
-            np.savez_compressed(os.path.join(pusedo_dataset, f'{self.engine.config.DATASET.name}_dummy.npz'), data=cluster_input, label=pusedo_labels)
-            print(f'The save time is {time.since_last_check() / 60} min')
-            # binary_labels = MultiLabelBinarizer().fit_transform(pusedo_labels)
-            # self.trainer.ovr_model = OneVsRestClassifier(LinearSVC(random_state = 0)).fit(cluster_input,binary_labels)
-            # self.trainer.ovr_model = OneVsRestClassifier(LinearSVC(random_state = 0), n_jobs=16).fit(cluster_input, pusedo_labels)
-            self.engine.ovr_model = self.engine.ovr_model.fit(cluster_input, pusedo_labels)
-            # self.trainer.saved_model['OVR'] = self.trainer.ovr_model
-            print(f'The train ovr: {time.since_last_check() / 60} min')
-            joblib.dump(self.engine.ovr_model, self.engine.ovr_model_path)
+                    past_object, _ = multi_obj_grid_crop(past[index], bbox)
+                    current2past = torch.stack([current_object, past_object], dim=1)
+
+                    _, _, A_input = frame_gradient(future2current)
+                    A_input = A_input.sum(1)
+                    _, _, C_input = frame_gradient(current2past)
+                    C_input = C_input.sum(1)
+                    A_feature, _, _ = self.engine.A(A_input)
+                    B_feature, _, _ = self.engine.B(current_object)
+                    C_feature, _, _ = self.engine.C(C_input)
+
+                    A_flatten_feature = A_feature.flatten(start_dim=1)
+                    B_flatten_feature = B_feature.flatten(start_dim=1)
+                    C_flatten_feature = C_feature.flatten(start_dim=1)
+                    ABC_feature = torch.cat([A_flatten_feature, B_flatten_feature, C_flatten_feature], dim=1).detach()
+                    # import ipdb; ipdb.set_trace()
+                    ABC_feature_s = torch.chunk(ABC_feature, ABC_feature.size(0), dim=0)
+                    # feature_record.extend(ABC_feature_s)
+                    for abc_f in ABC_feature_s:
+                        temp = abc_f.squeeze(0).cpu().numpy()
+                        feature_record.append(temp)
+                    # import ipdb; ipdb.set_trace()
+            self.engine.logger.info(f'Finish the video:{video_name}')
+        self.engine.logger.info(f'Finish extract feature, the sample:{len(feature_record)}')
+        device = torch.device('cuda:0')
+        cluster_input = torch.from_numpy(np.array(feature_record))
+        # cluster_input = np.array(feature_record)
+        time = mmcv.Timer()
+        # import ipdb; ipdb.set_trace()
+        cluster_centers = cluster_input.new_zeros(size=[self.engine.config.TRAIN.cluster.k, 3072])
+        cluster_score = 0.0
+        cluster_model = None
+        for _ in range(1):
+            # model = KMeans(n_clusters=self.trainer.config.TRAIN.cluster.k, init='k-means++',n_init=10, algorithm='full',max_iter=300).fit(cluster_input)
+            # labels = model.labels_
+            # temp = calinski_harabaz_score(cluster_input, labels)
+            # if temp > cluster_score:
+                # cluster_model = model
+            # print(f'the temp score is {temp}')
+            cluster_ids_x, cluster_center = kmeans(X=cluster_input, num_clusters=self.engine.config.TRAIN.cluster.k, distance='euclidean', device=device)
+            cluster_centers += cluster_center
+        # import ipdb; ipdb.set_trace()
+        # cluster_centers =  cluster_centers / 10
+        # model.fit(cluster_input)
+        # pusedo_labels = model.predict(cluster_input)
+        pusedo_labels = kmeans_predict(cluster_input, cluster_centers, 'euclidean', device=device).detach().cpu().numpy()
+        # pusedo_labels = cluster_model.labels_
+        print(f'The cluster time is :{time.since_start()/60} min')
+        # import ipdb; ipdb.set_trace()
+        # pusedo_labels = np.split(pusedo_labels, pusedo_labels.shape[0], 0)
+
+        pusedo_dataset = os.path.join(self.engine.config.TRAIN.pusedo_data_path, 'pusedo')
+        if not os.path.exists(pusedo_dataset):
+            os.mkdir(pusedo_dataset)
+
+        np.savez_compressed(os.path.join(pusedo_dataset, f'{self.engine.config.DATASET.name}_dummy.npz'), data=cluster_input, label=pusedo_labels)
+        print(f'The save time is {time.since_last_check() / 60} min')
+        # binary_labels = MultiLabelBinarizer().fit_transform(pusedo_labels)
+        # self.trainer.ovr_model = OneVsRestClassifier(LinearSVC(random_state = 0)).fit(cluster_input,binary_labels)
+        # self.trainer.ovr_model = OneVsRestClassifier(LinearSVC(random_state = 0), n_jobs=16).fit(cluster_input, pusedo_labels)
+        self.engine.ovr_model = self.engine.ovr_model.fit(cluster_input, pusedo_labels)
+        # self.trainer.saved_model['OVR'] = self.trainer.ovr_model
+        print(f'The train ovr: {time.since_last_check() / 60} min')
+        joblib.dump(self.engine.ovr_model, self.engine.ovr_model_path)
             # import ipdb; ipdb.set_trace()
             
 @HOOK_REGISTRY.register()

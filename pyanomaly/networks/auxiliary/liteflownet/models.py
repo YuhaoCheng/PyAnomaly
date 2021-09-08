@@ -125,7 +125,7 @@ class LiteFlowNet(torch.nn.Module):
                 if intLevel != 2:
                     self.netFeat = torch.nn.Sequential()
 
-                elif intLevel == 2:
+                else:
                     self.netFeat = torch.nn.Sequential(
                         torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=1, stride=1, padding=0),
                         torch.nn.LeakyReLU(inplace=False, negative_slope=0.1)
@@ -136,7 +136,7 @@ class LiteFlowNet(torch.nn.Module):
                 if intLevel == 6:
                     self.netUpflow = None
 
-                elif intLevel != 6:
+                else:
                     self.netUpflow = torch.nn.ConvTranspose2d(in_channels=2, out_channels=2, kernel_size=4, stride=2, padding=1, bias=False, groups=2)
 
                 # end
@@ -144,7 +144,7 @@ class LiteFlowNet(torch.nn.Module):
                 if intLevel >= 4:
                     self.netUpcorr = None
 
-                elif intLevel < 4:
+                else:
                     self.netUpcorr = torch.nn.ConvTranspose2d(in_channels=49, out_channels=49, kernel_size=4, stride=2, padding=1, bias=False, groups=49)
 
                 # end
@@ -175,7 +175,7 @@ class LiteFlowNet(torch.nn.Module):
                 if self.netUpcorr is None:
                     tenCorrelation = torch.nn.functional.leaky_relu(input=correlation.FunctionCorrelation(tenFirst=tenFeaturesFirst, tenSecond=tenFeaturesSecond, intStride=1), negative_slope=0.1, inplace=False)
 
-                elif self.netUpcorr is not None:
+                else:
                     tenCorrelation = self.netUpcorr(torch.nn.functional.leaky_relu(input=correlation.FunctionCorrelation(tenFirst=tenFeaturesFirst, tenSecond=tenFeaturesSecond, intStride=2), negative_slope=0.1, inplace=False))
 
                 # end
@@ -193,7 +193,7 @@ class LiteFlowNet(torch.nn.Module):
                 if intLevel != 2:
                     self.netFeat = torch.nn.Sequential()
 
-                elif intLevel == 2:
+                else:
                     self.netFeat = torch.nn.Sequential(
                         torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=1, stride=1, padding=0),
                         torch.nn.LeakyReLU(inplace=False, negative_slope=0.1)
@@ -235,7 +235,7 @@ class LiteFlowNet(torch.nn.Module):
                 if intLevel >= 5:
                     self.netFeat = torch.nn.Sequential()
 
-                elif intLevel < 5:
+                else:
                     self.netFeat = torch.nn.Sequential(
                         torch.nn.Conv2d(in_channels=[ 0, 0, 32, 64, 96, 128, 192 ][intLevel], out_channels=128, kernel_size=1, stride=1, padding=0),
                         torch.nn.LeakyReLU(inplace=False, negative_slope=0.1)
@@ -263,7 +263,7 @@ class LiteFlowNet(torch.nn.Module):
                         torch.nn.Conv2d(in_channels=32, out_channels=[ 0, 0, 49, 25, 25, 9, 9 ][intLevel], kernel_size=[ 0, 0, 7, 5, 5, 3, 3 ][intLevel], stride=1, padding=[ 0, 0, 3, 2, 2, 1, 1 ][intLevel])
                     )
 
-                elif intLevel < 5:
+                else:
                     self.netDist = torch.nn.Sequential(
                         torch.nn.Conv2d(in_channels=32, out_channels=[ 0, 0, 49, 25, 25, 9, 9 ][intLevel], kernel_size=([ 0, 0, 7, 5, 5, 3, 3 ][intLevel], 1), stride=1, padding=([ 0, 0, 3, 2, 2, 1, 1 ][intLevel], 0)),
                         torch.nn.Conv2d(in_channels=[ 0, 0, 49, 25, 25, 9, 9 ][intLevel], out_channels=[ 0, 0, 49, 25, 25, 9, 9 ][intLevel], kernel_size=(1, [ 0, 0, 7, 5, 5, 3, 3 ][intLevel]), stride=1, padding=(0, [ 0, 0, 3, 2, 2, 1, 1 ][intLevel]))
